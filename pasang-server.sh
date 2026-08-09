@@ -36,7 +36,7 @@ garis "1/5 Paket dasar"
 apt-get update -qq
 # rsync dipasang di sini karena dia yang dipakai mengirim kode dari laptop, dan
 # Ubuntu minimal sering tidak membawanya.
-apt-get install -y -qq curl rsync ca-certificates gnupg debian-keyring \
+apt-get install -y -qq curl git ca-certificates gnupg debian-keyring \
   debian-archive-keyring apt-transport-https fail2ban
 
 garis "2/5 Node.js 20"
@@ -96,11 +96,11 @@ echo
 echo "═══════════════════════════════════════════════════════════"
 echo "Server siap. Node $(node -v), pm2, Caddy, firewall, swap."
 echo
-echo "BERIKUTNYA, dari LAPTOP, kirim kodenya:"
+echo "BERIKUTNYA, di server ini juga, ambil kodenya:"
 echo
-echo "  rsync -avz --exclude node_modules --exclude .next --exclude .next-uji \\"
-echo "    --exclude data --exclude .env \\"
-echo "    \"/d/000 copy cekat/\" root@$(hostname -I | awk '{print $1}'):/opt/palwise/"
+echo "  git clone https://github.com/13kailouis/palwiseAICRM.git /opt/palwise"
+echo "  cd /opt/palwise && npm install && cp .env.example .env"
+echo "  mkdir -p data/log data/media data/wa-sessions data/cadangan"
 echo
 echo "SESUDAH kunci SSH-mu terbukti bisa masuk, keraskan SSH-nya:"
 echo

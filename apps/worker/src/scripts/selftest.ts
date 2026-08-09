@@ -6359,6 +6359,37 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /Mau perpanjang lebih awal\?/.test(halamanPaket),
     );
 
+    // ── Data contoh tidak boleh bisa dipasang di server sungguhan ────────────
+    //
+    // Akun demonya demo@palwise.id dengan password demo1234, dua-duanya tertulis
+    // di dalam kode. Sejak repo Palwise jadi publik di GitHub (9 Agustus 2026),
+    // password itu bisa dibaca semua orang di internet.
+    //
+    // Selama ini satu-satunya yang mencegahnya ada di server adalah SATU KALIMAT
+    // di panduan pemasangan. Kalimat di dokumen bukan pengaman: sekali ada yang
+    // menjalankannya di server, langsung ada akun hidup dengan password yang
+    // diketahui seluruh internet, lengkap dengan kotak masuk WhatsApp dan data
+    // pelanggan di dalamnya.
+    const seed = baca("packages/db/src/seed.ts");
+    check(
+      "db:seed menolak jalan waktu NODE_ENV production",
+      /function tolakDiProduction/.test(seed) &&
+        /process\.env\.NODE_ENV !== "production"/.test(seed) &&
+        /process\.exit\(1\)/.test(seed),
+    );
+    // Penjaganya harus dipanggil PALING AWAL di main(), sebelum satu baris pun
+    // ditulis ke database. Penjaga yang dipanggil belakangan tidak menjaga apa pun.
+    check(
+      "penjaganya dipanggil sebelum apa pun ditulis",
+      /async function main\(\) \{\s*\n\s*tolakDiProduction\(\);/.test(seed),
+    );
+    // Pesannya harus menyebut jalan yang BENAR, bukan cuma menolak. Orang yang
+    // ditolak tanpa diberi tahu harus apa akan mencari cara mematikan penjaganya.
+    check(
+      "penolakannya menyebut perintah yang benar",
+      /npm run db:push/.test(seed) && /npm run akun:bantuan/.test(seed),
+    );
+
     await prisma.workspace.delete({ where: { id: wsBayar.id } });
 
     // ── Penjaga di kode, yang tidak bisa diuji dari sini ─────────────────────

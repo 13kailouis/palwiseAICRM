@@ -33,7 +33,7 @@ alasannya di akhir bagian ini.
 Masuk sebagai root lewat SSH, lalu:
 
 ```bash
-apt update && apt install -y curl rsync
+apt update && apt install -y curl git
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt install -y nodejs
 npm install -g pm2
@@ -71,32 +71,33 @@ sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/; s/^#*PermitRoo
 **Jalankan itu HANYA setelah kunci SSH-mu benar-benar bisa dipakai masuk**, kalau
 tidak kamu mengunci diri sendiri di luar. Tambah `fail2ban` sekalian.
 
-## 2. Naikkan kodenya
+## 2. Ambil kodenya
 
-**Repo ini TIDAK punya git**, jadi tidak ada yang bisa di-`clone`. Kodenya
-dikirim langsung dari laptop. Jalankan ini di laptop, bukan di server:
-
-```bash
-rsync -avz --exclude node_modules --exclude .next --exclude .next-uji --exclude data --exclude .env "/d/000 copy cekat/" root@IP-SERVER:/opt/palwise/
-```
-
-Yang dikecualikan itu penting, dan bukan sekadar demi ukuran:
-
-- `node_modules` dan `.next` isinya beda per sistem operasi, harus dibuat ulang
-  di server.
-- `data/` itu database laptopmu. Menimpanya berarti menghapus data pelanggan yang
-  sudah ada di server.
-- `.env` diisi terpisah di server, supaya kunci laptop dan kunci server tidak
-  saling menimpa. Lihat langkah 3.
-
-Kalau `rsync` tidak ada di PowerShell, pakai WinSCP dan tarik foldernya lewat
-jendela, dengan lima folder itu tidak dicentang.
-
-Lalu di server:
+Repo-nya ada di GitHub sejak 9 Agustus 2026, jadi `git clone` yang dipakai, bukan
+lagi `rsync` dari laptop. Ini lebih baik dan bukan cuma lebih pendek: yang sampai
+di server persis versi yang tercatat, `git pull` tahu apa yang berubah, dan tidak
+ada berkas nyasar dari laptop yang ikut terkirim.
 
 ```bash
+apt-get install -y git
+git clone https://github.com/13kailouis/palwiseAICRM.git /opt/palwise
 cd /opt/palwise && npm install && cp .env.example .env
 ```
+
+**Yang TIDAK ikut ter-clone, dan itu memang benar:** `.env` dan seluruh folder
+`data/`, keduanya ada di `.gitignore`. Jadi kunci laptopmu tidak pernah menimpa
+kunci server, dan database laptopmu tidak pernah menimpa database pelanggan. Dua
+hal itu diisi sendiri di server, lihat langkah 3 dan 4.
+
+**Repo-nya publik**, dan yang perlu diingat dari itu cuma satu: apa pun yang
+dikomit bisa dibaca semua orang, termasuk nanti. Jangan pernah `git add -f .env`,
+dan periksa dulu sebelum menambah berkas yang memuat angka atau kunci sungguhan.
+Sampai 9 Agustus 2026 riwayatnya sudah diperiksa dan bersih: `.env` tidak pernah
+masuk, dan tidak ada satu pun kunci API di seluruh riwayat.
+
+Kalau nanti repo-nya dijadikan privat, `git clone` butuh kunci deploy. Buat
+kuncinya di server (`ssh-keygen`), lalu tambahkan yang `.pub` sebagai Deploy Key
+di setelan repo GitHub.
 
 ## 3. Isi .env, dan ini bagian yang paling menentukan
 
@@ -220,11 +221,11 @@ rugi. Kalau suatu hari mau diganti, hitung ulang harga paketnya dulu dan jalanka
 
 ## 4. Bangun dan siapkan database
 
-**Buat folder `data/` dulu, dan ini WAJIB.** Foldernya sengaja tidak ikut dikirim
-`rsync` (isinya database laptopmu), jadi di server dia belum ada. Dan SQLite tidak
-bisa membuat folder sendiri: `npm run db:push` akan gagal dengan "unable to open
-database file", pesan yang tidak menyebut folder sama sekali dan bikin orang
-mencari kesalahan di tempat yang salah.
+**Buat folder `data/` dulu, dan ini WAJIB.** Foldernya ada di `.gitignore`, jadi
+sesudah `git clone` dia belum ada di server. Dan SQLite tidak bisa membuat folder
+sendiri: `npm run db:push` akan gagal dengan "unable to open database file", pesan
+yang tidak menyebut folder sama sekali dan bikin orang mencari kesalahan di tempat
+yang salah.
 
 `data/log` juga perlu ada sebelum PM2 jalan. Kalau tidak, catatan prosesnya tidak
 ikut tertulis, dan itu justru yang kamu butuh baca waktu ada yang rusak jam 2
@@ -372,18 +373,19 @@ hilang.
 
 **Lihat catatan proses:** `pm2 logs`.
 
-**Perbarui kodenya.** Tidak ada `git pull`, karena tidak ada git. Kirim ulang dari
-laptop dengan pengecualian yang SAMA seperti waktu pertama:
+**Perbarui kodenya:**
 
 ```bash
-rsync -avz --exclude node_modules --exclude .next --exclude .next-uji --exclude data --exclude .env "/d/000 copy cekat/" root@IP-SERVER:/opt/palwise/
+cd /opt/palwise && git pull && npm install && npm run db:push && npm run build && pm2 restart all
 ```
 
-Lalu di server:
+`.env` dan `data/` tidak ikut tersentuh `git pull`, jadi kunci dan database di
+server tetap utuh setiap kali diperbarui.
 
-```bash
-cd /opt/palwise && npm install && npm run db:push && npm run build && pm2 restart all
-```
+Kalau `git pull` menolak karena ada berkas yang berubah di server, jangan langsung
+`git checkout .` — periksa dulu apa yang berubah dengan `git status`. Berkas yang
+berubah di server biasanya berarti ada yang menyunting langsung di sana, dan
+membuangnya berarti membuang perbaikan yang mungkin belum ada di laptop.
 
 `pm2 restart all` memutus semua sambungan WhatsApp sebentar dan menyambung lagi
 sendiri. Lakukan di jam sepi.

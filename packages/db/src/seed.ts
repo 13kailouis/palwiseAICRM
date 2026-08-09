@@ -66,7 +66,54 @@ JAM OPERASIONAL
 GROSIR / RESELLER
 - Minimal 5 kg, harga khusus. Diarahkan ke tim sales.`;
 
+/**
+ * Menolak jalan di server sungguhan, dan ini KODE bukan lagi kalimat di panduan.
+ *
+ * Akun demonya `demo@palwise.id` dengan password `demo1234`, dua-duanya tertulis
+ * di dalam berkas ini. Sejak repo Palwise jadi publik di GitHub (9 Agustus 2026),
+ * password itu bukan lagi rahasia siapa pun: dia bisa dibaca semua orang di
+ * internet.
+ *
+ * Selama ini satu-satunya yang mencegah akun itu ada di server sungguhan adalah
+ * satu kalimat di `bisnis/07-pasang-di-vps.md` yang berbunyi "jangan jalankan
+ * npm run db:seed di server". Kalimat di dokumen bukan pengaman. Sekali ada yang
+ * menjalankannya di server, entah karena panik, karena mengira databasenya
+ * kosong, atau karena menyalin perintah dari catatan lama, langsung ada akun
+ * hidup dengan password yang diketahui seluruh internet, dan di dalamnya ada
+ * kotak masuk WhatsApp beserta seluruh data pelanggan.
+ *
+ * Pola yang sama dengan `INTERNAL_TOKEN` di worker: nilai bawaan yang tertulis di
+ * dalam kode WAJIB membuat prosesnya menolak jalan waktu production, bukan cuma
+ * memunculkan peringatan yang bisa dilewati.
+ *
+ * Kalau suatu hari benar-benar perlu memasang data contoh di server, ganti
+ * passwordnya lebih dulu dan jangan pakai jalan pintas mematikan pemeriksaan ini.
+ */
+function tolakDiProduction() {
+  if (process.env.NODE_ENV !== "production") return;
+
+  console.error(
+    [
+      "",
+      "npm run db:seed DITOLAK karena NODE_ENV=production.",
+      "",
+      `Perintah ini membuat akun ${DEMO_EMAIL} dengan password ${DEMO_PASSWORD},`,
+      "dan password itu tertulis di dalam kode yang repo-nya publik. Di server",
+      "sungguhan itu berarti akun hidup yang passwordnya diketahui semua orang,",
+      "lengkap dengan kotak masuk WhatsApp dan data pelanggan di dalamnya.",
+      "",
+      "Yang mungkin kamu cari: npm run db:push (menyiapkan tabel, tanpa data",
+      "contoh) atau npm run akun:bantuan (akun bantuan Palwise dengan password",
+      "acak yang dicetak sekali).",
+      "",
+    ].join("\n"),
+  );
+  process.exit(1);
+}
+
 async function main() {
+  tolakDiProduction();
+
   const existing = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
   if (existing) {
     console.log(`✓ Akun demo sudah ada: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
