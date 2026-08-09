@@ -49,9 +49,15 @@ const OBROLAN = [
 export function MockupDashboard() {
   return (
     <Jendela judul="app.palwise.id/app/inbox">
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
-        {/* Daftar obrolan */}
-        <div className="border-r border-ink-200">
+      <div className="grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+        {/* Daftar obrolan.
+            DISEMBUNYIKAN DI HP. Di layar 375px dua kolom ini masing-masing
+            tinggal sekitar 140px dan 190px, jadi tulisan 10px di dalamnya
+            terpotong di mana-mana dan gambarnya berhenti menunjukkan apa pun.
+            Yang harus terbaca di gambar ini cuma satu hal: asistennya menjawab
+            dengan benar. Itu ada di kolom percakapan, jadi daftar obrolannya
+            yang dilepas, bukan dikecilkan lagi. */}
+        <div className="hidden border-r border-ink-200 sm:block">
           <div className="flex items-center gap-2 border-b border-ink-200 px-3 py-2.5">
             <span className="rounded-md bg-ink-900 px-2 py-1 text-[10px] font-medium text-white">
               Semua

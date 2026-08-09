@@ -21,6 +21,56 @@ import {
   MockupSapaLagi,
 } from "@/components/Mockup";
 import { KakiHalaman } from "@/components/HalamanTeks";
+import { AjakanBawah } from "@/components/AjakanBawah";
+
+/**
+ * HALAMAN INI DIBACA DI HP DULU, BARU DI LAPTOP.
+ *
+ * Pemilik usaha di Indonesia menjalankan usahanya dari HP, dan halaman ini
+ * ditemukan lewat tautan yang dibagikan di WhatsApp. Waktu diukur di layar
+ * 375px, seluruh halaman ini setara belasan layar penuh tulisan, dan tulisan
+ * yang di laptop terbaca sebagai "penjelasan yang teliti" di HP terbaca
+ * sebagai tembok.
+ *
+ * Jadi di HP yang tampil versi pendeknya, dan yang panjang tetap ada untuk
+ * layar lebar. Caranya lewat <Dua>: dua-duanya tertulis di HTML, yang satu
+ * disembunyikan CSS. Bukan dengan mengukur lebar layar di JavaScript, karena
+ * itu berarti server tidak tahu mana yang akan tampil, dan halamannya berkedip
+ * ganti tulisan sesudah dimuat.
+ *
+ * Yang DIBUANG di HP, bukan cuma dipendekkan: catatan kaki tiap sorotan, isi
+ * penjelasan tiap fitur (judulnya sudah kalimat lengkap), contoh pertanyaan
+ * tiap bidang usaha, ajakan di tengah halaman (sudah ada tombol nempel di
+ * dasar layar), dan separuh daftar "sekarang vs pakai Palwise".
+ *
+ * Yang DITAMBAH khusus HP: tombol daftar yang nempel di dasar layar, baris
+ * pintasan ke bagian penting (di HP menu atas menyembunyikan tautannya), dan
+ * kartu harga yang digeser ke samping, bukan ditumpuk empat ke bawah.
+ */
+
+/**
+ * Tulisan dua ukuran: pendek untuk HP, panjang untuk layar lebar.
+ *
+ * Keduanya dikirim dalam satu HTML. Itu memang menambah beberapa baris yang
+ * tidak terbaca, dan itu harga yang murah dibanding halaman yang isinya baru
+ * diputuskan sesudah sampai di browser.
+ */
+function Dua({
+  hp,
+  lebar,
+  className = "",
+}: {
+  hp: React.ReactNode;
+  lebar: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <>
+      <p className={`sm:hidden ${className}`}>{hp}</p>
+      <p className={`hidden sm:block ${className}`}>{lebar}</p>
+    </>
+  );
+}
 
 /**
  * Judul fitur menyebut HASILNYA, isinya baru menjelaskan caranya.
@@ -117,16 +167,19 @@ const LANGKAH = [
     ikon: "qr" as NamaIkon,
     judul: "Sambungin nomor kamu",
     body: "Buka WhatsApp di HP, masuk ke Perangkat tertaut, scan QR yang muncul di layar. Kelar, sekitar semenit. Chat lama kamu nggak ke mana-mana.",
+    pendek: "Buka WhatsApp, masuk ke Perangkat tertaut, scan QR. Chat lama kamu nggak ke mana-mana.",
   },
   {
     ikon: "info" as NamaIkon,
     judul: "Kasih tahu dia jualan kamu",
     body: "Pilih contoh yang paling deket sama bidangmu, terus tempel daftar harga, jadwal, dan aturanmu. Atau cukup kasih alamat website kamu dan biar dia baca sendiri.",
+    pendek: "Tempel daftar harga dan aturanmu, atau kasih alamat website dan biar dia baca sendiri.",
   },
   {
     ikon: "chat" as NamaIkon,
     judul: "Dia mulai jualan",
     body: "Chat yang masuk dibalas sendiri pakai harga dan jadwal yang bener, sampai orangnya mau pesan. Kamu tetep lihat semuanya, dan bisa ambil alih kapan aja.",
+    pendek: "Chat masuk dibalas pakai harga dan jadwal yang bener. Kamu bisa ambil alih kapan aja.",
   },
 ];
 
@@ -213,17 +266,30 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
  * dengan ucapan mereka.
  */
 const FAKTA = [
-  { nilai: "24 jam", label: "Calon pembeli dibalas terus, termasuk tengah malam dan hari libur" },
-  { nilai: "1 menit", label: "Dari scan QR sampai dia mulai jualan buat kamu" },
+  {
+    nilai: "24 jam",
+    label: "Calon pembeli dibalas terus, termasuk tengah malam dan hari libur",
+    pendek: "Dibales terus, tengah malam juga",
+  },
+  {
+    nilai: "1 menit",
+    label: "Dari scan QR sampai dia mulai jualan buat kamu",
+    pendek: "Dari scan QR sampai dia jualan",
+  },
   // Dibandingkan dengan gaji admin, bukan cuma disebut angkanya sendiri. Rp 33
   // itu tidak berarti apa-apa sampai ditaruh di sebelah biaya yang selama ini
   // orang keluarkan untuk pekerjaan yang sama.
-  { nilai: "Rp 33", label: "Ongkos tiap balasan di paket Growth. Bandingin sama gaji admin sebulan" },
+  {
+    nilai: "Rp 33",
+    label: "Ongkos tiap balasan di paket Growth. Bandingin sama gaji admin sebulan",
+    pendek: "Ongkos tiap balasan di paket Growth",
+  },
   {
     // Diturunkan dari daftar paket, jangan diketik. Angka di kartu ini dan jatah
     // yang benar-benar ditegakkan sistem wajib sama.
     nilai: String(PLANS.free.aiCredits),
     label: "Balasan gratis tiap bulan, tanpa kartu kredit, tanpa batas waktu",
+    pendek: "Balasan gratis tiap bulan",
   },
 ];
 
@@ -286,6 +352,7 @@ const RIVAL_CREDITS = 15_000;
 function Sorotan({
   judul,
   body,
+  bodyHp,
   catatan,
   gambar,
   balik = false,
@@ -293,6 +360,8 @@ function Sorotan({
 }: {
   judul: string;
   body: string;
+  /** Versi HP. Isinya sama, kalimat pendukungnya dibuang. */
+  bodyHp: string;
   catatan?: string;
   gambar: React.ReactNode;
   balik?: boolean;
@@ -300,15 +369,26 @@ function Sorotan({
 }) {
   return (
     <section className={latar ? "border-y border-ink-200 bg-ink-50/60" : ""}>
-      <div className="mx-auto max-w-6xl px-5 py-20">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
+      <div className="mx-auto max-w-6xl px-5 py-12 sm:py-20">
+        <div className="grid items-center gap-7 sm:gap-12 lg:grid-cols-2">
           <div className={balik ? "lg:order-2" : ""}>
-            <h2 className="text-2xl font-semibold tracking-tight text-ink-950 sm:text-3xl">
+            <h2 className="text-[22px] font-semibold leading-snug tracking-tight text-ink-950 sm:text-3xl">
               {judul}
             </h2>
-            <p className="mt-4 text-lg leading-relaxed text-ink-600">{body}</p>
+            <Dua
+              hp={bodyHp}
+              lebar={body}
+              className="mt-3 text-[15px] leading-relaxed text-ink-600 sm:mt-4 sm:text-lg"
+            />
+            {/* CATATAN KAKI CUMA DI LAYAR LEBAR.
+                Isinya syarat dan pengecualian, dan itu memang perlu ada, tapi
+                di HP dia menambah satu paragraf lagi tepat sesudah paragraf
+                yang baru saja dibaca. Empat sorotan berarti empat paragraf
+                tambahan yang tidak menjual apa pun. Semuanya tetap terjawab di
+                bagian tanya jawab, dan yang benar-benar teliti membacanya di
+                sana. */}
             {catatan && (
-              <p className="mt-5 border-l-2 border-ink-300 pl-4 text-[15px] leading-relaxed text-ink-500">
+              <p className="mt-5 hidden border-l-2 border-ink-300 pl-4 text-[15px] leading-relaxed text-ink-500 sm:block">
                 {catatan}
               </p>
             )}
@@ -352,11 +432,14 @@ export default async function LandingPage() {
       <DataTerstruktur tanyaJawab={TANYA_JAWAB} />
       {/* Nav */}
       <header className="sticky top-0 z-20 border-b border-ink-200/70 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+        {/* Kepala halaman lebih pendek di HP. Layar HP itu pendek berdiri, dan
+            64px yang menempel di atas terus-terusan memakan bagian layar yang
+            paling mahal. */}
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:h-16">
           <Link href="/">
             <LogoNama />
           </Link>
-          <nav className="flex items-center gap-2 text-sm">
+          <nav className="flex items-center gap-1 text-sm sm:gap-2">
             <a href="#harga" className="hidden px-3 py-2 text-ink-600 hover:text-ink-900 sm:block">
               Harga
             </a>
@@ -411,7 +494,7 @@ export default async function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-6xl px-5 pt-16 sm:pt-24">
+      <section className="mx-auto max-w-6xl px-5 pt-9 sm:pt-24">
         <div className="mx-auto max-w-3xl text-center">
           <span className="badge bg-brand-50 text-brand-700">
             Sepertujuh harga platform sebelah
@@ -486,7 +569,12 @@ export default async function LandingPage() {
               "WhatsApp" tetap di judul supaya orang yang datang dari pencarian
               atau dari tautan yang dibagikan teman langsung tahu ini kategori
               apa. */}
-          <h1 className="mt-5 text-4xl font-bold leading-[1.08] tracking-tight text-ink-950 sm:text-[3.4rem]">
+          {/* Ukurannya turun di HP, bukan cuma ikut lebar.
+              36px di layar 375px bikin judul ini jadi empat baris tebal yang
+              memenuhi hampir separuh layar pertama, dan tombolnya terdorong ke
+              bawah lipatan. Turun ke 30px hasilnya masih judul yang paling
+              besar di layar, tapi tombolnya kelihatan tanpa menggulir. */}
+          <h1 className="mt-4 text-[1.875rem] font-bold leading-[1.15] tracking-tight text-ink-950 sm:mt-5 sm:text-[3.4rem] sm:leading-[1.08]">
             Ada yang chat WhatsApp kamu jam 11 malam.
             <br className="hidden sm:inline" />{" "}
             <span className="text-ink-500">Besoknya, dia udah beli di sebelah.</span>
@@ -524,13 +612,23 @@ export default async function LandingPage() {
               Judul menyebut sakitnya, kalimat ini menyebut obatnya, dan urutan
               itu yang benar: orang harus mengenali dirinya dulu sebelum dia
               peduli kamu jual apa. */}
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-ink-700">
-            Palwise jadi sales WhatsApp kamu yang bales dalam hitungan detik, 24
-            jam, pakai harga dan jadwal yang kamu isi sendiri. Sampai orangnya
-            mau pesan, tanpa nambah gaji dan tanpa nambah orang.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href={keApp("/daftar")} className="btn-primary px-6 py-3 text-base">
+          {/* Di HP dipotong jadi satu kalimat. Yang dibuang "sampai orangnya
+              mau pesan, tanpa nambah orang", karena dua-duanya sudah terbaca
+              dari kata "sales" dan "tanpa nambah gaji" di kalimat yang sama. */}
+          <Dua
+            hp="Palwise jadi sales WhatsApp kamu: bales dalam hitungan detik, 24 jam, pakai harga dan jadwal yang kamu isi sendiri. Tanpa nambah gaji."
+            lebar="Palwise jadi sales WhatsApp kamu yang bales dalam hitungan detik, 24 jam, pakai harga dan jadwal yang kamu isi sendiri. Sampai orangnya mau pesan, tanpa nambah gaji dan tanpa nambah orang."
+            className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-ink-700 sm:mt-6 sm:text-lg"
+          />
+          {/* Tombolnya selebar layar di HP, bukan dua tombol berdampingan.
+              Dua tombol yang membungkus jadi dua baris dengan lebar berbeda
+              terbaca sebagai berantakan, dan sasaran selebar layar itu yang
+              paling gampang kena jempol. */}
+          <div className="mt-6 flex flex-col items-stretch gap-2.5 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-3">
+            <Link
+              href={keApp("/daftar")}
+              className="btn-primary px-6 py-3 text-base sm:w-auto"
+            >
               Mulai gratis
             </Link>
             {/* Tombol "chat orangnya" muncul CUMA kalau nomornya sudah diisi.
@@ -550,43 +648,78 @@ export default async function LandingPage() {
                 }
                 target="_blank"
                 rel="noreferrer"
-                className="btn-ghost px-6 py-3 text-base"
+                className="btn-ghost px-6 py-3 text-base sm:w-auto"
               >
                 Tanya dulu lewat WhatsApp
               </a>
             ) : (
-              <a href="#cara" className="btn-ghost px-6 py-3 text-base">
+              <a href="#cara" className="btn-ghost px-6 py-3 text-base sm:w-auto">
                 Lihat cara kerjanya
               </a>
             )}
           </div>
-          <p className="mt-4 text-sm text-ink-500">
-            Tanpa kartu kredit. Pasangnya cukup scan QR dari HP kamu, semenit
-            kelar.
-          </p>
+          <Dua
+            hp="Gratis, tanpa kartu kredit. Pasangnya scan QR dari HP kamu."
+            lebar="Tanpa kartu kredit. Pasangnya cukup scan QR dari HP kamu, semenit kelar."
+            className="mt-4 text-sm text-ink-500"
+          />
         </div>
 
         {/* Wujud produknya ditaruh setinggi mungkin. Orang menilai barang yang
             dilihatnya, bukan barang yang dibacanya. */}
-        <div className="relative mt-14">
+        <div className="relative mt-8 sm:mt-14">
           <div className="absolute inset-x-0 bottom-0 top-1/3 -z-10 rounded-3xl bg-ink-50" />
           <div className="mx-auto max-w-4xl">
             <MockupDashboard />
           </div>
         </div>
+
+        {/* Pintasan, CUMA DI HP.
+            Tautan Harga, Fitur, dan Panduan di menu atas semuanya `hidden
+            sm:block`, jadi di HP tidak ada satu pun jalan ke bagian tertentu
+            selain menggulir seluruh halaman. Orang yang datang cuma mau tahu
+            harganya, dan itu golongan yang paling siap membeli, harus melewati
+            sepuluh layar dulu. Barisnya digeser ke samping supaya empat
+            pintasan tidak jadi empat baris. */}
+        <nav
+          aria-label="Loncat ke bagian"
+          className="thin-scroll -mx-5 mt-7 flex gap-2 overflow-x-auto px-5 pb-1 sm:hidden"
+        >
+          {[
+            ["#cara", "Cara kerjanya"],
+            ["#fitur", "Fitur"],
+            ["#harga", "Harga"],
+            ["#tanya", "Tanya jawab"],
+          ].map(([href, label]) => (
+            <a
+              key={href}
+              href={href}
+              className="tap-aman shrink-0 whitespace-nowrap rounded-full border border-ink-200 px-4 text-sm text-ink-700"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
       </section>
 
       {/* Fakta cepat. Semuanya sifat produknya sendiri, bukan pengakuan orang
           lain. Kami belum punya pelanggan, jadi tidak ada satu angka pun di
           sini yang mengaku sebagai bukti sosial. */}
-      <section className="mx-auto max-w-6xl px-5 pt-14">
-        <dl className="grid gap-6 rounded-2xl border border-ink-200 px-6 py-8 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Dua kolom di HP, bukan empat baris bertumpuk. Angka-angka pendek yang
+          ditumpuk ke bawah membuang setengah lebar layar dan menambah satu
+          layar penuh gulir untuk empat kata. Keterangannya juga dipendekkan:
+          di sini tugasnya cuma dilirik, bukan dibaca. */}
+      <section className="mx-auto max-w-6xl px-5 pt-10 sm:pt-14">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-5 rounded-2xl border border-ink-200 px-4 py-6 sm:gap-6 sm:px-6 sm:py-8 lg:grid-cols-4">
           {FAKTA.map((f) => (
             <div key={f.label}>
-              <dt className="text-2xl font-bold tracking-tight text-ink-950">
+              <dt className="text-xl font-bold tracking-tight text-ink-950 sm:text-2xl">
                 {f.nilai}
               </dt>
-              <dd className="mt-1 text-sm leading-relaxed text-ink-600">{f.label}</dd>
+              <dd className="mt-1 text-[13px] leading-snug text-ink-600 sm:text-sm sm:leading-relaxed">
+                <span className="sm:hidden">{f.pendek}</span>
+                <span className="hidden sm:inline">{f.label}</span>
+              </dd>
             </div>
           ))}
         </dl>
@@ -610,11 +743,11 @@ export default async function LandingPage() {
 
           GANTI SELURUH BAGIAN INI begitu ada pelanggan berbayar yang mau bicara.
           Ucapan satu orang sungguhan mengalahkan seluruh paragraf ini. */}
-      <section className="mx-auto max-w-6xl px-5 pt-16">
-        <div className="rounded-2xl border border-ink-900 bg-ink-950 px-6 py-10 sm:px-10">
+      <section className="mx-auto max-w-6xl px-5 pt-12 sm:pt-16">
+        <div className="rounded-2xl border border-ink-900 bg-ink-950 px-5 py-8 sm:px-10 sm:py-10">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold text-ink-400">Jujur dari awal</p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h2 className="mt-2 text-[22px] font-semibold leading-snug tracking-tight text-white sm:mt-3 sm:text-3xl">
               Kamu nggak perlu percaya kami. Tes aja dulu.
             </h2>
             {/* SATU paragraf, dan sudutnya risiko DIA, bukan situasi kami.
@@ -629,14 +762,28 @@ export default async function LandingPage() {
                 Jadi paragrafnya dibalik: bukan "kami belum punya bukti", tapi
                 "kamu nggak perlu ambil risiko". Barangnya sama, yang berubah siapa
                 yang jadi pusat kalimatnya. */}
-            <p className="mt-4 leading-relaxed text-ink-400">
-              Palwise masih baru dan kami nggak mau nulis &ldquo;dipercaya 3.000+
-              bisnis&rdquo; padahal nggak ada. Yang kami tawarin lebih enak
-              daripada testimoni orang yang kamu nggak kenal: sambungin nomor
-              kamu, tanya dia kayak pelanggan yang paling rewel, dan lihat sendiri
-              jawabannya bener atau nggak buat jualan kamu. Kalau nggak cocok,
-              kamu nggak keluar sepeser pun dan nggak ada yang perlu dibatalin.
-            </p>
+            <Dua
+              hp={
+                <>
+                  Palwise masih baru, dan kami nggak mau nulis &ldquo;dipercaya
+                  3.000+ bisnis&rdquo; padahal nggak ada. Tanya dia kayak
+                  pelanggan yang paling rewel, dan lihat sendiri jawabannya bener
+                  atau nggak. Kalau nggak cocok, kamu nggak keluar sepeser pun.
+                </>
+              }
+              lebar={
+                <>
+                  Palwise masih baru dan kami nggak mau nulis &ldquo;dipercaya
+                  3.000+ bisnis&rdquo; padahal nggak ada. Yang kami tawarin lebih
+                  enak daripada testimoni orang yang kamu nggak kenal: sambungin
+                  nomor kamu, tanya dia kayak pelanggan yang paling rewel, dan
+                  lihat sendiri jawabannya bener atau nggak buat jualan kamu.
+                  Kalau nggak cocok, kamu nggak keluar sepeser pun dan nggak ada
+                  yang perlu dibatalin.
+                </>
+              }
+              className="mt-3 text-[15px] leading-relaxed text-ink-400 sm:mt-4 sm:text-base"
+            />
 
             {/* Manusianya, bukan cuma produknya.
 
@@ -663,9 +810,9 @@ export default async function LandingPage() {
       </section>
 
       {/* Masalah dan jalan keluarnya, disandingkan */}
-      <section className="mx-auto max-w-6xl px-5 py-20">
+      <section className="mx-auto max-w-6xl px-5 py-12 sm:py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
             Yang hilang bukan chatnya, tapi orderannya
           </h2>
           {/* Contohnya sengaja dari tiga jenis usaha yang berbeda.
@@ -674,20 +821,28 @@ export default async function LandingPage() {
               tumpul, karena tidak ada satu orang pun yang merasa dipanggil.
               Yang bekerja bukan menyebut semua, tapi menyebut beberapa dengan
               sangat spesifik, sampai yang lain ikut mengenali polanya. */}
-          <p className="mt-3 leading-relaxed text-ink-600">
-            Pertanyaannya itu-itu aja. Harga berapa, ready nggak, bisa Sabtu
-            nggak, lokasinya di mana. Gampang semua. Tapi yang nggak dibalas
-            dalam sejam biasanya udah beli di tempat lain, dan kamu nggak akan
-            pernah tahu berapa banyak.
-          </p>
+          <Dua
+            hp="Pertanyaannya itu-itu aja. Harga berapa, ready nggak, bisa Sabtu nggak. Tapi yang nggak dibalas dalam sejam biasanya udah beli di tempat lain."
+            lebar="Pertanyaannya itu-itu aja. Harga berapa, ready nggak, bisa Sabtu nggak, lokasinya di mana. Gampang semua. Tapi yang nggak dibalas dalam sejam biasanya udah beli di tempat lain, dan kamu nggak akan pernah tahu berapa banyak."
+            className="mt-3 text-[15px] leading-relaxed text-ink-600 sm:text-base"
+          />
         </div>
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-2">
-          <div className="rounded-2xl border border-ink-200 bg-ink-50 p-6">
+        {/* DI HP CUMA TIGA BARIS TIAP KOLOM.
+            Sebelas kalimat panjang bersusun itu bukan perbandingan lagi, itu
+            dua daftar bacaan. Yang bekerja di perbandingan justru baris
+            pertama, dan sisanya cuma menguatkan. Sisanya tetap ada di layar
+            lebar, tempat dua kolom itu berdampingan dan matanya bisa
+            membandingkan baris per baris. */}
+        <div className="mt-8 grid gap-4 sm:mt-10 sm:gap-5 lg:grid-cols-2">
+          <div className="rounded-2xl border border-ink-200 bg-ink-50 p-5 sm:p-6">
             <p className="text-sm font-semibold text-ink-500">Sekarang</p>
-            <ul className="mt-4 space-y-3 text-[15px] leading-relaxed text-ink-700">
-              {CARA_LAMA.map((t) => (
-                <li key={t} className="flex gap-3">
+            <ul className="mt-3 space-y-3 text-[15px] leading-relaxed text-ink-700 sm:mt-4">
+              {CARA_LAMA.map((t, i) => (
+                <li
+                  key={t}
+                  className={i >= 3 ? "hidden gap-3 sm:flex" : "flex gap-3"}
+                >
                   <span className="mt-0.5 shrink-0 text-ink-400">
                     <Ikon nama="silang" size={18} />
                   </span>
@@ -697,11 +852,14 @@ export default async function LandingPage() {
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-ink-900 bg-ink-950 p-6 text-ink-300">
+          <div className="rounded-2xl border border-ink-900 bg-ink-950 p-5 text-ink-300 sm:p-6">
             <p className="text-sm font-semibold text-ink-400">Pakai Palwise</p>
-            <ul className="mt-4 space-y-3 text-[15px] leading-relaxed">
-              {CARA_BARU.map((t) => (
-                <li key={t} className="flex gap-3">
+            <ul className="mt-3 space-y-3 text-[15px] leading-relaxed sm:mt-4">
+              {CARA_BARU.map((t, i) => (
+                <li
+                  key={t}
+                  className={i >= 3 ? "hidden gap-3 sm:flex" : "flex gap-3"}
+                >
                   <span className="mt-0.5 shrink-0 text-white">
                     <Ikon nama="centang" size={18} />
                   </span>
@@ -717,6 +875,7 @@ export default async function LandingPage() {
       <Sorotan
         judul="Yang nanya tengah malam nggak kabur ke sebelah"
         body="Jam setengah dua belas malam pun dia tetep dapet harga, jadwal, dan aturan yang bener. Bukan balasan otomatis kaku yang bikin orang makin males, tapi jawaban yang nyambung sama pertanyaannya, terus diarahin sampai dia mau pesan."
+        bodyHp="Jam setengah dua belas malam pun dia tetep dapet harga dan jadwal yang bener. Bukan balasan otomatis yang kaku, tapi jawaban yang nyambung sampai dia mau pesan."
         catatan="Foto yang dikirim pelanggan juga dibaca, jadi “yang ini berapa kak?” tetep kejawab."
         gambar={<ContohChat />}
       />
@@ -740,6 +899,7 @@ export default async function LandingPage() {
            bukan daftar kemampuan tapi daftar LARANGAN. */
         judul="Nggak bakal bikin kamu malu di depan pelanggan"
         body="Dia cuma boleh jawab dari info jualan kamu sendiri, dan dilarang ngarang harga, stok, jadwal, atau nomor rekening. Tempel daftar hargamu, atau cukup kasih alamat website dan biar dia baca sendiri. Kalau kamu udah lama cerita soal bisnismu ke ChatGPT, itu juga bisa dipindahin ke sini."
+        bodyHp="Dia cuma boleh jawab dari info jualan kamu, dan dilarang ngarang harga, stok, jadwal, atau nomor rekening. Yang dia nggak tahu, dilempar ke kamu."
         catatan="Yang dia nggak tahu, dia bilang belum tahu dan lempar ke kamu. Dia juga nggak bisa mastiin jadwal dan nggak bisa ngaku udah ngerjain sesuatu yang belum dikerjain. Kamu bisa tes semua batasan ini sebelum nomor aslimu disambungin."
         gambar={<MockupInfoBisnis />}
       />
@@ -748,6 +908,7 @@ export default async function LandingPage() {
       <Sorotan
         judul="Pembeli lama balik lagi tanpa kamu inget satu-satu"
         body="Habis urusannya beres, pelanggannya ditanya kabar dulu. Terus diingetin pas kira-kira waktunya perlu lagi: kopinya udah abis, mobilnya waktunya servis, atau udah waktunya kontrol. Jualan ke yang udah pernah beli itu yang paling murah, dan yang paling sering kelupaan."
+        bodyHp="Habis urusannya beres, pelanggannya ditanya kabar. Terus disapa lagi pas kira-kira kopinya udah abis atau mobilnya waktunya servis."
         catatan="Dua jalur terpisah, jadi nanya kabar nggak ngabisin jatah ngajak beli lagi."
         gambar={<MockupSapaLagi />}
       />
@@ -763,6 +924,7 @@ export default async function LandingPage() {
         latar
         judul="Nggak ada lagi yang batal gara-gara jadwalnya kelewat"
         body="Begitu jamnya disepakati di chat, jadwalnya tercatat sendiri, lengkap dengan buat apa dan lewat mana. Berlaku juga buat meeting online. Semua yang mau datang berderet di satu daftar, dari yang paling deket harinya."
+        bodyHp="Begitu jamnya disepakati di chat, jadwalnya tercatat sendiri. Semua yang mau datang berderet di satu daftar, dari yang paling deket harinya."
         catatan="Dia nggak bisa lihat kalender kamu, jadi yang dia catat cuma permintaan. Kamu yang mastiin, sekali klik, dan pelanggannya dikabarin sekalian."
         gambar={<MockupJanji />}
       />
@@ -778,7 +940,12 @@ export default async function LandingPage() {
           Sengaja garis luar, bukan biru penuh. Biru penuhnya sudah dipakai sekali
           di hero, dan dua bidang biru besar di satu halaman membuat tidak ada yang
           jadi utama. */}
-      <section className="border-t border-ink-200 py-14">
+      {/* DI HP AJAKAN INI DIBUANG.
+          Fungsinya diambil alih tombol yang nempel di dasar layar: dia selalu
+          kelihatan, bukan cuma di satu titik gulir. Membiarkan dua-duanya
+          berarti satu blok penuh yang mengulang tombol yang sedang menempel
+          15px di bawahnya. */}
+      <section className="hidden border-t border-ink-200 py-14 sm:block">
         <div className="mx-auto max-w-2xl px-5 text-center">
           <p className="text-lg font-medium leading-relaxed text-ink-900">
             Udah kebayang buat jualan kamu?
@@ -816,31 +983,46 @@ export default async function LandingPage() {
       </section>
 
       {/* Cara kerjanya */}
-      <section id="cara" className="border-t border-ink-200 py-20">
+      <section
+        id="cara"
+        className="scroll-mt-16 border-t border-ink-200 py-12 sm:scroll-mt-20 sm:py-20"
+      >
         <div className="mx-auto max-w-5xl px-5">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
             Tiga langkah, kelar semenit
           </h2>
-          <p className="mt-3 max-w-2xl leading-relaxed text-ink-600">
-            Nggak ada yang perlu diinstal, nggak ada berkas yang diunduh, dan
-            nggak ada daftar ke Meta yang makan waktu berhari-hari.
-          </p>
+          <Dua
+            hp="Nggak ada yang perlu diinstal, dan nggak ada daftar ke Meta yang makan waktu berhari-hari."
+            lebar="Nggak ada yang perlu diinstal, nggak ada berkas yang diunduh, dan nggak ada daftar ke Meta yang makan waktu berhari-hari."
+            className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-600 sm:text-base"
+          />
 
-          <ol className="mt-10 grid gap-8 sm:grid-cols-3">
+          {/* Di HP tiap langkah jadi satu baris memanjang: gambar di kiri,
+              tulisan di kanan. Ditumpuk seperti di layar lebar, tiga langkah
+              memakan tiga layar penuh padahal isinya satu kalimat masing
+              masing. */}
+          <ol className="mt-7 grid gap-5 sm:mt-10 sm:gap-8 sm:grid-cols-3">
             {LANGKAH.map((l, i) => (
-              <li key={l.judul}>
-                <div className="flex items-center gap-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-ink-900 text-white">
-                    <Ikon nama={l.ikon} size={22} />
+              <li key={l.judul} className="flex gap-4 sm:block">
+                <div className="flex shrink-0 items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-ink-900 text-white sm:h-11 sm:w-11">
+                    <Ikon nama={l.ikon} size={20} />
                   </div>
-                  <span className="text-sm font-semibold text-ink-400">
+                  <span className="hidden text-sm font-semibold text-ink-400 sm:inline">
                     Langkah {i + 1}
                   </span>
                 </div>
-                <h3 className="mt-4 font-semibold text-ink-950">{l.judul}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-                  {l.body}
-                </p>
+                <div className="min-w-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-400 sm:hidden">
+                    Langkah {i + 1}
+                  </span>
+                  <h3 className="font-semibold text-ink-950 sm:mt-4">{l.judul}</h3>
+                  <Dua
+                    hp={l.pendek}
+                    lebar={l.body}
+                    className="mt-1 text-sm leading-relaxed text-ink-600 sm:mt-1.5"
+                  />
+                </div>
               </li>
             ))}
           </ol>
@@ -848,7 +1030,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Perbandingan */}
-      <section className="border-y border-ink-200 bg-ink-50/60 py-16">
+      <section className="border-y border-ink-200 bg-ink-50/60 py-12 sm:py-16">
         <div className="mx-auto max-w-5xl px-5">
           {/* Sudutnya UANG DIA, bukan struktur biaya kami.
 
@@ -861,17 +1043,46 @@ export default async function LandingPage() {
 
               Jadi judulnya menjawab pertanyaan itu langsung, dan alasan biayanya
               disusutkan jadi satu kalimat pendukung, bukan pembukaan. */}
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
             Murah bukan berarti ada yang dikurangin
           </h2>
-          <p className="mt-3 max-w-3xl leading-relaxed text-ink-600">
-            Kamu dapat asisten yang sama, jatah balasan yang sama, dan semua
-            fiturnya. Yang beda cuma satu: chat yang dimulai pelanggan itu nggak
-            ditagih WhatsApp sepeser pun selama dibalas dalam 24 jam, dan kami
-            nggak nagih kamu buat hal yang nggak ada biayanya. Sesederhana itu.
-          </p>
+          <Dua
+            hp="Asistennya sama, jatah balasannya sama, fiturnya sama. Bedanya: chat yang dimulai pelanggan nggak ditagih WhatsApp, dan kami nggak nagih kamu buat hal yang nggak ada biayanya."
+            lebar="Kamu dapat asisten yang sama, jatah balasan yang sama, dan semua fiturnya. Yang beda cuma satu: chat yang dimulai pelanggan itu nggak ditagih WhatsApp sepeser pun selama dibalas dalam 24 jam, dan kami nggak nagih kamu buat hal yang nggak ada biayanya. Sesederhana itu."
+            className="mt-3 max-w-3xl text-[15px] leading-relaxed text-ink-600 sm:text-base"
+          />
 
-          <div className="mt-8 overflow-x-auto">
+          {/* DI HP TABELNYA DIBONGKAR JADI KARTU.
+              Tabel tiga kolom butuh 560px, dan di layar 375px dia jadi tabel
+              yang harus digeser ke samping. Begitu digeser, kolom paling kiri
+              yang berisi nama barisnya ikut hilang, jadi orangnya melihat dua
+              angka tanpa tahu itu angka apa. Isinya sama persis, cuma
+              ditumpuk: nama barisnya di atas, angka kami, lalu angka mereka. */}
+          <ul className="mt-6 space-y-3 sm:hidden">
+            {COMPARISON.map(([label, ours, theirs]) => (
+              <li key={label} className="card p-4">
+                <p className="text-xs font-medium text-ink-500">{label}</p>
+                <div className="mt-2 flex items-start gap-2">
+                  <span className="mt-px w-[68px] shrink-0 text-xs font-semibold text-brand-700">
+                    Palwise
+                  </span>
+                  <span className="text-[15px] font-semibold leading-snug text-ink-950">
+                    {ours}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex items-start gap-2">
+                  <span className="mt-px w-[68px] shrink-0 text-xs text-ink-400">
+                    Yang lain
+                  </span>
+                  <span className="text-sm leading-snug text-ink-500">
+                    {theirs}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-8 hidden overflow-x-auto sm:block">
             <table className="w-full min-w-[560px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-ink-200 text-left">
@@ -901,15 +1112,51 @@ export default async function LandingPage() {
       </section>
 
       {/* Fitur */}
-      <section id="fitur" className="mx-auto max-w-6xl px-5 py-20">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+      <section
+        id="fitur"
+        className="mx-auto max-w-6xl scroll-mt-16 px-5 py-12 sm:scroll-mt-20 sm:py-20"
+      >
+        <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
           Yang lain-lainnya, yang ternyata paling kepakai
         </h2>
-        <p className="mt-3 max-w-2xl leading-relaxed text-ink-600">
-          Bukan daftar panjang biar kelihatan hebat. Semuanya udah jalan hari
-          ini, dan bisa kamu buktiin sendiri sebelum keluar duit.
-        </p>
-        <div className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+        <Dua
+          hp="Semuanya udah jalan hari ini, dan bisa kamu buktiin sendiri sebelum keluar duit."
+          lebar="Bukan daftar panjang biar kelihatan hebat. Semuanya udah jalan hari ini, dan bisa kamu buktiin sendiri sebelum keluar duit."
+          className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-600 sm:text-base"
+        />
+
+        {/* DI HP JUDULNYA SAJA.
+            Sepuluh fitur lengkap dengan penjelasannya itu 260 kata, sekitar
+            empat layar penuh, dan semuanya sudah lewat sesudah orangnya
+            melihat empat sorotan bergambar. Judul-judulnya memang sengaja
+            ditulis sebagai kalimat utuh yang menyebut hasilnya ("Foto dan
+            voice note tetap kejawab"), jadi tanpa penjelasannya pun tetap
+            terbaca sebagai janji, bukan sebagai nama fitur. Penjelasannya
+            tetap ada di layar lebar, tempat empat kolom bikin dia gratis. */}
+        <ul className="mt-6 divide-y divide-ink-100 border-y border-ink-100 sm:hidden">
+          {FEATURES.map((f) => {
+            const perlu = f.fitur ? paketFitur[f.fitur] : null;
+            return (
+              <li key={f.title} className="flex items-center gap-3 py-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-ink-200 text-ink-900">
+                  <Ikon nama={f.ikon} size={18} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-medium leading-snug text-ink-900">
+                    {f.title}
+                  </span>
+                  {perlu && (
+                    <span className="mt-0.5 block text-[11px] font-medium text-ink-500">
+                      Mulai paket {perlu}
+                    </span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="mt-10 hidden gap-x-10 gap-y-8 sm:grid sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((f) => {
             // Nama paketnya diturunkan dari plans.ts. Kalau suatu hari sebuah
             // fitur dipindah ke paket lain, baris ini ikut berubah sendiri.
@@ -936,19 +1183,43 @@ export default async function LandingPage() {
       </section>
 
       {/* Bidang usaha */}
-      <section className="border-t border-ink-200 bg-ink-950 py-20 text-white">
+      <section className="border-t border-ink-200 bg-ink-950 py-12 text-white sm:py-20">
         <div className="mx-auto max-w-6xl px-5">
           <div className="max-w-2xl">
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
               Paling kepakai di jualan yang orangnya nanya dulu sebelum beli
             </h2>
-            <p className="mt-3 leading-relaxed text-ink-400">
-              Bukan cuma toko online. Klinik, salon, bengkel, properti, tempat
-              les, katering. Semua yang pembelinya chat dulu sebelum mutusin.
-            </p>
+            <Dua
+              hp="Bukan cuma toko online. Semua yang pembelinya chat dulu sebelum mutusin."
+              lebar="Bukan cuma toko online. Klinik, salon, bengkel, properti, tempat les, katering. Semua yang pembelinya chat dulu sebelum mutusin."
+              className="mt-3 text-[15px] leading-relaxed text-ink-400 sm:text-base"
+            />
           </div>
 
-          <div className="mt-12 grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+          {/* DI HP CUMA NAMA BIDANGNYA, dua kolom.
+              Contoh pertanyaannya ("Size L ada warna apa aja?") itu bagian yang
+              bikin orang mengenali dirinya, dan di layar lebar dia wajib ada.
+              Tapi sembilan bidang kali dua baris di layar 375px jadi daftar
+              sepanjang layar sendiri, dan di HP tugas bagian ini cuma satu:
+              orangnya menemukan bidangnya ada di situ. Itu selesai dalam
+              sekali lirik kalau bentuknya petak, bukan paragraf. */}
+          <div className="mt-7 grid grid-cols-2 gap-2.5 sm:hidden">
+            {BIDANG.map((b) => (
+              <div
+                key={b.nama}
+                className="flex items-center gap-2.5 rounded-xl border border-ink-800 px-3 py-3"
+              >
+                <span className="shrink-0 text-ink-300">
+                  <Ikon nama={b.ikon} size={18} />
+                </span>
+                <span className="min-w-0 text-[13px] font-medium leading-snug text-white">
+                  {b.nama}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 hidden gap-x-8 gap-y-9 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             {BIDANG.map((b) => (
               <div key={b.nama} className="flex gap-4">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-ink-800 text-white">
@@ -964,23 +1235,28 @@ export default async function LandingPage() {
             ))}
           </div>
 
-          <p className="mt-12 max-w-2xl text-sm leading-relaxed text-ink-500">
-            Nggak ada di daftar ini bukan berarti nggak cocok. Dia belajar dari
-            info yang kamu masukin sendiri, jadi dia ngikutin jualanmu apa pun
-            bidangnya. Yang nggak cocok cuma satu: kalau harganya selalu
-            nego dan nggak ada satu pun yang bisa ditulis sebagai aturan.
-          </p>
+          <Dua
+            hp="Nggak ada di daftar ini bukan berarti nggak cocok. Dia belajar dari info yang kamu masukin sendiri, jadi dia ngikutin jualanmu apa pun bidangnya."
+            lebar="Nggak ada di daftar ini bukan berarti nggak cocok. Dia belajar dari info yang kamu masukin sendiri, jadi dia ngikutin jualanmu apa pun bidangnya. Yang nggak cocok cuma satu: kalau harganya selalu nego dan nggak ada satu pun yang bisa ditulis sebagai aturan."
+            className="mt-8 max-w-2xl text-sm leading-relaxed text-ink-500 sm:mt-12"
+          />
         </div>
       </section>
 
       {/* Harga */}
-      <section id="harga" className="border-t border-ink-200 bg-ink-50/60 py-20">
+      <section
+        id="harga"
+        className="scroll-mt-16 border-t border-ink-200 bg-ink-50/60 py-12 sm:scroll-mt-20 sm:py-20"
+      >
         <div className="mx-auto max-w-6xl px-5">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Harga</h2>
-          <p className="mt-3 text-ink-600">
-            Bayar per bulan, berhenti kapan aja, tanpa denda. Nggak ada biaya
-            pasang dan nggak ada kontrak tahunan.
-          </p>
+          <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
+            Harga
+          </h2>
+          <Dua
+            hp="Bayar per bulan, berhenti kapan aja, tanpa denda dan tanpa biaya pasang."
+            lebar="Bayar per bulan, berhenti kapan aja, tanpa denda. Nggak ada biaya pasang dan nggak ada kontrak tahunan."
+            className="mt-3 text-[15px] leading-relaxed text-ink-600 sm:text-base"
+          />
 
           {/* items-stretch + flex-col + mt-auto di tombolnya. Tanpa itu, tiap
               kartu setinggi isinya sendiri, dan empat tombol mendarat di empat
@@ -989,11 +1265,22 @@ export default async function LandingPage() {
 
               Baris harga dan baris keterangan juga dikunci tingginya, supaya
               daftar centangnya mulai di garis yang sama di keempat kartu. */}
-          <div className="mt-10 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* DI HP KARTUNYA DIGESER KE SAMPING, BUKAN DITUMPUK.
+              Empat kartu harga bertumpuk itu sekitar lima layar penuh, dan
+              orang yang mau membandingkan harus mengingat kartu pertama sampai
+              kartu keempat. Digeser ke samping, dua kartu yang bersebelahan
+              selalu bisa dibandingkan langsung, dan seluruh bagian harga muat
+              di satu layar.
+              Lebarnya sengaja 82%, bukan 100%: potongan kartu berikutnya yang
+              mengintip di tepi kanan itu yang memberi tahu orang bahwa ini bisa
+              digeser. Tanpa itu, carousel terbaca sebagai satu kartu saja.
+              Tepi kirinya dibleed pakai -mx-5 supaya kartu pertama tetap
+              sejajar dengan judulnya, bukan masuk 20px sendirian. */}
+          <div className="thin-scroll -mx-5 mt-7 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:mt-10 sm:grid sm:snap-none sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 sm:grid-cols-2 lg:grid-cols-4">
             {SEMUA_PAKET.map((plan) => (
               <div
                 key={plan.id}
-                className={`card flex flex-col p-6 ${
+                className={`card flex w-[82%] shrink-0 snap-start flex-col p-5 sm:w-auto sm:p-6 ${
                   plan.highlight ? "border-brand-500 ring-1 ring-brand-500" : ""
                 }`}
               >
@@ -1017,7 +1304,7 @@ export default async function LandingPage() {
                     : " per bulan, selamanya"}
                 </p>
 
-                <ul className="mt-6 flex-1 space-y-2.5 border-t border-ink-100 pt-6 text-sm text-ink-700">
+                <ul className="mt-5 flex-1 space-y-2.5 border-t border-ink-100 pt-5 text-sm text-ink-700 sm:mt-6 sm:pt-6">
                   {plan.features.map((f) => (
                     <li key={f} className="flex gap-2.5">
                       {/* Hitam, bukan biru. Ini keterangan isi paket, bukan
@@ -1032,7 +1319,7 @@ export default async function LandingPage() {
 
                 <Link
                   href={keApp("/daftar")}
-                  className={`mt-8 w-full ${plan.highlight ? "btn-primary" : "btn-ghost"}`}
+                  className={`mt-6 w-full sm:mt-8 ${plan.highlight ? "btn-primary" : "btn-ghost"}`}
                 >
                   {plan.pricePerMonth === 0 ? "Mulai gratis" : `Pilih ${plan.name}`}
                 </Link>
@@ -1040,34 +1327,48 @@ export default async function LandingPage() {
             ))}
           </div>
 
-          <p className="mx-auto mt-10 max-w-xl text-center text-sm leading-relaxed text-ink-600">
-            Ajak temen sesama pemilik usaha. Begitu dia mulai berlangganan,
-            kalian berdua dapet 1 bulan gratis. Bukan pas dia daftar, tapi pas
-            dia beneran bayar, biar nggak ada yang main akun palsu.
+          {/* Petunjuk geser, cuma di HP. Potongan kartu di tepi kanan sudah
+              memberi tahu sebagian orang, kalimat ini untuk sisanya. */}
+          <p className="mt-1 text-xs text-ink-500 sm:hidden">
+            Geser ke samping buat lihat paket lainnya.
           </p>
+
+          <Dua
+            hp="Ajak temen sesama pemilik usaha. Begitu dia mulai berlangganan, kalian berdua dapet 1 bulan gratis."
+            lebar="Ajak temen sesama pemilik usaha. Begitu dia mulai berlangganan, kalian berdua dapet 1 bulan gratis. Bukan pas dia daftar, tapi pas dia beneran bayar, biar nggak ada yang main akun palsu."
+            className="mx-auto mt-8 max-w-xl text-sm leading-relaxed text-ink-600 sm:mt-10 sm:text-center"
+          />
         </div>
       </section>
 
       {/* Tanya jawab */}
-      <section id="tanya" className="mx-auto max-w-3xl px-5 py-20">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+      <section
+        id="tanya"
+        className="mx-auto max-w-3xl scroll-mt-16 px-5 py-12 sm:scroll-mt-20 sm:py-20"
+      >
+        <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
           Yang biasanya ditanyain
         </h2>
-        <p className="mt-3 leading-relaxed text-ink-600">
-          Termasuk yang jawabannya kurang enak didenger. Mending kamu tahu
-          sekarang daripada kecewa setelah bayar.
-        </p>
+        <Dua
+          hp="Termasuk yang jawabannya kurang enak didenger."
+          lebar="Termasuk yang jawabannya kurang enak didenger. Mending kamu tahu sekarang daripada kecewa setelah bayar."
+          className="mt-3 text-[15px] leading-relaxed text-ink-600 sm:text-base"
+        />
 
-        <div className="mt-8 divide-y divide-ink-200 border-y border-ink-200">
+        {/* Panel lipat itu bentuk yang paling cocok buat HP: delapan
+            pertanyaan cuma memakan delapan baris sampai ada yang dibuka.
+            Yang perlu ditambah cuma luas sentuhnya, karena baris setinggi
+            teksnya saja lebih sempit daripada ujung jari. */}
+        <div className="mt-6 divide-y divide-ink-200 border-y border-ink-200 sm:mt-8">
           {TANYA_JAWAB.map((qa) => (
-            <details key={qa.t} className="group py-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-ink-950">
-                {qa.t}
-                <span className="shrink-0 text-ink-400 transition group-open:rotate-45">
+            <details key={qa.t} className="group py-1 sm:py-4">
+              <summary className="tap-aman flex w-full cursor-pointer list-none items-center justify-between gap-4 py-3 font-medium text-ink-950 sm:py-0">
+                <span className="min-w-0">{qa.t}</span>
+                <span className="shrink-0 text-lg text-ink-400 transition group-open:rotate-45">
                   +
                 </span>
               </summary>
-              <p className="mt-3 text-[15px] leading-relaxed text-ink-600">
+              <p className="mb-3 mt-1 text-[15px] leading-relaxed text-ink-600 sm:mb-0 sm:mt-3">
                 {qa.j}
               </p>
             </details>
@@ -1082,18 +1383,21 @@ export default async function LandingPage() {
           gampang ketinggalan waktu jatahnya diubah: dia tidak akan pernah
           muncul di pencarian angka, dan halaman jualan berakhir menjanjikan
           jatah yang sistemnya sendiri sudah tidak berikan lagi. */}
-      <section className="border-t border-ink-200 bg-ink-50/60 py-20">
+      <section className="border-t border-ink-200 bg-ink-50/60 py-12 sm:py-20">
         <div className="mx-auto max-w-2xl px-5 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
             Chat yang masuk malam ini, biar dia yang jawab
           </h2>
-          <p className="mx-auto mt-3 max-w-xl leading-relaxed text-ink-600">
-            {PLANS.free.aiCredits} balasan gratis tiap bulan, selamanya, tanpa
-            kartu kredit. Cukup buat kamu buktiin sendiri dia jawabnya bener atau
-            nggak buat jualan kamu, sebelum keluar duit sepeser pun.
-          </p>
-          <div className="mt-8 flex justify-center">
-            <Link href={keApp("/daftar")} className="btn-primary px-6 py-3 text-base">
+          <Dua
+            hp={`${PLANS.free.aiCredits} balasan gratis tiap bulan, selamanya, tanpa kartu kredit. Cukup buat kamu buktiin sendiri sebelum keluar duit.`}
+            lebar={`${PLANS.free.aiCredits} balasan gratis tiap bulan, selamanya, tanpa kartu kredit. Cukup buat kamu buktiin sendiri dia jawabnya bener atau nggak buat jualan kamu, sebelum keluar duit sepeser pun.`}
+            className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-ink-600 sm:text-base"
+          />
+          <div className="mt-6 flex justify-center sm:mt-8">
+            <Link
+              href={keApp("/daftar")}
+              className="btn-primary w-full px-6 py-3 text-base sm:w-auto"
+            >
               Mulai gratis
             </Link>
           </div>
@@ -1105,6 +1409,11 @@ export default async function LandingPage() {
       </section>
 
       <KakiHalaman />
+
+      {/* Tombol nempel di dasar layar, cuma di HP. Ditaruh paling akhir supaya
+          dia tidak ikut mendorong apa pun: dia melayang di atas halaman, bukan
+          bagian dari susunannya. */}
+      <AjakanBawah gratis={PLANS.free.aiCredits} />
     </main>
   );
 }

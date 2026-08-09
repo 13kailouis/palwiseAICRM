@@ -5017,10 +5017,18 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // Kalau menambah pemeriksaan copy baru di sini, pakai `hero`, JANGAN
     // `heroMentah`.
     const hero = heroMentah.replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+    // <Dua> dihitung SATU paragraf, karena memang cuma satu yang tampil.
+    //
+    // Dia menggambar dua <p> sekaligus, versi HP dan versi layar lebar, dan
+    // yang satunya disembunyikan CSS. Menghitung tag <p> mentah di sini berarti
+    // menuduh hero punya dua paragraf padahal pembacanya selalu melihat satu.
+    const paragrafHero =
+      (hero.match(/<p className="mx-auto/g) ?? []).length +
+      (hero.match(/<Dua\b/g) ?? []).length;
     check(
       "hero cuma punya satu kalimat sebelum tombolnya",
-      (hero.match(/<p className="mx-auto/g) ?? []).length === 1,
-      `${(hero.match(/<p className="mx-auto/g) ?? []).length} paragraf`,
+      paragrafHero === 1,
+      `${paragrafHero} paragraf`,
     );
     // Kalimatnya menyebut PERTANYAAN yang tiap hari masuk ke HP pemilik usaha,
     // bukan istilah dari dalam dashboard. "Info usahamu" itu nama halaman di
@@ -5113,6 +5121,89 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "pemenggalan judul cuma berlaku di layar lebar",
       !/<br \/>\n\s+tidak pernah tidur/.test(depan) &&
         /<br className="hidden sm:inline" \/>/.test(depan),
+    );
+
+    // ── Halaman jualan di HP ────────────────────────────────────────────────
+    //
+    // Kebanyakan orang membuka halaman ini dari HP, lewat tautan yang
+    // dibagikan di WhatsApp. Yang di laptop terbaca sebagai penjelasan yang
+    // teliti, di layar 375px terbaca sebagai tembok tulisan, dan tidak ada satu
+    // pun tes yang bisa melihat itu. Yang bisa diperiksa: bahwa versi pendeknya
+    // benar-benar ada, dan bahwa tidak ada lagi yang memaksa layar digeser ke
+    // samping.
+
+    // Tabel tiga kolom butuh 560px. Di layar 375px dia harus digeser ke
+    // samping, dan begitu digeser, kolom nama barisnya ikut hilang: yang
+    // tertinggal dua angka tanpa keterangan apa pun. Jadi tabelnya wajib
+    // disembunyikan di HP, bukan cuma dibungkus overflow.
+    check(
+      "tabel perbandingan tidak dipaksakan ke layar HP",
+      /className="mt-8 hidden overflow-x-auto sm:block"/.test(depan) &&
+        /min-w-\[560px\]/.test(depan),
+    );
+    // Isinya sama persis, cuma ditumpuk: nama barisnya di atas, angka kami,
+    // lalu angka mereka. Dua-duanya membaca daftar COMPARISON yang sama, jadi
+    // versi HP dan versi laptop tidak bisa menyebut angka yang berbeda.
+    check(
+      "perbandingan tetap ada di HP dalam bentuk kartu",
+      (depan.match(/COMPARISON\.map/g) ?? []).length === 2 &&
+        /<ul className="mt-6 space-y-3 sm:hidden">/.test(depan),
+    );
+    // Tombol daftar yang nempel di dasar layar. Halaman ini belasan layar
+    // panjangnya di HP, dan tanpa ini orang yang sudah yakin di tengah halaman
+    // harus menggulir jauh cuma untuk menemukan tombolnya lagi.
+    const barBawah = baca("apps/web/src/components/AjakanBawah.tsx");
+    check(
+      "ada tombol daftar yang nempel di dasar layar HP",
+      /<AjakanBawah gratis=\{PLANS\.free\.aiCredits\}/.test(depan) &&
+        /sm:hidden/.test(barBawah),
+    );
+    // Jatahnya DITERIMA sebagai prop. Berkas itu jalan di browser, dan menarik
+    // @palwise/db ke sana berarti menarik seluruh database ikut terbawa.
+    check(
+      "tombol nempel tidak menarik database ke browser",
+      // Yang diperiksa IMPORNYA, bukan penyebutan namanya. Alasan kenapa
+      // database tidak boleh ditarik ke sini justru tertulis di komentar berkas
+      // itu sendiri, dan mencari namanya begitu saja menuduh komentarnya.
+      !/from "@palwise\/db"/.test(barBawah),
+    );
+    // Bar yang menutupi kaki halaman itu bukan cuma jelek: tautan ketentuan dan
+    // privasi ada di situ, dan itu yang wajib bisa dibaca.
+    check(
+      "tombol nempel menyingkir menjelang kaki halaman",
+      /hampirDasar/.test(barBawah),
+    );
+    // Di HP menu atas menyembunyikan tautan Harga dan Fitur, jadi tanpa
+    // pintasan ini tidak ada satu pun jalan ke bagian tertentu selain
+    // menggulir seluruh halaman.
+    check(
+      "ada pintasan ke bagian penting khusus HP",
+      /aria-label="Loncat ke bagian"/.test(depan) &&
+        /"#harga", "Harga"/.test(depan),
+    );
+    // Kepala halaman menempel setinggi 56px di HP. Tanpa scroll-mt, tiap
+    // pintasan mendarat dengan judul bagiannya tertutup kepala halaman.
+    for (const id of ["cara", "fitur", "harga", "tanya"]) {
+      const mulai = depan.indexOf(`id="${id}"`);
+      check(
+        `bagian ${id} tidak mendarat di balik kepala halaman`,
+        mulai > 0 && /scroll-mt-16/.test(depan.slice(mulai, mulai + 220)),
+      );
+    }
+    // Empat kartu harga bertumpuk itu sekitar lima layar penuh di HP, dan yang
+    // mau membandingkan harus mengingat kartu pertama sampai kartu keempat.
+    check(
+      "kartu harga digeser ke samping di HP, bukan ditumpuk",
+      /snap-x snap-mandatory[\s\S]{0,400}SEMUA_PAKET\.map/.test(depan) &&
+        /Geser ke samping/.test(depan),
+    );
+    // Gambar kotak masuk dua kolom di layar 375px menyisakan sekitar 140px per
+    // kolom, dan tulisan 10px di dalamnya terpotong di mana-mana.
+    check(
+      "gambar kotak masuk cuma menampilkan percakapannya di HP",
+      /className="hidden border-r border-ink-200 sm:block"/.test(
+        baca("apps/web/src/components/Mockup.tsx"),
+      ),
     );
 
     // Halaman harga tidak boleh berbohong ke DUA arah.
