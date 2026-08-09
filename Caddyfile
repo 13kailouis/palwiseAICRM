@@ -64,20 +64,38 @@
 	}
 }
 
+# CATATANNYA KE JOURNALD, BUKAN KE BERKAS. Diubah 9 Agustus 2026.
+#
+# Dulu di sini ada `log { output file /var/log/caddy/palwise-situs.log }` untuk
+# tiap situs. Waktu dipasang di VPS Ubuntu, Caddy menolak memuat konfigurasinya:
+#
+#   open /var/log/caddy/palwise-situs.log: permission denied
+#
+# Foldernya sudah ada, dimiliki caddy:caddy, mode 755, dan Caddy memang jalan
+# sebagai pengguna caddy. Tetap ditolak. Paket Caddy di Ubuntu menjalankan
+# prosesnya di dalam pagar systemd (`ProtectSystem=full`, `PrivateTmp=true`), dan
+# menulis ke berkas di luar jalur yang disiapkan paketnya itu urusan yang tidak
+# sepadan dengan gunanya.
+#
+# Tanpa blok ini, Caddy mencatat ke journald, dan itu dibaca dengan:
+#
+#   journalctl -u caddy -f
+#
+# Untuk satu VPS dengan satu situs, ini memang yang lebih baik, bukan cuma jalan
+# keluar: satu tempat untuk semua catatan sistem alih-alih dua tempat yang harus
+# diingat, rotasi dan batas ukuran diurus systemd sendiri jadi tidak ada risiko
+# disk penuh, dan tidak ada izin berkas yang bisa salah lagi waktu Caddy
+# diperbarui.
+#
+# Yang dilepas: catatan Palwise tidak lagi terpisah dari catatan Caddy lainnya.
+# Kalau suatu hari benar-benar perlu terpisah, pakai `LogsDirectory=caddy` di
+# unit systemd-nya supaya systemd yang membuat foldernya beserta izinnya, jangan
+# `mkdir` manual seperti yang gagal di atas.
+
 palwise.id, www.palwise.id {
 	import palwise_umum
-
-	log {
-		output file /var/log/caddy/palwise-situs.log
-		format console
-	}
 }
 
 app.palwise.id {
 	import palwise_umum
-
-	log {
-		output file /var/log/caddy/palwise-app.log
-		format console
-	}
 }
