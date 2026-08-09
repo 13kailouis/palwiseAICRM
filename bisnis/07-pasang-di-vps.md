@@ -34,9 +34,24 @@ Masuk sebagai root lewat SSH, lalu:
 
 ```bash
 apt update && apt install -y curl git
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
 npm install -g pm2
+```
+
+**Node 22, bukan 20.** Ini bukan pilihan bebas: `unpdf`, pembaca PDF yang dipakai
+Info bisnis, menuntut Node 22 ke atas. Dengan Node 20 `npm install` cuma
+memperingatkan `EBADENGINE` lalu lanjut seperti biasa, dan itu yang berbahaya:
+`unpdf` di-`import` saat berkasnya dibaca, bukan saat start. Jadi semuanya
+kelihatan normal sampai ada pelanggan mengunggah PDF, baru gagal, dan tidak ada
+apa pun sebelum itu yang memberi tahu.
+
+Terjadi sungguhan 9 Agustus 2026: panduan ini sempat menyuruh Node 20 sementara
+laptopnya jalan di Node 22, jadi PDF jalan di laptop dan akan mati di server.
+Kalau `node -v` di server menunjukkan v20, naikkan dan pasang ulang:
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs && cd /opt/palwise && rm -rf node_modules && npm install
 ```
 
 Caddy ikut petunjuk resminya di caddyserver.com/docs/install.

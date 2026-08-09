@@ -39,11 +39,15 @@ apt-get update -qq
 apt-get install -y -qq curl git ca-certificates gnupg debian-keyring \
   debian-archive-keyring apt-transport-https fail2ban
 
-garis "2/5 Node.js 20"
-if command -v node >/dev/null 2>&1 && node -v | grep -qE '^v(2[0-9]|[3-9][0-9])'; then
+# Node 22, BUKAN 20. `unpdf` (pembaca PDF di Info bisnis) menuntut >=22, dan
+# dengan Node 20 npm cuma memperingatkan EBADENGINE lalu lanjut. Karena unpdf
+# di-import saat berkasnya dibaca dan bukan saat start, semuanya kelihatan normal
+# sampai ada pelanggan mengunggah PDF. Lihat bisnis/07-pasang-di-vps.md.
+garis "2/5 Node.js 22"
+if command -v node >/dev/null 2>&1 && node -v | grep -qE '^v(2[2-9]|[3-9][0-9])'; then
   echo "sudah ada: $(node -v)"
 else
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y -qq nodejs
   echo "terpasang: $(node -v)"
 fi
