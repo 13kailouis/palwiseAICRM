@@ -14,3 +14,8 @@ data/
 
 # Folder build sementara untuk verifikasi, lihat NEXT_DIST_DIR di next.config.mjs
 .next-uji/
+
+# Berkas bisnis: ICP, harga, margin, playbook, peta jalan.
+# SENGAJA TIDAK ikut ke GitHub. Isinya strategi bersaing dan angka untung-rugi,
+# dan repo ini publik. Berkasnya tetap ada di komputer, cuma tidak dilacak git.
+bisnis/
