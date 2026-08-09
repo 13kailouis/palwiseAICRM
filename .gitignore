@@ -15,6 +15,14 @@ data/
 # Folder build sementara untuk verifikasi, lihat NEXT_DIST_DIR di next.config.mjs
 .next-uji/
 
+# Dibuat ulang oleh Next.js tiap "next dev" dan "next build", dan isinya ikut
+# NEXT_DIST_DIR. Di laptop build pakai .next-uji, di VPS pakai .next, jadi
+# barisnya beda di tiap komputer. Waktu masih dilacak git, tiap "git pull" di
+# VPS gagal dengan "Your local changes would be overwritten by merge" padahal
+# tidak ada yang mengetik apa pun di sana. Tidak perlu dilacak: hilang pun
+# dibuat lagi otomatis, dan typecheck tetap lolos tanpanya.
+apps/web/next-env.d.ts
+
 # Berkas bisnis: ICP, harga, margin, playbook, peta jalan.
 # SENGAJA TIDAK ikut ke GitHub. Isinya strategi bersaing dan angka untung-rugi,
 # dan repo ini publik. Berkasnya tetap ada di komputer, cuma tidak dilacak git.
