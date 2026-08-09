@@ -36,8 +36,14 @@ garis "1/5 Paket dasar"
 apt-get update -qq
 # rsync dipasang di sini karena dia yang dipakai mengirim kode dari laptop, dan
 # Ubuntu minimal sering tidak membawanya.
+# fontconfig dan fonts-dejavu-core dipasang karena `npm run logo` menggambar
+# TULISAN di kartu bagikan lewat SVG. Tanpa font di sistem, skripnya mencetak
+# "Fontconfig error" lalu SELESAI DENGAN SUKSES dan kartunya jadi tanpa tulisan.
+# Satu-satunya tandanya ukuran berkasnya separuh, dan tidak ada yang memeriksa
+# ukuran berkas. Terjadi sungguhan 9 Agustus 2026.
 apt-get install -y -qq curl git ca-certificates gnupg debian-keyring \
-  debian-archive-keyring apt-transport-https fail2ban
+  debian-archive-keyring apt-transport-https fail2ban \
+  fontconfig fonts-dejavu-core
 
 # Node 22, BUKAN 20. `unpdf` (pembaca PDF di Info bisnis) menuntut >=22, dan
 # dengan Node 20 npm cuma memperingatkan EBADENGINE lalu lanjut. Karena unpdf

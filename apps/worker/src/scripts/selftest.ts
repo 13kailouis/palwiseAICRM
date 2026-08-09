@@ -5075,6 +5075,31 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "admin cuma dipakai sebagai pembanding biaya",
       /gaji admin/.test(depan),
     );
+
+    // Kartu bagikan WAJIB ikut posisinya, dan dia yang paling gampang terlupa.
+    //
+    // Terjadi 9 Agustus 2026: halaman jualan sudah dipindah ke sales dua hari
+    // sebelumnya, tapi kartu bagikan masih bertulisan "Admin WhatsApp yang tidak
+    // pernah tidur". Padahal kartu itu yang PERTAMA dilihat orang waktu tautannya
+    // dikirim lewat WhatsApp, dan WhatsApp itu jalur sebar utama produk ini. Jadi
+    // orang membaca posisi lama sebelum sempat membuka halamannya.
+    const skripLogo = baca("apps/web/scripts/buatLogo.mjs");
+    check(
+      "kartu bagikan tidak lagi menjual admin",
+      !/Admin WhatsApp/.test(skripLogo),
+    );
+    check(
+      "kartu bagikan menyebut sales dan pembeda harganya",
+      /sales WhatsApp/i.test(skripLogo) && /[Ss]epertujuh/.test(skripLogo),
+    );
+    // Fontnya harus memuat nama yang ADA di Linux. Kalau tidak, di server
+    // tulisannya hilang tanpa satu pun galat: berkasnya tetap terbentuk, cuma
+    // ukurannya separuh. Satu-satunya tandanya ukuran berkas, dan tidak ada yang
+    // memeriksa ukuran berkas.
+    check(
+      "font kartu bagikan punya cadangan yang ada di Linux",
+      /DejaVu Sans/.test(skripLogo),
+    );
     // Tombol chat yang tidak ada yang membalas jauh lebih merusak daripada
     // tidak ada tombolnya, jadi dia harus menunggu nomornya diisi.
     check(

@@ -88,10 +88,21 @@ async function persegi(tanda, sisi, latar = { r: 0, g: 0, b: 0, alpha: 0 }) {
  * Kartu yang muncul waktu tautannya dibagikan.
  *
  * Tulisannya digambar sebagai SVG, bukan diketik di atas gambar, supaya tetap
- * tajam dan tidak bergantung pada berkas font yang mungkin tidak ada di mesin
- * yang menjalankan skrip ini. Kalau mesinnya tidak bisa menggambar teks sama
- * sekali, kartunya tetap jadi, cuma berisi logonya saja: kartu tanpa tulisan
- * masih jauh lebih baik daripada kotak abu kosong.
+ * tajam. Kalau mesinnya tidak bisa menggambar teks sama sekali, kartunya tetap
+ * jadi, cuma berisi logonya saja: kartu tanpa tulisan masih jauh lebih baik
+ * daripada kotak abu kosong.
+ *
+ * FONTNYA WAJIB MEMUAT NAMA YANG ADA DI LINUX. Terjadi sungguhan 9 Agustus 2026
+ * waktu dipasang di VPS Ubuntu: daftarnya cuma "Segoe UI, Arial, Helvetica",
+ * dan tidak satu pun ada di Ubuntu minimal. Skripnya mencetak satu baris
+ * "Fontconfig error" lalu SELESAI DENGAN SUKSES, berkasnya tetap terbentuk, dan
+ * satu-satunya tanda bahwa tulisannya hilang adalah ukurannya separuh dari yang
+ * di laptop (24 KB lawan 50 KB). Tidak ada galat, tidak ada peringatan yang
+ * menyebut tulisan.
+ *
+ * DejaVu Sans ditaruh paling belakang karena hampir selalu ada di Linux, dan
+ * server tetap perlu `apt install fontconfig fonts-dejavu-core`. Lihat panduan
+ * pemasangan VPS.
  */
 async function kartuBagikan(tanda) {
   const L = 1200;
@@ -103,12 +114,12 @@ async function kartuBagikan(tanda) {
 
   const teks = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${T}">
   <style>
-    .judul { font-family: Segoe UI, Arial, Helvetica, sans-serif; font-weight: 700; fill: #0b1220; }
-    .anak  { font-family: Segoe UI, Arial, Helvetica, sans-serif; font-weight: 400; fill: #4a5568; }
+    .judul { font-family: Segoe UI, Arial, Helvetica, DejaVu Sans, Liberation Sans, sans-serif; font-weight: 700; fill: #0b1220; }
+    .anak  { font-family: Segoe UI, Arial, Helvetica, DejaVu Sans, Liberation Sans, sans-serif; font-weight: 400; fill: #4a5568; }
   </style>
-  <text x="96" y="400" class="judul" font-size="62">Admin WhatsApp yang</text>
-  <text x="96" y="472" class="judul" font-size="62">tidak pernah tidur.</text>
-  <text x="96" y="536" class="anak" font-size="30">Palwise, sepertujuh harga platform sebelah.</text>
+  <text x="96" y="400" class="judul" font-size="62">Yang chat tengah malam,</text>
+  <text x="96" y="472" class="judul" font-size="62">jangan beli di sebelah.</text>
+  <text x="96" y="536" class="anak" font-size="30">Palwise, sales WhatsApp AI. Sepertujuh harga platform sebelah.</text>
 </svg>`);
 
   // SATU panggilan composite untuk semuanya.
