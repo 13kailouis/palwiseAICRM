@@ -1,0 +1,621 @@
+// Palwise — schema MVP
+// SQLite dipakai supaya bisa jalan di laptop tanpa install apa pun.
+// Untuk produksi: ganti provider ke "postgresql", embedding pindah ke pgvector.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Tenant ───────────────────────────────────────────────────────────────────
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  // starter | growth | pro  — definisi kuota ada di packages/db/src/plans.ts
+  plan      String   @default("starter")
+  // Kuota balasan AI dipakai bulan berjalan
+  aiCreditsUsed  Int      @default(0)
+  quotaResetAt   DateTime @default(now())
+
+  /// Kapan terakhir kali menelusuri website atau membaca berkas untuk Info
+  /// bisnis.
+  ///
+  /// Dua jalur itu memanggil model tapi SENGAJA tidak memotong jatah balasan,
+  /// karena satuannya beda dan dua angka bersatuan beda di satu layar bikin
+  /// orang mengira salah satunya bohong. Konsekuensinya mereka tidak punya
+  /// meteran sama sekali, jadi remnya di sini: jarak minimal antar impor yang
+  /// berhasil. Tanpa ini satu akun gratis bisa menelusuri seratus website
+  /// berturut-turut dan tagihannya jatuh ke kita.
+  imporTerakhir DateTime?
+
+  /// Ruang coba punya jatah harian sendiri dan TIDAK memotong kuota utama.
+  /// Kalau ikut memotong, pengguna gratis menghabiskan jatahnya buat menguji
+  /// dan tidak pernah sempat membuktikan asistennya di WhatsApp sungguhan.
+  playgroundUsed    Int      @default(0)
+  playgroundResetAt DateTime @default(now())
+
+  /// Supaya peringatan kuota tidak dikirim berulang-ulang.
+  quotaWarnedAt    DateTime?
+  quotaExhaustedAt DateTime?
+
+  /// Kode ajakan milik workspace ini, dibagikan ke teman.
+  kodeAjak String? @unique
+  /// Kode workspace yang mengajak. Diisi sekali saat daftar, tidak bisa diubah.
+  diajakOleh String?
+  /// Bulan gratis yang sudah didapat tapi belum terpakai. Dipotong otomatis
+  /// dari tagihan begitu sistem pembayaran terpasang.
+  bulanGratis Int @default(0)
+  /// Hadiah ajakan hanya cair sekali per workspace, yaitu saat dia pertama
+  /// kali berlangganan berbayar.
+  hadiahAjakCair Boolean @default(false)
+
+  /// Sampai kapan paket berbayar sekarang SUDAH DIBAYAR. Null = belum pernah
+  /// bayar, atau sudah turun ke gratis.
+  ///
+  /// Ini kolom yang menentukan, bukan `plan`. `plan` cuma menyebut paket mana
+  /// yang sedang berlaku; yang menjawab "apakah dia masih berhak" tanggalnya.
+  /// Kalau cuma mengandalkan `plan`, satu pembayaran yang tidak pernah
+  /// diperpanjang membuat orang memakai paket Pro selamanya.
+  ///
+  /// Ketentuan layanan menjanjikan langganan hidup sampai akhir periode yang
+  /// sudah dibayar walau orangnya berhenti di tengah bulan, jadi tanggal ini
+  /// juga yang menahan penurunan paket supaya tidak berlaku seketika.
+  langgananSampai DateTime?
+
+  /// Paket yang berlaku begitu `langgananSampai` lewat.
+  ///
+  /// Ada karena berhenti berlangganan TIDAK boleh langsung mematikan layanan.
+  /// Orang yang sudah bayar sebulan lalu menekan "Pindah ke Coba Gratis" di
+  /// hari kesepuluh tetap berhak atas dua puluh hari sisanya, dan halaman
+  /// pengembalian dana menjanjikan itu dengan kalimat yang jelas. Jadi
+  /// pilihannya dicatat di sini dulu, bukan dikerjakan sekarang.
+  ///
+  /// Null berarti tidak ada perubahan terjadwal. Kalau `langgananSampai` lewat
+  /// dan kolom ini kosong, yang berlaku "free".
+  paketBerikutnya String?
+
+  /// Kapan terakhir kali pemiliknya diingatkan bahwa langganannya mau habis.
+  /// Tanpa penanda ini, pengingatnya terkirim tiap kali penjadwal berputar.
+  langgananDiingatkanPada DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([diajakOleh])
+  /// Dipakai penjadwal di worker untuk mencari yang sudah kedaluwarsa.
+  @@index([langgananSampai])
+
+  users         User[]
+  agents        Agent[]
+  channels      Channel[]
+  contacts      Contact[]
+  conversations Conversation[]
+  pembayaran    Pembayaran[]
+}
+
+/// Masukan, saran, dan laporan bug dari pengguna.
+///
+/// SENGAJA TIDAK PUNYA RELASI KE WORKSPACE. Ini keputusan, bukan kelupaan.
+///
+/// Kalau dia direlasikan dengan `onDelete: Cascade` seperti tabel lain, masukan
+/// akan ikut terhapus tepat waktu akunnya dihapus. Padahal masukan dari orang
+/// yang BERHENTI adalah yang paling wajib dibaca: di situ tertulis kenapa dia
+/// berhenti. Kehilangan justru baris itu berarti kehilangan satu-satunya
+/// keterangan tentang kenapa pelanggan pergi.
+///
+/// Karena itu identitas pengirimnya disalin apa adanya, bukan diambil lewat
+/// relasi. Salinan itu tetap terbaca sesudah akunnya tidak ada.
+model Masukan {
+  id String @id @default(cuid())
+
+  /// bug | saran | lainnya
+  jenis String @default("saran")
+  isi   String
+
+  /// Halaman tempat tombolnya ditekan, mis. "/app/knowledge".
+  ///
+  /// Ini yang membuat laporan bug bisa ditindaklanjuti tanpa bertanya balik.
+  /// Tanpanya, hampir semua laporan berbunyi "tombolnya nggak jalan" dan tidak
+  /// ada yang tahu tombol yang mana.
+  halaman String?
+
+  /// Disalin, bukan direlasikan. Lihat catatan di atas.
+  workspaceId   String?
+  namaUsaha     String?
+  emailPengirim String?
+
+  /// Kosong = belum dibaca. Yang dihitung sebagai penanda di halaman founder.
+  dibacaPada DateTime?
+
+  createdAt DateTime @default(now())
+
+  /// Yang belum dibaca selalu dicari lebih dulu, jadi urutannya begini.
+  @@index([dibacaPada, createdAt])
+}
+
+/// Satu upaya pembayaran langganan.
+///
+/// Satu baris per UPAYA, bukan per langganan. Orang yang membuka halaman bayar
+/// lalu menutupnya, lalu mencoba lagi besok, menghasilkan dua baris, dan itu
+/// memang yang benar: Midtrans menolak order_id yang dipakai ulang, dan riwayat
+/// upaya yang gagal justru yang paling dibutuhkan waktu ada yang bilang
+/// "uangnya sudah keluar tapi paketnya tidak naik".
+///
+/// `id` sekaligus dipakai sebagai order_id di Midtrans. Cuid itu huruf dan
+/// angka saja, jauh di bawah batas 50 karakter, dan tidak pernah terulang.
+model Pembayaran {
+  id String @id @default(cuid())
+
+  /// Paket yang dibeli. Disimpan di sini, BUKAN dibaca dari workspace waktu
+  /// notifikasinya masuk. Orang bisa mengklik paket lain sambil menunggu, dan
+  /// yang harus diaktifkan adalah paket yang benar-benar dia bayar.
+  planId String
+  /// Rupiah bulat yang ditagih. Dibandingkan dengan yang dilaporkan Midtrans,
+  /// jadi notifikasi yang jumlahnya tidak cocok ditolak.
+  jumlah Int
+
+  /// midtrans | bulanGratis
+  ///
+  /// Bulan gratis dari ajak teman tidak lewat Midtrans sama sekali, tapi tetap
+  /// dicatat di sini supaya riwayatnya utuh dan pemiliknya bisa melihat bulan
+  /// mana yang dia tidak bayar.
+  sumber String @default("midtrans")
+
+  /// menunggu | lunas | gagal | dikembalikan
+  status String @default("menunggu")
+
+  /// true = memperpanjang paket yang sama, jadi tanggal habisnya ditambah dari
+  /// tanggal lama. false = paket ganti, periodenya mulai dari nol hari ini.
+  perpanjang Boolean @default(false)
+
+  /// Nomor transaksi di Midtrans. Baru ada sesudah dia menjawab.
+  midtransId String?
+  /// bank_transfer | gopay | qris | ... apa adanya dari Midtrans.
+  metode String?
+  /// Alamat halaman bayar Snap.
+  urlBayar String?
+  /// Notifikasi terakhir dari Midtrans, disimpan apa adanya.
+  ///
+  /// Bukan hiasan. Waktu ada sengketa, satu-satunya yang bisa dipegang adalah
+  /// apa yang benar-benar dikirim penyedia pembayaran, bukan tafsiran kita
+  /// atasnya.
+  catatan String?
+
+  lunasPada DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("owner") // owner | agent
+  createdAt    DateTime @default(now())
+
+  /// Kapan alamat emailnya dikonfirmasi. Kosong = belum.
+  ///
+  /// Gunanya bukan menyaring pendaftar, tapi menangkap salah ketik selagi
+  /// masih gampang dibetulkan. Alamat inilah satu-satunya kunci cadangan
+  /// akun: kalau salah, pemiliknya tidak bisa ditolong waktu lupa password.
+  /// Dikosongkan lagi setiap emailnya diganti.
+  emailVerifiedAt DateTime?
+
+  /// Dinaikkan setiap password diganti. Angka ini ikut disimpan di dalam tanda
+  /// login, dan yang angkanya ketinggalan langsung ditolak. Tanpa ini, ganti
+  /// password tidak mengusir siapa pun: orang yang sudah terlanjur masuk ke
+  /// akunmu tetap bisa lanjut, dan justru itu alasan orang mengganti password.
+  sessionVersion Int @default(0)
+
+  /// Rem untuk tebak-tebakan password.
+  ///
+  /// Halaman lupa password sudah lama punya batas percobaan, tapi halaman masuk
+  /// tidak punya sama sekali, jadi satu alamat email bisa dicoba ribuan kali
+  /// tanpa hambatan apa pun. Yang dipertaruhkan bukan cuma akunnya: di dalamnya
+  /// ada nomor WhatsApp yang tersambung dan seluruh riwayat chat pelanggannya.
+  ///
+  /// Dihitung per akun, bukan per alamat IP. IP gampang berganti dan yang perlu
+  /// dilindungi memang akunnya. Konsekuensinya orang lain bisa membuat akunmu
+  /// terkunci sebentar, dan itu memang harga yang dipilih: 15 menit menunggu
+  /// jauh lebih murah daripada akun yang jebol.
+  gagalMasuk      Int       @default(0)
+  gagalMasukSejak DateTime?
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  resets        PasswordReset[]
+  verifications EmailVerification[]
+
+  @@index([workspaceId])
+}
+
+/// Permintaan ganti password lewat email.
+///
+/// Yang disimpan cuma sidik jari tokennya, bukan tokennya. Token aslinya hanya
+/// ada di email pemiliknya. Jadi kalau isi database ini bocor, tidak ada satu
+/// pun akun yang bisa diambil alih dengan isinya.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  /// Sekali pakai. Diisi begitu passwordnya benar-benar diganti.
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Konfirmasi alamat email.
+///
+/// Sama seperti PasswordReset, yang disimpan cuma sidik jari tokennya.
+model EmailVerification {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  /// Alamat yang sedang dikonfirmasi, disimpan apa adanya.
+  ///
+  /// Perlu dicatat terpisah karena orang bisa mengganti emailnya lagi sebelum
+  /// yang lama sempat dikonfirmasi. Tanpa ini, tautan lama akan menandai
+  /// alamat baru sebagai terkonfirmasi padahal tidak ada yang pernah
+  /// membuktikan alamat baru itu benar.
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─── AI Agent ─────────────────────────────────────────────────────────────────
+
+model Agent {
+  id   String @id @default(cuid())
+  name String
+
+  // Prompt utama: identitas + gaya bicara + aturan (setara "AI Agent Behavior")
+  behaviorPrompt String @default("")
+  // Pesan pertama otomatis saat customer chat pertama kali
+  welcomeMessage String @default("")
+  // Kondisi bahasa natural: kapan AI harus lempar ke manusia
+  handoffCondition String @default("")
+
+  // Kirim jawaban panjang sebagai beberapa bubble (dipisah "---")
+  splitBubbles Boolean @default(true)
+  // Jeda "mengetik" biar terasa manusiawi (ms per karakter, dibatasi di worker)
+  typingSpeedMs Int @default(25)
+  temperature   Float @default(0.4)
+  model         String @default("")   // kosong = pakai default dari env
+
+  // Jam kerja: di luar jam ini AI ambil alih penuh. Format "HH:mm".
+  officeHoursEnabled Boolean @default(false)
+  officeHoursStart   String  @default("09:00")
+  officeHoursEnd     String  @default("17:00")
+
+  // Auto follow-up kalau customer diam SEBELUM membeli
+  followUpEnabled     Boolean @default(false)
+  followUpAfterHours  Int     @default(24)
+  followUpMaxAttempts Int     @default(2)
+  followUpPrompt      String  @default("Tanyakan kabar dengan sopan, ingatkan penawaran sebelumnya, dan tawarkan bantuan lanjutan.")
+
+  // Menjaga hubungan SETELAH pelanggan membeli.
+  // Tanya kabar: memastikan paketnya sampai dan barangnya cocok.
+  afterSalesEnabled   Boolean @default(false)
+  afterSalesAfterDays Int     @default(3)
+  /// Bawaannya sengaja tidak menyebut "paket" atau "produk" saja. Palwise juga
+  /// dipakai klinik, salon, bengkel, dan penjual jasa, dan buat mereka
+  /// "pesanannya sudah sampai?" itu pertanyaan yang salah alamat.
+  afterSalesPrompt    String  @default("Tanyakan apakah semuanya sudah beres dan bagaimana hasilnya, sesuaikan dengan yang dia ambil: barangnya sudah sampai, layanannya sudah dikerjakan, atau jadwalnya sudah jalan. Jangan jualan dulu, cukup pastikan dia puas. Kalau ada keluhan, minta maaf dan bilang akan diteruskan ke tim.")
+
+  // Pengingat sebelum janji temu.
+  //
+  // Cuma dikirim untuk janji yang SUDAH DIPASTIKAN manusia. Mengingatkan
+  // pelanggan soal jadwal yang pemiliknya sendiri belum pernah setujui itu
+  // persis bahaya yang dicegah pemisah diminta/dipastikan: pelanggan datang
+  // membawa keyakinan yang tidak pernah dimiliki siapa pun.
+  pengingatEnabled    Boolean @default(false)
+  pengingatJamSebelum Int     @default(24)
+  pengingatPrompt     String  @default("Ingatkan dengan ramah bahwa janjinya sudah dekat. Sebut hari dan jamnya persis seperti yang diberikan, jangan menghitung ulang sendiri. Tanyakan apakah masih sesuai rencana, dan bilang boleh kabari kalau perlu diubah.")
+
+  // Ajak balik lagi: untuk yang habis dipakai (kopi, skincare) DAN untuk yang
+  // memang berulang (kontrol ke klinik, servis rutin, potong rambut).
+  restockEnabled   Boolean @default(false)
+  restockAfterDays Int     @default(30)
+  restockPrompt    String  @default("Ingatkan dengan santai bahwa mungkin sudah waktunya dia perlu lagi, entah barangnya sudah habis atau memang sudah waktunya datang lagi, lalu tawarkan. Sebut yang dulu dia ambil kalau kamu tahu. Jangan memaksa.")
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  knowledgeSources KnowledgeSource[]
+  knowledgeChunks  KnowledgeChunk[]
+  channels         Channel[]
+  conversations    Conversation[]
+  mediaAssets      MediaAsset[]
+
+  @@index([workspaceId])
+}
+
+/// Gambar, video, atau berkas yang boleh DIKIRIM asisten ke pelanggan.
+/// Bedakan dari KnowledgeSource yang isinya hal yang asisten TAHU.
+model MediaAsset {
+  id String @id @default(cuid())
+  /// Kode pendek yang dipakai AI untuk memilih, mis. "foto-arabika-gayo".
+  /// Dibuat otomatis dari judulnya.
+  code String
+  name String
+  /// Kapan gambar ini pantas dikirim. Ini yang dibaca AI untuk memutuskan.
+  description String
+  /// Nama berkas di dalam MEDIA_DIR
+  fileName String
+  mimeType String
+  /// image | video | document
+  kind      String @default("image")
+  sizeBytes Int    @default(0)
+  /// Dikirim berapa kali, sekadar untuk dilihat pemilik toko
+  sentCount Int    @default(0)
+  /// Catatan Info bisnis hasil membaca isi gambar ini, kalau pemiliknya minta.
+  /// Gambar bisa DIKIRIM tanpa ini; kolom ini yang bikin isinya juga DIKETAHUI.
+  knowledgeSourceId String?
+  /// pending | ready | error | none
+  readStatus String @default("none")
+  readError  String?
+  createdAt DateTime @default(now())
+
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, code])
+  @@index([agentId])
+}
+
+// ─── Knowledge base (RAG) ─────────────────────────────────────────────────────
+
+model KnowledgeSource {
+  id      String @id @default(cuid())
+  // text | file | website | qna
+  type    String @default("text")
+  title   String
+  content String
+  // pending | ready | error
+  status  String @default("pending")
+  error   String?
+  chunkCount Int  @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  chunks  KnowledgeChunk[]
+
+  @@index([agentId])
+}
+
+model KnowledgeChunk {
+  id      String @id @default(cuid())
+  content String
+  // Vektor embedding disimpan sebagai JSON array (cukup untuk skala MVP).
+  embedding String
+  createdAt DateTime @default(now())
+
+  sourceId String
+  source   KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  agentId  String
+  agent    Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([sourceId])
+}
+
+// ─── Channel (koneksi WhatsApp) ───────────────────────────────────────────────
+
+model Channel {
+  id   String @id @default(cuid())
+  name String
+  // whatsapp_qr | whatsapp_cloud (slot untuk Meta Cloud API nanti)
+  type String @default("whatsapp_qr")
+  // disconnected | connecting | qr | connected | logged_out
+  status      String  @default("disconnected")
+  phoneNumber String?
+  lastQr      String?
+  lastError   String?
+  connectedAt DateTime?
+  // Nyalakan otomatis saat worker start
+  autoStart   Boolean @default(true)
+  createdAt   DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agentId     String?
+  agent       Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  conversations Conversation[]
+
+  @@index([workspaceId])
+}
+
+// ─── CRM ──────────────────────────────────────────────────────────────────────
+
+model Contact {
+  id    String  @id @default(cuid())
+  waJid String?
+  phone String?
+  /// Nama CRM: hanya diisi kalau customer menyebutkannya sendiri, atau
+  /// dikoreksi manual oleh tim. AI tidak boleh menimpa yang sudah terisi.
+  name  String  @default("")
+  /// Nama dari profil WhatsApp. Sekadar cadangan tampilan — bukan data CRM,
+  /// jadi tidak boleh menghalangi AI mengisi `name`.
+  waPushName String?
+  email String?
+  businessName String?
+  industry     String?
+  // JSON array of string
+  tags  String  @default("[]")
+  // baru | tertarik | negosiasi | closing | selesai | batal
+  stage String  @default("baru")
+
+  /// Masalah yang sedang dialami pelanggan ini: minta refund, barang rusak,
+  /// paket tidak sampai, salah kirim. Diisi AI waktu dia mengenalinya dari
+  /// obrolan, dikosongkan pemilik toko waktu sudah beres.
+  ///
+  /// SENGAJA BUKAN TAHAP PIPELINE. Enam tahap itu posisi di jalan menuju
+  /// membeli. Masalah bukan posisi: dia bisa menimpa siapa saja, kapan saja,
+  /// dan paling sering justru menimpa yang sudah "selesai" alias sudah bayar.
+  /// Kalau dijadikan tahap ketujuh, pembeli yang komplain hilang dari hitungan
+  /// pembeli, aturan "tahap hanya boleh maju" jadi rusak, dan waktu masalahnya
+  /// beres tidak ada yang tahu dia harus dikembalikan ke tahap mana.
+  masalah      String?
+  /// Sejak kapan masalahnya terbuka. Ini yang paling penting dilihat pemilik
+  /// toko: keluhan yang menggantung tiga hari jauh lebih merusak daripada
+  /// keluhan yang ada.
+  masalahSejak DateTime?
+  /// Kapan pelanggan ini masuk tahap "selesai". Jadi patokan hitung mundur
+  /// tanya kabar dan ajakan beli lagi.
+  closedAt DateTime?
+
+  /// Janji temu yang sudah disepakati di obrolan: jadwal kontrol, survei unit,
+  /// booking servis, jam datang ke salon.
+  ///
+  /// SENGAJA CUMA DUA KOLOM, BUKAN SISTEM BOOKING. Tidak ada pengecekan bentrok,
+  /// tidak ada kuota per jam, tidak ada kalender. Ini catatan bertanggal yang
+  /// diisi AI dari obrolan, dan boleh dibetulkan pemiliknya kapan saja. Menjual
+  /// dua kolom ini sebagai sistem booking akan bikin orang berhenti mencatat di
+  /// buku mereka sendiri, lalu kehilangan janji waktu AI salah dengar.
+  ///
+  /// Untuk usaha jasa, ini data terpenting yang dulu tidak punya tempat sama
+  /// sekali: pemiliknya tahu ada yang mau datang, tapi cuma kalau dia ingat
+  /// membaca ulang obrolannya.
+  janjiPada    DateTime?
+  janjiCatatan String?
+  /// false = baru diminta pelanggan, BELUM dipastikan manusia.
+  ///
+  /// Ini pemisah yang paling penting di seluruh fitur janji temu. AI tidak tahu
+  /// isi kalender pemiliknya, tidak tahu dia sedang cuti, dan tidak tahu jam
+  /// itu sudah dipakai untuk hal lain di luar Palwise. Kalau AI boleh
+  /// memastikan, pelanggan datang membawa keyakinan yang tidak pernah dimiliki
+  /// siapa pun, dan yang menanggung malunya pemilik usaha di depan orang.
+  ///
+  /// Jadi AI cuma boleh MENCATAT PERMINTAAN. Yang memastikan manusia, sekali
+  /// klik, dan sesudah itu barulah pelanggannya boleh diberi kepastian.
+  janjiDipastikan Boolean @default(false)
+  /// Untuk janji jam berapa pengingatnya sudah dikirim.
+  ///
+  /// Menyimpan WAKTU JANJINYA, bukan sekadar penanda "sudah/belum". Orang
+  /// menjadwalkan ulang, dan penanda boolean akan membuat janji baru hasil
+  /// penjadwalan ulang tidak pernah diingatkan lagi karena penandanya sudah
+  /// terlanjur menyala. Dengan menyimpan waktunya, janji yang berubah otomatis
+  /// tidak cocok lagi dan pengingatnya terpasang ulang dengan sendirinya.
+  pengingatUntuk DateTime?
+
+  /// Ringkasan obrolan yang ditulis AI ATAS PERMINTAAN pemilik toko, bukan
+  /// otomatis tiap pesan masuk.
+  ///
+  /// Sengaja bukan otomatis. Obrolan yang ramai bisa lima puluh pesan sehari,
+  /// dan meringkas ulang tiap pesan berarti membayar model lima puluh kali
+  /// untuk satu kalimat yang mungkin tidak pernah dibaca siapa pun. Jadi
+  /// dibuat waktu diklik, lalu dipakai ulang sampai ada pesan baru.
+  ringkasan   String?
+  /// Sampai pesan kapan ringkasannya berlaku. Kalau lastMessageAt sudah lewat
+  /// dari ini, ringkasannya ditandai kedaluwarsa di layar dan boleh dibuat
+  /// ulang. Tanpa penanda ini orang membaca ringkasan lama sebagai kabar
+  /// terbaru, dan itu lebih berbahaya daripada tidak ada ringkasan sama sekali.
+  ringkasanAt DateTime?
+
+  notes String  @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  conversations Conversation[]
+
+  @@unique([workspaceId, waJid])
+  @@index([workspaceId])
+  @@index([workspaceId, stage])
+}
+
+// ─── Percakapan ───────────────────────────────────────────────────────────────
+
+model Conversation {
+  id String @id @default(cuid())
+  // open | resolved
+  status String @default("open")
+  // false = agen manusia sedang ambil alih
+  aiEnabled Boolean @default(true)
+  // true = AI minta bantuan manusia
+  needsHuman   Boolean @default(false)
+  handoffReason String?
+  /// Kapan eskalasinya dinaikkan. Dipakai membatasi berapa lama asisten diam
+  /// menunggu. Tanpa batas, satu eskalasi yang tidak pernah ditangani membuat
+  /// pelanggan didiamkan selamanya, dan itu justru membatalkan janji produknya.
+  handoffAt    DateTime?
+  unreadCount  Int     @default(0)
+
+  lastMessageAt   DateTime @default(now())
+  lastCustomerAt  DateTime?
+  lastOutboundAt  DateTime?
+  followUpCount   Int      @default(0)
+  followUpMutedUntil DateTime?
+  /// Dicatat terpisah dari followUp supaya sapaan sebelum dan sesudah
+  /// pembelian tidak saling menghabiskan jatah.
+  afterSalesSentAt DateTime?
+  restockSentAt    DateTime?
+  /// Pemberitahuan ke pelanggan bahwa jatah balasan habis, dikirim sekali saja
+  /// supaya dia tidak merasa diabaikan tapi juga tidak dibanjiri.
+  quotaNoticeSentAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contactId   String
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  channelId   String?
+  channel     Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  agentId     String?
+  agent       Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  messages Message[]
+
+  @@index([workspaceId, lastMessageAt])
+  @@index([contactId])
+}
+
+model Message {
+  id String @id @default(cuid())
+  // customer | ai | human | system
+  role    String
+  content String
+  // text | image | audio | document | video
+  mediaType String  @default("text")
+  mediaPath String?
+  // Transkrip/deskripsi media hasil analisa AI — dipakai lagi sebagai konteks
+  mediaSummary String?
+  waMessageId  String?
+  createdAt    DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}

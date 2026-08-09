@@ -1,0 +1,41 @@
+{
+  "name": "palwise",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Palwise — WhatsApp AI agent + CRM omnichannel untuk bisnis Indonesia",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "setup": "npm install && npm run db:push && npm run db:seed",
+    "dev": "concurrently -n worker,web -c cyan,magenta \"npm:dev:worker\" \"npm:dev:web\"",
+    "dev:worker": "npm run dev --workspace=@palwise/worker",
+    "dev:web": "npm run dev --workspace=@palwise/web",
+    "build": "npm run build --workspace=@palwise/worker && npm run build --workspace=@palwise/web",
+    "start": "concurrently -n worker,web -c cyan,magenta \"npm:start:worker\" \"npm:start:web\"",
+    "start:worker": "npm run start --workspace=@palwise/worker",
+    "start:web": "npm run start --workspace=@palwise/web",
+    "db:push": "prisma db push --schema packages/db/prisma/schema.prisma --skip-generate && prisma generate --schema packages/db/prisma/schema.prisma",
+    "db:seed": "tsx packages/db/src/seed.ts",
+    "db:studio": "prisma studio --schema packages/db/prisma/schema.prisma",
+    "db:backup": "tsx packages/db/src/backup.ts",
+    "typecheck": "npm run typecheck --workspace=@palwise/worker && npm run typecheck --workspace=@palwise/web",
+    "selftest": "tsx apps/worker/src/scripts/selftest.ts",
+    "akun:bantuan": "tsx apps/worker/src/scripts/akunBantuan.ts",
+    "logo": "node apps/web/scripts/buatLogo.mjs",
+    "bisnis:pdf": "node bisnis/buatPdf.mjs",
+    "ukur:prompt": "tsx apps/worker/src/scripts/ukurPrompt.ts",
+    "uji:diskon": "tsx apps/worker/src/scripts/ujiDiskon.ts",
+    "uji:bayar": "tsx apps/worker/src/scripts/ujiBayar.ts",
+    "uji:model": "tsx apps/worker/src/scripts/ujiModel.ts",
+    "models": "tsx apps/worker/src/scripts/models.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

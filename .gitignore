@@ -1,0 +1,16 @@
+node_modules/
+.next/
+dist/
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.env
+.env.local
+.tmp/
+.DS_Store
+*.tsbuildinfo
+
+# Folder build sementara untuk verifikasi, lihat NEXT_DIST_DIR di next.config.mjs
+.next-uji/

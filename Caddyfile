@@ -1,0 +1,83 @@
+# Gerbang depan Palwise.
+#
+# Caddy mengurus HTTPS sendiri, termasuk memperbarui sertifikatnya. Tidak perlu
+# certbot, tidak perlu diperpanjang manual.
+#
+# Dua alamat, satu aplikasi:
+#
+#   palwise.id      halaman jualan, boleh dilihat siapa saja
+#   app.palwise.id  dashboard, masuk, daftar
+#
+# Keduanya diteruskan ke porta yang sama. Yang memilah halamannya ada di
+# apps/web/src/middleware.ts, berdasarkan alamat yang dibuka pengunjung.
+#
+# Sebelum menjalankan, arahkan dua DNS record ke IP server:
+#   A   @     <ip-server>
+#   A   app   <ip-server>
+#   A   www   <ip-server>
+#
+# Lalu jalankan:  caddy run --config Caddyfile
+
+(palwise_umum) {
+	encode gzip
+
+	# Hanya dashboard yang dibuka ke internet.
+	#
+	# Porta 4000 (mesin WhatsApp) sengaja TIDAK diteruskan. Di dalamnya ada
+	# lampiran pelanggan dan perintah pengelolaan nomor. Cukup dashboard yang
+	# menghubunginya, dan itu terjadi di dalam server.
+	reverse_proxy localhost:3000
+
+	# Batas paling luar, jadi WAJIB paling longgar.
+	#
+	# Urutan empat lapisnya, dari dalam ke luar:
+	#   lib/batas.ts MAKS_BYTE        10 MB  <- kirim ke pelanggan
+	#   serverActions.bodySizeLimit   12 MB
+	#   middlewareClientMaxBodySize   14 MB
+	#   lib/batas.ts MAKS_BACA_BYTE   15 MB  <- baca isinya untuk Info bisnis
+	#   Caddy                         20 MB  <- ini
+	#
+	# Dulu angka ini 15MB, sama persis dengan batas berkas yang boleh dibaca.
+	# Berkas 15 MB dibungkus formulir multipart selalu melebihi 15 MB karena
+	# ada pembatas dan kepala bagian di dalamnya, jadi Caddy menolaknya lebih
+	# dulu dengan halaman galat bawaannya. Orangnya diberi tahu batasnya 15 MB
+	# di layar, mengirim berkas 15 MB, lalu ditolak oleh sesuatu yang bahkan
+	# bukan kalimat kita. Yang paling kecil harus selalu milik kita, supaya
+	# yang bicara ke orangnya selalu kalimat yang kita tulis sendiri.
+	request_body {
+		max_size 20MB
+	}
+
+	# Dashboard tidak boleh bisa dipasang di dalam halaman orang lain.
+	#
+	# Tanpa ini, siapa pun bisa menaruh app.palwise.id di dalam bingkai
+	# tembus pandang di situsnya sendiri, lalu menumpuk tombol palsu di
+	# atasnya. Yang diklik korban tombol "Hapus pelanggan" yang asli, dan
+	# karena dia memang sedang login, permintaannya sah sepenuhnya.
+	#
+	# Dipasang di Next.js juga, bukan cuma di sini, supaya tetap berlaku kalau
+	# suatu hari Palwise dipasang tanpa Caddy di depannya.
+	header {
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
+
+palwise.id, www.palwise.id {
+	import palwise_umum
+
+	log {
+		output file /var/log/caddy/palwise-situs.log
+		format console
+	}
+}
+
+app.palwise.id {
+	import palwise_umum
+
+	log {
+		output file /var/log/caddy/palwise-app.log
+		format console
+	}
+}

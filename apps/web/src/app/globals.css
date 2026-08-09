@@ -1,0 +1,294 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  /* Gerak.
+   *
+   * Benda nyata tidak pernah berhenti mendadak, dan tidak pernah mulai dengan
+   * kecepatan penuh. Yang masuk ke layar memakai kurva melambat (cepat di
+   * awal, pelan mendarat), karena itu yang dilakukan benda yang punya gesekan.
+   * Yang keluar boleh lebih cepat: mata tidak perlu mengikutinya sampai habis.
+   *
+   * Durasinya bukan selera. Di bawah 100 ms perubahan terasa mengedip, di atas
+   * 300 ms mulai terasa lambat dan orang menunggu. Semua di sini ada di antara
+   * itu. */
+  --gerak-cepat: 140ms;
+  --gerak: 200ms;
+  --gerak-pelan: 280ms;
+  --lengkung-masuk: cubic-bezier(0.16, 0.84, 0.28, 1);
+  --lengkung-keluar: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Tinggi bar bawah HP, dipakai juga sebagai jarak aman di dasar halaman
+   * supaya isi terakhir tidak tertutup. */
+  --bar-bawah: 60px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-50 text-ink-900 antialiased;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2
+           text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  /* Biru: tombol yang MENYELESAIKAN tujuan halaman ini. Satu saja per layar.
+     Kalau ada tiga yang sama kerasnya, tidak ada yang jadi utama dan warnanya
+     berhenti berarti apa-apa, cuma jadi hiasan. */
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  }
+  /* Hitam: tindakan biasa yang sama pentingnya tapi bukan tujuan halaman.
+     Bukan versi "lebih pelan" dari biru, hitam di atas putih justru paling
+     kontras. Ini penanda jenis, bukan penanda keras-pelan. */
+  .btn-ink {
+    @apply btn bg-ink-900 text-white hover:bg-ink-950;
+  }
+  .btn-ghost {
+    @apply btn border border-ink-200 bg-white text-ink-700 hover:bg-ink-50;
+  }
+  .btn-danger {
+    @apply btn border border-red-200 bg-white text-red-600 hover:bg-red-50;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm
+           text-ink-900 outline-none transition placeholder:text-ink-400
+           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+  /* Huruf lebar-tetap. BENAR untuk daftar harga: angka dan kolomnya berbaris
+     lurus ke bawah, dan itu memang gunanya. */
+  .textarea {
+    @apply input resize-y font-mono text-[13px] leading-relaxed;
+  }
+  /* Huruf biasa, untuk tulisan yang dibaca sebagai kalimat, bukan sebagai
+     data. Keterangan sifat asisten itu karangan tentang orang, bukan tabel.
+     Ditulis di kotak berhuruf lebar-tetap, dia terbaca seperti berkas
+     pengaturan, dan itu berlawanan dengan kalimat di atasnya sendiri yang
+     menyuruh "tulis seperti melatih karyawan baru". */
+  .textarea-prosa {
+    @apply input resize-y text-[14.5px] leading-relaxed;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink-800;
+  }
+  .hint {
+    @apply mt-1.5 text-xs leading-relaxed text-ink-500;
+  }
+
+  .card {
+    @apply rounded-xl border border-ink-200 bg-white;
+  }
+  /* Padding kartu ikut lebar layar. 20px di dalam kartu yang sudah punya
+     16px pinggiran halaman berarti 72px habis di layar 375px. */
+  .card-pad {
+    @apply card p-4 sm:p-5;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+}
+
+/* Luas sentuh minimal untuk jari.
+ *
+ * Patokannya `pointer: coarse`, bukan lebar layar. Yang menentukan seberapa
+ * besar sasaran harus dibuat itu alat tunjuknya: ujung jari menutupi sekitar
+ * 9 mm, jauh lebih lebar daripada satu piksel ujung kursor. Tablet dengan
+ * layar lebar tetap dipakai jari, dan jendela browser yang disempitkan di
+ * desktop tetap dipakai tetikus. Mengukur layar akan salah di kedua kasus itu.
+ *
+ * Layar sempit ikut dimasukkan sebagai patokan kedua. Bukan karena lebar itu
+ * ukuran yang benar, tapi karena jendela sempit di desktop pun tidak rugi
+ * kalau sasarannya dibuat lebih besar, dan dengan begitu aturannya bisa diuji
+ * di browser bertetikus. Patokan utamanya tetap jenis penunjuknya.
+ *
+ * Kotaknya diperbesar tanpa memperbesar tulisannya, jadi tampilannya tidak
+ * berubah, cuma jadi lebih gampang kena. */
+@media (pointer: coarse), (max-width: 640px) {
+  .tap-aman {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Semua tombol sekaligus, bukan satu per satu di tiap komponen.
+     Mengejarnya per komponen berarti tombol berikutnya yang ditambahkan
+     orang pasti terlewat lagi. */
+  .btn,
+  .input,
+  select {
+    min-height: 44px;
+  }
+}
+
+/* ─── Gerak ─────────────────────────────────────────────────────────────────
+ *
+ * Semuanya pendek dan searah: isi halaman naik sedikit sambil muncul, seperti
+ * sesuatu yang mendarat. Tidak ada yang berputar, memantul, atau membesar
+ * mendadak.
+ */
+
+@keyframes naik-muncul {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes muncul {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes geser-masuk-kiri {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.anim-naik {
+  animation: naik-muncul var(--gerak) var(--lengkung-masuk) both;
+}
+.anim-muncul {
+  animation: muncul var(--gerak) var(--lengkung-masuk) both;
+}
+.anim-laci {
+  animation: geser-masuk-kiri var(--gerak) var(--lengkung-masuk) both;
+}
+
+/* Berurutan, bukan barengan.
+ *
+ * Kalau enam kartu muncul pada saat yang sama, mata tidak tahu harus mulai
+ * dari mana dan semuanya terasa seperti satu kedipan. Jeda 45 ms per kartu
+ * membuat matanya digiring dari kiri atas ke kanan bawah, arah orang membaca.
+ * Dibatasi enam, karena setelah itu yang terakhir jadi terasa lambat. */
+.anim-urut > * {
+  animation: naik-muncul var(--gerak) var(--lengkung-masuk) both;
+}
+.anim-urut > *:nth-child(1) { animation-delay: 0ms; }
+.anim-urut > *:nth-child(2) { animation-delay: 45ms; }
+.anim-urut > *:nth-child(3) { animation-delay: 90ms; }
+.anim-urut > *:nth-child(4) { animation-delay: 135ms; }
+.anim-urut > *:nth-child(5) { animation-delay: 180ms; }
+.anim-urut > *:nth-child(n + 6) { animation-delay: 225ms; }
+
+/* Kerangka halaman yang sedang dimuat.
+ *
+ * Gunanya bukan hiasan. Waktu orang mengeklik menu, halaman berikutnya masih
+ * disiapkan di server, dan tanpa ini layar diam sepenuhnya: halaman lama masih
+ * terpampang, tidak ada yang bergerak, tidak ada tanda apa pun. Orang membaca
+ * diam sebagai macet, lalu mengeklik lagi, yang justru bikin lebih lambat.
+ *
+ * Kerangka yang bentuknya menyerupai halaman tujuan juga bikin isinya terasa
+ * datang lebih cepat daripada spinner, karena matanya sudah lebih dulu tahu
+ * di mana judul dan di mana kartunya akan muncul.
+ *
+ * Sengaja berdenyut pelan lewat opacity saja, bukan kilau yang berjalan.
+ * Kilau menarik perhatian ke dirinya sendiri padahal dia cuma tempat kosong. */
+@keyframes denyut {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.kerangka {
+  background-color: theme("colors.ink.200");
+  border-radius: 6px;
+  animation: denyut 1.4s ease-in-out infinite;
+}
+
+/* Garis perpindahan halaman.
+ *
+ * Melaju cepat di awal lalu makin pelan, dan berhenti di 80 persen. Sengaja
+ * tidak pernah sampai ujung: lama sebenarnya tidak diketahui, dan garis yang
+ * sudah penuh tapi halamannya belum datang justru terbaca sebagai macet. */
+@keyframes maju-muat {
+  0% {
+    transform: translateX(-100%);
+  }
+  55% {
+    transform: translateX(-32%);
+  }
+  100% {
+    transform: translateX(-20%);
+  }
+}
+
+.garis-muat {
+  animation: maju-muat 2.4s cubic-bezier(0.16, 0.84, 0.28, 1) forwards;
+}
+
+/* Sebagian orang pusing atau mual melihat gerakan di layar, dan sistemnya
+ * sudah menyimpan pilihan itu. Menghormatinya bukan tambahan, itu syarat. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Batang gulir tipis.
+ *
+ * Dua penulisan, dan dua-duanya perlu.
+ *
+ * `scrollbar-width` dan `scrollbar-color` adalah properti CSS resmi, dan itu
+ * yang dimengerti Firefox. `::-webkit-scrollbar` cuma dimengerti Chrome, Edge,
+ * dan Safari. Dulu di sini cuma ada yang webkit, jadi di Firefox batang
+ * gulirnya tetap tebal bawaan sistem dan tampilannya kelihatan tidak digarap.
+ *
+ * Yang resmi ditulis duluan supaya browser yang mengerti keduanya tetap
+ * memakai yang webkit, karena yang itu bisa diatur lebih halus. */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: theme("colors.ink.200") transparent;
+}
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-ink-200;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  @apply bg-ink-300;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Halaman utamanya juga, bukan cuma panel di dalamnya. Batang gulir tebal di
+ * tepi kanan layar itu yang paling kelihatan, dan justru yang selama ini
+ * terlewat. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: theme("colors.ink.200") transparent;
+}
