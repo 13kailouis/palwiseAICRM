@@ -135,6 +135,77 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/**
+ * Balasan yang sudah dikirim tapi belum diakui server WhatsApp.
+ *
+ * ── KENAPA INI ADA ──────────────────────────────────────────────────────────
+ *
+ * 10 Agustus 2026, dan ini kejadian yang paling mahal sejauh ini. Nomor Palwise
+ * kena batasan kirim dari WhatsApp beberapa jam sesudah disambungkan. Pesan
+ * masuk tetap sampai, balasan asisten tetap dibuat, tetap tersimpan, dan tetap
+ * tergambar rapi di kotak masuk. Yang tidak terjadi cuma satu: tidak ada satu
+ * pun yang benar-benar terkirim. Tidak ada galat, tidak ada tanda, tidak ada
+ * apa pun. Berjam-jam dihabiskan mencari bug di kode yang sebenarnya benar.
+ *
+ * Yang membedakan nomor sehat dan nomor dibatasi cuma satu angka: status
+ * pesannya. Yang sehat naik 1 -> 2 (diterima server) -> 3 (sampai HP) -> 4
+ * (dibaca) dalam hitungan detik. Yang dibatasi berhenti di 1 selamanya.
+ *
+ * Jadi angka itu sekarang ditunggu. Kalau dalam 30 detik sebuah balasan tidak
+ * pernah diakui server, nomornya diberi keterangan yang muncul di halaman Nomor
+ * WhatsApp pemiliknya. Dia berhak tahu asistennya sedang bicara ke tembok,
+ * karena dari layar semuanya terlihat normal.
+ *
+ * SENGAJA CUMA MEMBERI TAHU, tidak menghentikan apa pun. Jaringan yang lambat
+ * juga bisa membuat sebuah ack telat, dan mematikan asisten karena satu pesan
+ * telat jauh lebih merusak daripada peringatan yang sesekali keliru.
+ */
+const menungguAck = new Map<string, { channelId: string; timer: NodeJS.Timeout }>();
+
+/** Nomor yang balasannya pernah tidak diakui, supaya kabarnya bisa dicabut. */
+const dicurigaiDibatasi = new Set<string>();
+
+const BATAS_ACK_MS = 30_000;
+
+const KABAR_DIBATASI =
+  "Balasan asisten tidak diterima WhatsApp. Nomor ini kemungkinan sedang dibatasi: chat masuk tetap sampai, tapi yang keluar didiamkan tanpa pemberitahuan. Istirahatkan dulu dari asisten sekitar sehari, pakai seperti biasa dari HP, dan jangan scan QR berulang karena itu memperpanjang batasannya.";
+
+function tungguAck(
+  channelId: string,
+  id: string | null | undefined,
+  jid: string,
+): void {
+  if (!id) return;
+  const timer = setTimeout(() => {
+    menungguAck.delete(id);
+    log.warn(
+      `pesan ${id} ke ${jid} belum diakui server WhatsApp setelah ${BATAS_ACK_MS / 1000} detik. Nomornya kemungkinan dibatasi.`,
+    );
+    dicurigaiDibatasi.add(channelId);
+    void setChannelStatus(channelId, { lastError: KABAR_DIBATASI });
+  }, BATAS_ACK_MS);
+  // Jangan menahan proses tetap hidup cuma karena ada penantian yang belum
+  // habis waktunya.
+  timer.unref?.();
+  menungguAck.set(id, { channelId, timer });
+}
+
+/** Dipanggil begitu WhatsApp mengakui sebuah pesan (status 2 ke atas). */
+function tandaiAck(id: string | null | undefined): void {
+  if (!id) return;
+  const nunggu = menungguAck.get(id);
+  if (!nunggu) return;
+  clearTimeout(nunggu.timer);
+  menungguAck.delete(id);
+
+  // Nomornya jalan lagi, jadi kabar buruknya dicabut. Peringatan yang tidak
+  // pernah hilang sesudah masalahnya lewat akan berhenti dipercaya, dan yang
+  // berikutnya ikut diabaikan.
+  if (dicurigaiDibatasi.delete(nunggu.channelId)) {
+    void setChannelStatus(nunggu.channelId, { lastError: null });
+  }
+}
+
 // ─── Siklus hidup koneksi ─────────────────────────────────────────────────────
 
 /**
@@ -404,6 +475,9 @@ async function connect(session: Session): Promise<void> {
     for (const u of updates) {
       const status = u?.update?.status;
       if (status === undefined || !u?.key?.fromMe) continue;
+      // 2 ke atas berarti server WhatsApp sudah memegangnya. Dari titik itu
+      // nasibnya bukan urusan kita lagi.
+      if (status >= 2) tandaiAck(u.key.id);
       log.info(
         `status pesan ${u.key.id} ke ${u.key.remoteJid}: ${status}${
           status <= 1 ? " (belum diterima server WhatsApp)" : ""
@@ -784,7 +858,7 @@ async function sapuBelumDibalas(session: Session): Promise<void> {
     }
 
     log.info(`pesan yang tertinggal tanpa jawaban di ${c.id} dibalas`);
-    await sendBubbles(sock, tujuan, hasil.bubbles, kecepatan);
+    await sendBubbles(sock, tujuan, hasil.bubbles, kecepatan, session.channelId);
     if (hasil.berkas.length > 0) {
       await sendAssets(sock, tujuan, hasil.berkas);
     }
@@ -853,7 +927,14 @@ async function balasSekarang(
     // yang mati.
     if (result.code === "handoff_pending" && sock) {
       const pesan = await kabariEskalasiSekali(conversationId);
-      if (pesan) await sendBubbles(sock, data.jid, [pesan], data.typingSpeedMs);
+      if (pesan)
+        await sendBubbles(
+          sock,
+          data.jid,
+          [pesan],
+          data.typingSpeedMs,
+          session.channelId,
+        );
       return;
     }
 
@@ -861,7 +942,7 @@ async function balasSekarang(
     // obrolan, supaya dia tahu pesannya masuk tanpa dibanjiri.
     if (result.code === "quota_exhausted" && sock) {
       const pesan = await kabariPelangganSekali(conversationId);
-      if (pesan) await sendBubbles(sock, data.jid, [pesan], 0);
+      if (pesan) await sendBubbles(sock, data.jid, [pesan], 0, session.channelId);
 
       await periksaDanKabari(session.workspaceId, async (jid, teks) => {
         await sock.sendMessage(jid, { text: teks });
@@ -871,7 +952,13 @@ async function balasSekarang(
   }
 
   if (!sock) return;
-  await sendBubbles(sock, data.jid, result.bubbles, data.typingSpeedMs);
+  await sendBubbles(
+    sock,
+    data.jid,
+    result.bubbles,
+    data.typingSpeedMs,
+    session.channelId,
+  );
 
   // Peringatan menipis dikirim setelah balasannya sampai, bukan sebelum.
   await periksaDanKabari(session.workspaceId, async (jid, teks) => {
@@ -1105,7 +1192,13 @@ async function handleIncoming(
   const jidKirim = alamatKirim(jid, contact.phone ?? nomor) ?? jid;
 
   if (isFirstMessage && agent?.welcomeMessage && conversation.aiEnabled) {
-    await sendBubbles(sock, jidKirim, [agent.welcomeMessage], agent.typingSpeedMs);
+    await sendBubbles(
+      sock,
+      jidKirim,
+      [agent.welcomeMessage],
+      agent.typingSpeedMs,
+      session.channelId,
+    );
     await appendMessage({
       conversationId: conversation.id,
       workspaceId: channel.workspaceId,
@@ -1208,6 +1301,12 @@ export async function sendBubbles(
   jid: string,
   bubbles: string[],
   typingSpeedMs = 25,
+  /**
+   * Nomor pengirimnya. Dipakai menunggu pengakuan server WhatsApp, dan itu
+   * satu-satunya cara membedakan nomor yang sehat dari nomor yang dibatasi.
+   * Boleh kosong untuk pemanggil yang memang tidak punya channel.
+   */
+  channelId?: string,
 ): Promise<void> {
   for (const text of bubbles) {
     if (!text.trim()) continue;
@@ -1231,6 +1330,7 @@ export async function sendBubbles(
       log.info(
         `kirim ke ${jid}: id=${hasil?.key?.id ?? "?"} status=${hasil?.status ?? "?"}`,
       );
+      if (channelId) tungguAck(channelId, hasil?.key?.id, jid);
     } catch (err) {
       log.error(`gagal kirim pesan ke ${jid}: ${err instanceof Error ? err.message : err}`);
       throw err;
@@ -1268,7 +1368,7 @@ export async function sendToConversation(
   }
 
   try {
-    await sendBubbles(session.sock, tujuan, bubbles);
+    await sendBubbles(session.sock, tujuan, bubbles, 25, conversation.channelId);
 
     // Mengirim sesuatu berarti obrolannya hidup lagi.
     //

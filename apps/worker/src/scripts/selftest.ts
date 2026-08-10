@@ -442,6 +442,47 @@ async function main() {
     (manajer.match(/alamatKirim\(/g) ?? []).length >= 3,
   );
 
+  // ── Nomor yang dibatasi WhatsApp harus KELIHATAN ─────────────────────────
+  //
+  // 10 Agustus 2026, kejadian termahal sejauh ini. Nomor Palwise kena batasan
+  // kirim beberapa jam sesudah disambungkan: chat masuk tetap sampai, balasan
+  // tetap dibuat dan tersimpan, kotak masuk terlihat normal, dan tidak satu pun
+  // benar-benar terkirim. Berjam-jam habis mencari bug di kode yang benar.
+  //
+  // Yang membedakan nomor sehat dan nomor dibatasi cuma status pesannya: yang
+  // sehat naik ke 2 dalam hitungan detik, yang dibatasi berhenti di 1. Jadi
+  // angka itu ditunggu, dan pemiliknya diberi tahu.
+  check(
+    "balasan yang tidak diakui WhatsApp memunculkan peringatan di nomornya",
+    /tungguAck\(/.test(manajer) &&
+      /status >= 2\) tandaiAck/.test(manajer) &&
+      /lastError: KABAR_DIBATASI/.test(manajer),
+  );
+  // Peringatan yang tidak pernah hilang sesudah masalahnya lewat akan berhenti
+  // dipercaya, dan yang berikutnya ikut diabaikan.
+  check(
+    "peringatan dicabut begitu nomornya bisa kirim lagi",
+    /dicurigaiDibatasi\.delete\(/.test(manajer) &&
+      /lastError: null/.test(manajer),
+  );
+  // Cuma memberi tahu, TIDAK menghentikan apa pun. Jaringan lambat juga bikin
+  // ack telat, dan mematikan asisten karena satu pesan telat lebih merusak
+  // daripada peringatan yang sesekali keliru.
+  // Yang diperiksa: penandanya tidak pernah DITANYA. Selama tidak ada
+  // `.has(`, tidak ada satu pun keputusan yang bisa berdiri di atasnya, dan
+  // asisten tidak bisa berhenti membalas gara-gara satu ack yang telat.
+  // (`.delete(` di dalam `if` itu pencabutan kabarnya, bukan keputusan kirim.)
+  check(
+    "peringatan batasan tidak ikut mematikan asisten",
+    !/dicurigaiDibatasi\.has\(/.test(manajer),
+  );
+  // Kalimatnya untuk pemilik warung, bukan untuk yang menulis kodenya: apa yang
+  // terjadi, dan apa yang harus dia lakukan.
+  check(
+    "kabar batasan memberi tahu apa yang harus dilakukan",
+    /Istirahatkan dulu/.test(manajer) && /jangan scan QR berulang/.test(manajer),
+  );
+
   // Orang yang sama datang lagi lewat LID. Nomornya dikirim terpisah, jadi
   // harus nyambung ke kontak yang sudah ada, bukan bikin kontak kedua.
   const lagi = await getOrCreateContact({
