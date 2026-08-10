@@ -114,6 +114,7 @@ import {
   appendMessage,
   getOrCreateContact,
   getOrCreateConversation,
+  alamatKirim,
   jidToPhone,
 } from "../core/conversation.js";
 import { resetProviders } from "../ai/provider.js";
@@ -393,6 +394,53 @@ async function main() {
   check("LID tidak dianggap nomor", jidToPhone("208010232209592@lid") === null);
   check("alamat ruang coba tidak dianggap nomor", jidToPhone("playground:abc") === null);
   check("nomor asli tetap terbaca", jidToPhone("628111222333@s.whatsapp.net") === "+628111222333");
+
+  // ── Alamat KIRIM, dan kenapa dia beda dari alamat masuk ───────────────────
+  //
+  // Bug 10 Agustus 2026, bentuknya paling jahat karena tidak ada galat sama
+  // sekali: empat balasan tersimpan dan tergambar rapi di kotak masuk, log
+  // worker bersih, dan tidak satu pun sampai ke HP orangnya. Sebabnya balasan
+  // dikirim ke alamat LID yang dipakai pesan MASUK, dan Baileys menerimanya
+  // tanpa mengeluh. Nomor aslinya ada di senderPn dan sudah lama diambil untuk
+  // ditampilkan, cuma tidak pernah dipakai mengirim.
+  check(
+    "balasan ke kontak LID dikirim ke nomor aslinya",
+    alamatKirim("208010232209592@lid", "+6285646407893") ===
+      "6285646407893@s.whatsapp.net",
+    alamatKirim("208010232209592@lid", "+6285646407893") ?? "null",
+  );
+  // Kalau nomornya benar-benar tidak diketahui, LID tetap dipakai. Alamat yang
+  // mungkin salah masih lebih baik daripada tidak mengirim sama sekali.
+  check(
+    "tanpa nomor, LID tetap dipakai sebagai cadangan",
+    alamatKirim("208010232209592@lid", null) === "208010232209592@lid",
+  );
+  check(
+    "alamat biasa tetap mengarah ke nomor yang sama",
+    alamatKirim("628111222333@s.whatsapp.net", "+628111222333") ===
+      "628111222333@s.whatsapp.net",
+  );
+  check(
+    "kontak tanpa alamat dan tanpa nomor tidak dikirimi apa pun",
+    alamatKirim(null, null) === null,
+  );
+  // Yang menjaga supaya perbaikannya tidak bocor lagi lewat jalur lain: TIDAK
+  // BOLEH ada pemanggilan kirim yang memakai waJid mentah. Tiga jalur keluar
+  // (balasan otomatis, sapuan pesan tertinggal, balasan manual dan sapaan)
+  // semuanya pernah memakai alamat yang sama, jadi ketiganya ikut gagal diam.
+  const manajer = fs.readFileSync(
+    new URL("../wa/manager.ts", import.meta.url),
+    "utf8",
+  );
+  check(
+    "tidak ada jalur kirim yang memakai waJid mentah",
+    !/sendBubbles\([^)]*\.waJid/.test(manajer) &&
+      !/sendAssets\([^)]*\.waJid/.test(manajer),
+  );
+  check(
+    "tiap jalur kirim melewati alamatKirim",
+    (manajer.match(/alamatKirim\(/g) ?? []).length >= 3,
+  );
 
   // Orang yang sama datang lagi lewat LID. Nomornya dikirim terpisah, jadi
   // harus nyambung ke kontak yang sudah ada, bukan bikin kontak kedua.

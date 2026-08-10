@@ -16,6 +16,7 @@ import { env } from "../env.js";
 import { log } from "../lib/log.js";
 import { bus } from "../lib/bus.js";
 import {
+  alamatKirim,
   appendMessage,
   getOrCreateContact,
   getOrCreateConversation,
@@ -745,7 +746,11 @@ async function sapuBelumDibalas(session: Session): Promise<void> {
 
   for (const c of calon) {
     if (!perluDisapu(c, menungguBalasan.has(c.id))) continue;
-    if (!c.contact.waJid) continue;
+    // Nomor asli yang dipakai mengirim, bukan LID yang tersimpan. Sama dengan
+    // jalur balasan biasa; kalau di sini masih memakai waJid, sapuan ini
+    // "berhasil" tanpa satu pun pesan sampai.
+    const tujuan = alamatKirim(c.contact.waJid, c.contact.phone);
+    if (!tujuan) continue;
 
     const hasil = await runAgentOnConversation({ conversationId: c.id });
     if (hasil.status !== "replied") {
@@ -754,9 +759,9 @@ async function sapuBelumDibalas(session: Session): Promise<void> {
     }
 
     log.info(`pesan yang tertinggal tanpa jawaban di ${c.id} dibalas`);
-    await sendBubbles(sock, c.contact.waJid, hasil.bubbles, kecepatan);
+    await sendBubbles(sock, tujuan, hasil.bubbles, kecepatan);
     if (hasil.berkas.length > 0) {
-      await sendAssets(sock, c.contact.waJid, hasil.berkas);
+      await sendAssets(sock, tujuan, hasil.berkas);
     }
   }
 }
@@ -1059,8 +1064,17 @@ async function handleIncoming(
     return;
   }
 
+  // Alamat KIRIM, yang belum tentu sama dengan alamat masuknya.
+  //
+  // Pesan dari WhatsApp versi baru datang dari `...@lid`, angka acak yang
+  // menyembunyikan nomor asli. Membalas ke alamat itu diterima Baileys tanpa
+  // galat sedikit pun, tapi tidak pernah sampai ke HP orangnya. Nomor aslinya
+  // ada di `senderPn` dan sudah diambil di atas sebagai `nomor`, jadi itu yang
+  // dipakai mengirim. Lihat `alamatKirim`.
+  const jidKirim = alamatKirim(jid, nomor) ?? jid;
+
   if (isFirstMessage && agent?.welcomeMessage && conversation.aiEnabled) {
-    await sendBubbles(sock, jid, [agent.welcomeMessage], agent.typingSpeedMs);
+    await sendBubbles(sock, jidKirim, [agent.welcomeMessage], agent.typingSpeedMs);
     await appendMessage({
       conversationId: conversation.id,
       workspaceId: channel.workspaceId,
@@ -1072,7 +1086,7 @@ async function handleIncoming(
   // Balasannya dijadwalkan, bukan dijalankan sekarang. Kalau pesan berikutnya
   // datang sebelum jedanya habis, jadwalnya diundur dan semuanya dijawab sekali.
   jadwalkanBalasan(session, conversation.id, {
-    jid,
+    jid: jidKirim,
     media,
     typingSpeedMs: agent?.typingSpeedMs ?? 25,
     // Ditolak karena ukurannya, entah dari angka yang diakui pengirim atau
@@ -1201,12 +1215,19 @@ export async function sendToConversation(
   if (!session?.sock || session.status !== "connected") {
     return { ok: false, error: "Nomor WhatsApp-nya lagi tidak nyambung" };
   }
-  if (!conversation.contact.waJid) {
+  // Nomor asli yang menang, LID cuma cadangan. Jalur ini dipakai balasan manual
+  // dari kotak masuk DAN semua sapaan otomatis, jadi sebelum diperbaiki
+  // dua-duanya melaporkan "terkirim" untuk pesan yang tidak pernah sampai.
+  const tujuan = alamatKirim(
+    conversation.contact.waJid,
+    conversation.contact.phone,
+  );
+  if (!tujuan) {
     return { ok: false, error: "Pelanggan ini tidak punya nomor WhatsApp" };
   }
 
   try {
-    await sendBubbles(session.sock, conversation.contact.waJid, bubbles);
+    await sendBubbles(session.sock, tujuan, bubbles);
 
     // Mengirim sesuatu berarti obrolannya hidup lagi.
     //

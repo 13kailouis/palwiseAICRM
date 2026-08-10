@@ -529,6 +529,41 @@ export function jidToPhone(jid: string): string | null {
   return "+" + user;
 }
 
+/**
+ * Alamat yang dipakai MENGIRIM, yang ternyata tidak selalu sama dengan alamat
+ * yang dipakai MENERIMA.
+ *
+ * Bug sungguhan 10 Agustus 2026, dan bentuknya paling jahat: tidak ada galat di
+ * mana pun. Kai mengirim "Hallo?" ke nomor Palwise, asistennya menyusun empat
+ * balasan, keempatnya tersimpan dan tergambar rapi di kotak masuk, dan tidak
+ * satu pun sampai ke HP-nya. Log worker bersih, `sendMessage` tidak melempar
+ * apa-apa. Dari layar pemilik toko, produknya terlihat bekerja sempurna
+ * sementara pelanggannya didiamkan.
+ *
+ * Sebabnya LID. Pesan masuk dari WhatsApp versi baru beralamat
+ * `208010232209592@lid`, angka acak yang sengaja menyembunyikan nomor asli, dan
+ * alamat itulah yang tersimpan di `Contact.waJid` lalu dipakai lagi sebagai
+ * tujuan balasan. Nomor aslinya sebenarnya ikut dikirim terpisah di
+ * `senderPn`, dan sudah lama diambil untuk ditampilkan, cuma tidak pernah
+ * dipakai untuk mengirim.
+ *
+ * Jadi aturannya: NOMOR ASLI YANG MENANG. LID cuma dipakai kalau nomornya
+ * benar-benar tidak diketahui, karena alamat yang salah tetap lebih baik
+ * daripada tidak mengirim sama sekali.
+ *
+ * Berlaku untuk SEMUA jalur keluar, bukan cuma balasan otomatis: balasan manual
+ * dari kotak masuk, sapaan otomatis, dan sapuan pesan tertinggal memakai
+ * alamat yang sama, jadi ketiganya ikut diam-diam gagal sebelum ini.
+ */
+export function alamatKirim(
+  waJid: string | null | undefined,
+  phone: string | null | undefined,
+): string | null {
+  const angka = (phone ?? "").replace(/\D/g, "");
+  if (angka.length >= 6) return `${angka}@s.whatsapp.net`;
+  return waJid ?? null;
+}
+
 export async function getOrCreateConversation(params: {
   workspaceId: string;
   contactId: string;
