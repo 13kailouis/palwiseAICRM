@@ -152,10 +152,13 @@ function Toggle({
 
 export function AgentForm({
   agent,
+  namaBisnis,
   fiturAktif,
   paketFitur,
 }: {
   agent: Agent;
+  /** Dipakai preset untuk mengisi sendiri nama usahanya, bukan disuruh diketik. */
+  namaBisnis: string;
   /** Fitur yang boleh dipakai paket workspace ini. */
   fiturAktif: Fitur[];
   /** Nama paket termurah yang punya tiap fitur, untuk kalimat ajakan. */
@@ -196,7 +199,7 @@ export function AgentForm({
           klinik membuka kotak "Cara kerja dan gaya bicara", melihatnya kosong,
           lalu menutup tab. Ini yang menutup jarak itu tanpa memecah kodenya
           jadi produk-produk terpisah per bidang usaha. */}
-      <PresetUsaha />
+      <PresetUsaha namaBisnis={namaBisnis} />
 
       <Section
         title="Cara dia bicara"

@@ -73,7 +73,10 @@ export const PRESET: Preset[] = [
     ikon: "fashion",
     contoh: "“Size L ada warna apa aja?”",
     diHalamanDepan: true,
-    behaviorPrompt: `Kamu pegawai toko [nama toko], namanya [nama asisten].
+    // "pegawai [nama toko]", bukan "pegawai toko [nama toko]". Nama usaha orang
+    // Indonesia sering sudah memuat kata "Toko", dan sesudah penandanya diisi
+    // otomatis hasilnya jadi "pegawai toko Toko Bu Intan".
+    behaviorPrompt: `Kamu pegawai [nama toko], namanya [nama asisten].
 
 TUGASMU
 - Menjawab soal produk, harga, stok, dan ongkir dari info bisnis.
@@ -455,4 +458,78 @@ BATASAN
 
 export function cariPreset(id: string): Preset | undefined {
   return PRESET.find((p) => p.id === id);
+}
+
+/**
+ * Nama persona bawaan, sama dengan yang dipakai prompt bawaan waktu daftar.
+ *
+ * Sengaja nama orang, bukan "Asisten". Kolom "Nama asisten" di layar itu label
+ * internal yang pelanggan tidak lihat, jadi nilainya sering "Asisten Wefluence"
+ * dan kalimat "namanya Asisten Wefluence" terbaca aneh oleh pelanggan.
+ */
+const NAMA_ASISTEN_BAWAAN = "Sari";
+
+/**
+ * Semua teks yang diisikan satu preset ke formulir.
+ * Dikumpulkan sekali di sini supaya penyalin, pengganti nama, dan pemeriksa
+ * penanda tidak pernah memakai daftar kolom yang berbeda-beda.
+ */
+export function isiPreset(preset: Preset): [string, string][] {
+  return [
+    ["behaviorPrompt", preset.behaviorPrompt],
+    ["welcomeMessage", preset.welcomeMessage],
+    ["handoffCondition", preset.handoffCondition],
+    ["followUpPrompt", preset.followUpPrompt],
+    ["afterSalesPrompt", preset.afterSalesPrompt],
+    ["restockPrompt", preset.restockPrompt],
+    ["pengingatPrompt", preset.pengingatPrompt],
+  ];
+}
+
+/**
+ * Ganti penanda kurung siku dengan nama usaha yang sebenarnya.
+ *
+ * Sampai 10 Agustus 2026 penanda ini harus diganti TANGAN, dan satu-satunya
+ * yang menahannya sampai ke pelanggan cuma satu kalimat imbauan di layar.
+ * Padahal sapaan pertama dikirim apa adanya, jadi yang lupa mengganti bikin
+ * pelanggannya menerima "Halo kak! Selamat datang di [nama toko]." dari nomor
+ * resmi usahanya sendiri. Prompt bawaan waktu daftar tidak pernah punya
+ * masalah ini karena dia memang mengisi namanya sendiri lewat {{BISNIS}}.
+ *
+ * Nama usaha kosong TIDAK diganti jadi teks kosong. Lebih baik penandanya tetap
+ * kelihatan lalu ditolak waktu disimpan daripada berubah jadi kalimat rumpang
+ * seperti "Selamat datang di ." yang tidak kelihatan salah sampai terkirim.
+ */
+export function isiPenanda(teks: string, namaBisnis: string): string {
+  const nama = namaBisnis.trim();
+  return teks.replace(/\[nama ([^\]]{1,40})\]/g, (utuh, isi: string) => {
+    if (isi.trim().toLowerCase() === "asisten") return NAMA_ASISTEN_BAWAAN;
+    return nama || utuh;
+  });
+}
+
+/**
+ * Semua penanda kurung siku yang pernah dipakai preset.
+ *
+ * Diturunkan dari PRESET, bukan diketik ulang, supaya penanda baru yang ikut
+ * masuk bersama bidang usaha baru otomatis ikut diperiksa. Dipakai pemeriksa di
+ * server untuk menolak simpanan yang penandanya belum diganti.
+ *
+ * Sengaja daftar tertutup, bukan pola /\[.*\]/ yang menangkap apa saja. Pemilik
+ * usaha boleh saja menulis kurung siku untuk keperluannya sendiri, dan menolak
+ * tulisan orang yang bukan bikinan kita itu memblokir pekerjaan yang benar.
+ */
+export function penandaPreset(): string[] {
+  const set = new Set<string>();
+  for (const p of PRESET) {
+    for (const [, teks] of isiPreset(p)) {
+      for (const m of teks.match(/\[[^\]]{1,40}\]/g) ?? []) set.add(m);
+    }
+  }
+  return [...set];
+}
+
+/** Penanda preset yang masih tertinggal di sebuah teks. */
+export function penandaTersisa(teks: string): string[] {
+  return penandaPreset().filter((p) => teks.includes(p));
 }

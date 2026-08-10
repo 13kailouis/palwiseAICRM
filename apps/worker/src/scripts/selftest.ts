@@ -5298,7 +5298,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     );
     check(
       "preset dipasang di layar Asisten",
-      /<PresetUsaha \/>/.test(pengaturan),
+      /<PresetUsaha /.test(pengaturan),
     );
     check(
       "isian yang sudah diisi sendiri tidak ditimpa diam-diam",
@@ -7744,6 +7744,77 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       cek >= jumlahPreset,
       `${cek} dari ${jumlahPreset}`,
     );
+
+    // ─── Penanda contoh tidak boleh sampai ke pelanggan ─────────────────────
+    //
+    // Preset memakai penanda kurung siku, dan sapaan pertama dikirim APA ADANYA
+    // ke pelanggan. Sampai 10 Agustus 2026 satu-satunya yang menahan
+    // "Selamat datang di [nama toko]." sampai ke orangnya cuma satu kalimat
+    // imbauan di layar, dan imbauan bukan pemeriksaan.
+    //
+    // Sekarang dua lapis: presetnya mengisi sendiri nama usahanya waktu tombolnya
+    // ditekan, dan simpanan yang penandanya masih tertinggal ditolak server.
+    const presetUsahaFile = baca("apps/web/src/components/PresetUsaha.tsx");
+    const aksiAgent = baca("apps/web/src/app/actions/agent.ts");
+    const agentForm = baca("apps/web/src/components/AgentForm.tsx");
+    const agentPage = baca("apps/web/src/app/app/agent/page.tsx");
+
+    check(
+      "preset mengisi sendiri nama usahanya, bukan menyuruh mengetik",
+      /isiPenanda\(/.test(presetUsahaFile) &&
+        /namaBisnis/.test(presetUsahaFile),
+    );
+    // Nama usahanya harus benar-benar sampai dari halaman ke tombolnya. Rantai
+    // yang putus di tengah bikin penggantinya diam-diam mengisi teks kosong.
+    check(
+      "nama usaha diteruskan dari halaman sampai ke tombol preset",
+      /namaBisnis=\{workspace\.name\}/.test(agentPage) &&
+        /<PresetUsaha namaBisnis=\{namaBisnis\}/.test(agentForm),
+    );
+    // Layarnya tidak boleh lagi menyuruh orang mengganti kurung siku, karena
+    // sudah tidak ada yang perlu diganti. Petunjuk yang menyuruh mengerjakan
+    // hal yang sudah dikerjakan bikin orang mencari-cari yang tidak ada.
+    check(
+      "petunjuknya tidak lagi menyuruh mengganti kurung siku",
+      !/kurung siku/.test(presetUsahaFile),
+    );
+    check(
+      "simpanan dengan penanda yang belum diganti ditolak server",
+      /penandaTersisa\(/.test(aksiAgent),
+    );
+    // Jebakan yang gampang dipasang tanpa sadar: preset baru yang memakai
+    // penanda selain "[nama ...]", misalnya "[kota]". Penggantinya cuma
+    // mengenal bentuk "[nama ...]", jadi penanda itu tidak akan pernah terisi,
+    // sementara pemeriksa di server mengenalinya dan menolak simpanannya. Orang
+    // yang menekan tombol contoh lalu menyimpan akan ditolak terus tanpa tahu
+    // harus mengapa. Jadi bentuknya dikunci di sini.
+    // Cuma yang berbentuk tulisan manusia: huruf dan spasi saja. Tanpa batas
+    // itu, kurung siku milik TypeScript sendiri ikut terjaring, dan
+    // "[string, string]" bukan penanda preset.
+    const penandaAsing = (presetFile.match(/\[[A-Za-z][A-Za-z ]{1,38}\]/g) ?? [])
+      .filter((p) => !p.startsWith("[nama "));
+    check(
+      "semua penanda preset berbentuk [nama ...] supaya bisa diisi otomatis",
+      penandaAsing.length === 0,
+      penandaAsing.join(" "),
+    );
+    // Sapaan pertama yang paling berbahaya, tapi prompt sapaan otomatis tidak
+    // kalah buruk: modelnya menulis ulang penandanya berbulan-bulan kemudian.
+    for (const kolom of [
+      "welcomeMessage",
+      "handoffCondition",
+      "followUpPrompt",
+      "afterSalesPrompt",
+      "restockPrompt",
+      "pengingatPrompt",
+    ]) {
+      check(
+        `kolom ${kolom} ikut diperiksa penandanya`,
+        new RegExp(`"${kolom}"`).test(
+          aksiAgent.slice(aksiAgent.indexOf("KOLOM_KALIMAT")),
+        ),
+      );
+    }
 
     // ─── Contoh isi Info bisnis mengajarkan bentuk yang bisa dipakai ─────────
     //

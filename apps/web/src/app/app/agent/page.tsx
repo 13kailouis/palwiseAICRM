@@ -96,6 +96,7 @@ export default async function AgentPage({
       <AgentForm
         key={active.id}
         agent={active}
+        namaBisnis={workspace.name}
         fiturAktif={fiturPaket(workspace.plan)}
         paketFitur={paketMinimalTiapFitur()}
       />

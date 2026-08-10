@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Ikon } from "@/components/Ikon";
-import { PRESET, type Preset } from "@/lib/preset";
+import { PRESET, isiPenanda, isiPreset, type Preset } from "@/lib/preset";
 
 /**
  * Pemilih contoh isian menurut jenis usaha.
@@ -15,20 +15,18 @@ import { PRESET, type Preset } from "@/lib/preset";
  * sendiri lalu penasaran menekan salah satu tombol ini tidak boleh kehilangan
  * tulisannya gara-gara ingin tahu.
  */
-export function PresetUsaha() {
+export function PresetUsaha({ namaBisnis }: { namaBisnis: string }) {
   const [dipakai, setDipakai] = useState<string | null>(null);
   const [terlewat, setTerlewat] = useState(0);
 
   function isi(preset: Preset) {
-    const isian: [string, string][] = [
-      ["behaviorPrompt", preset.behaviorPrompt],
-      ["welcomeMessage", preset.welcomeMessage],
-      ["handoffCondition", preset.handoffCondition],
-      ["followUpPrompt", preset.followUpPrompt],
-      ["afterSalesPrompt", preset.afterSalesPrompt],
-      ["restockPrompt", preset.restockPrompt],
-      ["pengingatPrompt", preset.pengingatPrompt],
-    ];
+    // Nama usahanya diisikan di sini, bukan disuruh diganti tangan. Lihat
+    // catatan di [isiPenanda]: sapaan pertama dikirim apa adanya ke pelanggan,
+    // jadi penanda yang lupa diganti sampai ke orangnya.
+    const isian: [string, string][] = isiPreset(preset).map(([id, teks]) => [
+      id,
+      isiPenanda(teks, namaBisnis),
+    ]);
 
     const terisi = isian.filter(([id]) => {
       const el = document.getElementById(id) as HTMLTextAreaElement | null;
@@ -104,8 +102,8 @@ export function PresetUsaha() {
 
       {dipakai && (
         <p className="mt-4 text-sm leading-relaxed text-ink-600">
-          Contohnya sudah dimasukkan ke kotak-kotak di bawah. Ganti bagian dalam
-          tanda kurung siku dengan nama usahamu sendiri, lalu simpan.
+          Contohnya sudah dimasukkan ke kotak-kotak di bawah, lengkap dengan nama
+          usahamu. Baca sekali, ubah yang perlu, lalu simpan.
           {terlewat > 0 &&
             " Bagian yang sekarang mati belum ikut terisi. Nyalakan dulu bagiannya, lalu tekan tombol ini lagi."}
         </p>

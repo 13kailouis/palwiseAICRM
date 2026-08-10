@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { bolehPakai, getPlan, pesanTerkunci, prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
+import { penandaTersisa } from "@/lib/preset";
 
 export interface FormState {
   ok?: boolean;
@@ -160,6 +161,37 @@ export async function saveAgentAction(
         error:
           "Keterangannya terlalu pendek. Jelaskan dulu siapa dia dan apa tugasnya, minimal beberapa kalimat.",
       };
+    }
+
+    // Penanda contoh yang belum diganti DITOLAK, bukan disimpan diam-diam.
+    //
+    // Sapaan pertama dikirim apa adanya ke pelanggan, jadi satu penanda yang
+    // lupa diganti bikin orang menerima "Selamat datang di [nama toko]." dari
+    // nomor resmi usahanya sendiri. Preset sekarang mengisi namanya sendiri,
+    // tapi pemeriksaan ini tetap perlu untuk dua hal yang tidak lewat situ:
+    // prompt yang sudah terlanjur tersimpan sebelum hari ini, dan formulir yang
+    // dikirim langsung tanpa membuka halamannya.
+    //
+    // Diperiksa di SEMUA kolom yang berisi kalimat, bukan cuma sapaan.
+    // Penanda di prompt sapaan otomatis tidak kalah buruk: modelnya menulis
+    // ulang penanda itu berbulan-bulan kemudian, waktu tidak ada yang melihat.
+    const KOLOM_KALIMAT: [string, string][] = [
+      ["Cara kerja dan gaya bicara", behaviorPrompt],
+      ["Sapaan pertama", String(formData.get("welcomeMessage") ?? "")],
+      ["Kapan panggil kamu", String(formData.get("handoffCondition") ?? "")],
+      ["Pesan follow up", String(formData.get("followUpPrompt") ?? "")],
+      ["Pesan tanya kabar", String(formData.get("afterSalesPrompt") ?? "")],
+      ["Pesan ajak beli lagi", String(formData.get("restockPrompt") ?? "")],
+      ["Pesan pengingat janji", String(formData.get("pengingatPrompt") ?? "")],
+    ];
+
+    for (const [judul, isi] of KOLOM_KALIMAT) {
+      const sisa = penandaTersisa(isi);
+      if (sisa.length > 0) {
+        return {
+          error: `Di kotak "${judul}" masih ada ${sisa.join(" dan ")} yang belum diganti. Tulis nama usahamu di situ dulu, kalau tidak pelanggan akan menerima tulisan itu apa adanya.`,
+        };
+      }
     }
 
     await prisma.agent.update({
