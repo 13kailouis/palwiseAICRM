@@ -109,56 +109,56 @@ const FEATURES: {
   {
     ikon: "qr" as NamaIkon,
     title: "Mulai jualan dalam semenit",
-    body: "Buka WhatsApp di HP, scan QR, kelar. Nggak usah daftar ke Meta, nggak usah nunggu disetujui berhari-hari.",
+    body: "Buka WhatsApp di HP, scan QR, kelar. Nggak usah daftar ke Meta dan nunggu berhari-hari.",
   },
   {
     ikon: "suara" as NamaIkon,
     title: "Foto dan voice note tetap kejawab",
-    body: "Pelanggan kirim foto barang sambil nanya \"ini berapa?\", atau voice note panjang sambil nyetir. Dua-duanya dibaca dan dibalas.",
+    body: "Pelanggan kirim foto barang sambil nanya \"ini berapa?\", atau voice note panjang. Dua-duanya dibaca dan dibalas.",
     fitur: "bacaMedia",
   },
   {
     ikon: "kirim" as NamaIkon,
     title: "Katalog dikirim tanpa kamu buka HP",
-    body: "Unggah foto barang, katalog, daftar harga PDF, atau QRIS sekali saja. Pas ada yang minta, dia yang kirim.",
+    body: "Unggah foto barang, katalog, daftar harga PDF, atau QRIS sekali. Pas ada yang minta, dia yang kirim.",
     fitur: "kirimMedia",
   },
   {
     ikon: "kendali" as NamaIkon,
     title: "Kamu masih yang pegang kendali",
-    body: "Semua chat kelihatan di satu layar. Begitu kamu ikut ngetik, dia langsung diam dan minggir. Nggak ada dua orang jawab barengan.",
+    body: "Semua chat di satu layar. Begitu kamu ikut ngetik, dia langsung diam dan minggir.",
   },
   {
     ikon: "catat" as NamaIkon,
     title: "Calon pembeli tercatat sendiri",
-    body: "Nama, nomor, dan apa yang dia cari masuk sendiri dari obrolannya. Nggak ada lagi nomor yang ketimbun di chat lalu hilang.",
+    body: "Nama, nomor, dan apa yang dia cari masuk sendiri dari obrolannya, bukan ketimbun di chat.",
   },
   {
     ikon: "sapa" as NamaIkon,
     title: "Yang tanya lalu hilang, dikejar lagi",
-    body: "Yang nanya-nanya terus diem aja disapa ulang otomatis setelah sekian jam. Ini yang paling sering nambah closing, dan yang paling sering kelupaan kalau manual.",
+    body: "Yang nanya terus diem aja disapa ulang otomatis. Ini yang paling sering nambah closing.",
     fitur: "sapaOtomatis",
   },
   {
     ikon: "kalender" as NamaIkon,
     title: "Nggak ada jadwal yang kelewat",
-    body: "Jam yang udah disepakati di chat tercatat sendiri, mau ketemuan langsung atau meeting online, terus pelanggannya diingetin sebelum harinya.",
+    body: "Jam yang disepakati di chat tercatat sendiri, dan pelanggannya diingetin sebelum harinya.",
   },
   {
     ikon: "ringkasan" as NamaIkon,
     title: "Chat 80 pesan, kebaca dalam 5 baris",
-    body: "Sekali klik: dia mau apa, udah sampai mana, dan nunggu apa dari kamu. Nggak usah scroll dari awal buat inget.",
+    body: "Sekali klik: dia mau apa, udah sampai mana, dan nunggu apa dari kamu.",
   },
   {
     ikon: "jam" as NamaIkon,
     title: "Jam kerja kamu yang nentuin",
-    body: "Jam buka, chat dipegang tim kamu. Di luar jam itu baru dia yang ambil alih. Jadi nggak ada pelanggan yang ngobrol sama mesin padahal kamu lagi nganggur.",
+    body: "Jam buka, chat dipegang tim kamu. Di luar jam itu baru dia yang ambil alih.",
     fitur: "jamKerja",
   },
   {
     ikon: "banyakNomor" as NamaIkon,
     title: "Banyak nomor, banyak cabang",
-    body: "Satu akun bisa pegang beberapa nomor, dan tiap nomor boleh punya sales sendiri dengan harga dan aturan yang beda.",
+    body: "Satu akun bisa pegang beberapa nomor, dan tiap nomor boleh punya sales sendiri.",
   },
 ];
 
@@ -166,19 +166,19 @@ const LANGKAH = [
   {
     ikon: "qr" as NamaIkon,
     judul: "Sambungin nomor kamu",
-    body: "Buka WhatsApp di HP, masuk ke Perangkat tertaut, scan QR yang muncul di layar. Kelar, sekitar semenit. Chat lama kamu nggak ke mana-mana.",
+    body: "Buka WhatsApp di HP, masuk ke Perangkat tertaut, scan QR yang muncul di layar. Sekitar semenit, dan chat lama kamu nggak ke mana-mana.",
     pendek: "Buka WhatsApp, masuk ke Perangkat tertaut, scan QR. Chat lama kamu nggak ke mana-mana.",
   },
   {
     ikon: "info" as NamaIkon,
     judul: "Kasih tahu dia jualan kamu",
-    body: "Pilih contoh yang paling deket sama bidangmu, terus tempel daftar harga, jadwal, dan aturanmu. Atau cukup kasih alamat website kamu dan biar dia baca sendiri.",
+    body: "Pilih contoh yang paling deket sama bidangmu, terus tempel daftar harga dan aturanmu. Atau cukup kasih alamat website kamu dan biar dia baca sendiri.",
     pendek: "Tempel daftar harga dan aturanmu, atau kasih alamat website dan biar dia baca sendiri.",
   },
   {
     ikon: "chat" as NamaIkon,
     judul: "Dia mulai jualan",
-    body: "Chat yang masuk dibalas sendiri pakai harga dan jadwal yang bener, sampai orangnya mau pesan. Kamu tetep lihat semuanya, dan bisa ambil alih kapan aja.",
+    body: "Chat yang masuk dibalas pakai harga dan jadwal yang bener, sampai orangnya mau pesan. Kamu tetep lihat semuanya dan bisa ambil alih kapan aja.",
     pendek: "Chat masuk dibalas pakai harga dan jadwal yang bener. Kamu bisa ambil alih kapan aja.",
   },
 ];
@@ -206,15 +206,15 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
     // Angkanya diturunkan dari daftar paket. Kalau diketik di sini, suatu hari
     // jatah yang ditegakkan sistem dan jatah yang dijanjikan halaman ini akan
     // berbeda, dan yang membaca tidak punya cara tahu mana yang benar.
-    j: `Bisa, tanpa denda. Langganannya bulanan, dan bulan yang udah kamu bayar tetep jalan sampai tanggal habisnya. Paket gratisnya ${PLANS.free.aiCredits} balasan per bulan, bisa kamu pakai selamanya.`,
+    j: `Bisa, tanpa denda. Langganannya bulanan, dan bulan yang udah kamu bayar tetep jalan sampai tanggal habisnya. Paket gratisnya ${PLANS.free.aiCredits} balasan per bulan, bisa dipakai selamanya.`,
   },
   {
     t: "Pelanggan saya tahu ini dibalas mesin?",
-    j: "Kamu yang nentuin. Dia bisa ngaku asisten, bisa juga ngomong sebagai tim usahamu. Saran kami yang pertama: orang jarang keberatan dibalas mesin kalau jawabannya bener, tapi kesel kalau ngerasa dibohongin.",
+    j: "Kamu yang nentuin. Dia bisa ngaku asisten, bisa juga ngomong sebagai tim usahamu. Saran kami yang pertama: orang jarang keberatan dibalas mesin kalau jawabannya bener.",
   },
   {
     t: "Kalau dia salah jawab gimana?",
-    j: "Bisa kejadian, dan kami nggak mau pura-pura nggak. Dia cuma boleh jawab dari info yang kamu masukin, dilarang ngarang harga, stok, dan jadwal, dan kalau ada yang dia nggak tahu, obrolannya dilempar ke kamu. Tes dulu sepuasnya di halaman Coba dulu sebelum nomor asli kamu disambungin.",
+    j: "Bisa kejadian, dan kami nggak mau pura-pura nggak. Dia cuma boleh jawab dari info yang kamu masukin, dilarang ngarang harga, stok, dan jadwal, dan yang dia nggak tahu dilempar ke kamu. Tes dulu sepuasnya di halaman Coba dulu sebelum nomor aslimu disambungin.",
   },
   {
     t: "Nomor WhatsApp saya aman?",
@@ -229,7 +229,7 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
     // terbeli. Saran yang bertentangan antar layar lebih merugikan daripada
     // saran yang tidak ada, karena yang kedua tidak membuat orang mengeluarkan
     // uang untuk hal yang salah.
-    j: "Palwise nyambung lewat Perangkat tertaut, sama kayak WhatsApp Web, jadi chat lama kamu nggak ke mana-mana. Tapi Palwise bukan produk resmi WhatsApp, dan Meta berhak batesin nomor yang dianggap ngelanggar aturan mereka. Palwise cuma bales yang chat duluan dan nggak pernah nyebar pesan, karena itu penyebab paling sering. Kalau nomor itu satu-satunya jalur usahamu, mending pakai nomor lain yang khusus buat usaha. Tapi jangan nomor yang baru banget dibeli: WhatsApp belum kenal nomor baru, jadi malah lebih gampang kena batasan. Pakai nomor yang udah kamu pakai wajar beberapa hari dari HP dulu.",
+    j: "Palwise nyambung lewat Perangkat tertaut, sama kayak WhatsApp Web, jadi chat lama kamu nggak ke mana-mana. Tapi Palwise bukan produk resmi WhatsApp, dan Meta berhak batesin nomor yang dianggap ngelanggar aturan mereka. Palwise cuma bales yang chat duluan dan nggak pernah nyebar pesan, karena itu penyebab paling sering. Kalau nomor itu satu-satunya jalur usahamu, pakai nomor lain yang khusus buat usaha, tapi jangan nomor yang baru banget dibeli: WhatsApp belum kenal nomor baru, jadi malah lebih gampang kena batasan.",
   },
   {
     t: "Data pelanggan saya dipakai buat apa?",
@@ -248,7 +248,7 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
     //
     // Jadi kelemahannya dijadikan alat jual: yang lain minta kamu percaya
     // testimoni, kami minta kamu tidak percaya siapa pun dan mengetes sendiri.
-    j: "Palwise masih baru dan belum punya daftar pelanggan yang bisa kami pajang. Kami juga nggak mau ngarang angka atau testimoni, karena kalau satu aja ketahuan karangan, kamu nggak akan percaya harga kami juga. Yang bisa kami tawarin lebih enak: tes sendiri sampai yakin sebelum keluar duit. Buka halaman Coba dulu, tanya dia kayak kamu pelanggan, dan lihat sendiri jawabannya bener atau nggak buat jualan kamu.",
+    j: "Palwise masih baru dan belum punya daftar pelanggan yang bisa kami pajang. Kami juga nggak mau ngarang angka atau testimoni, karena kalau satu aja ketahuan karangan, kamu nggak akan percaya harga kami juga. Yang bisa kami tawarin lebih enak: buka halaman Coba dulu, tanya dia kayak kamu pelanggan, dan lihat sendiri jawabannya bener atau nggak.",
   },
   {
     t: "Bedanya sama platform lain apa?",
@@ -306,15 +306,15 @@ const CARA_LAMA = [
   "\"Ready nggak kak?\" diketik ulang buat yang keseratus kali hari ini.",
   "Nomor calon pembeli ketimbun di chat, besok udah nggak ketemu lagi.",
   "Yang nanya-nanya terus ngilang ya udah, nggak ada yang ngejar.",
-  "Mau nambah admin? Nambah gaji, nambah cuti, nambah diajarin dari nol lagi.",
+  "Nambah admin berarti nambah gaji, nambah cuti, dan ngajarin dari nol lagi.",
 ];
 
 const CARA_BARU = [
   "Dibalas dalam hitungan detik, jam berapa pun, tanpa kamu pegang HP.",
   "Harga, jadwal, dan aturan dijawab dari daftar yang kamu isi sendiri.",
   "Nama, nomor, dan apa yang dia cari tercatat sendiri dari obrolannya.",
-  "Jadwal yang disepakati di chat masuk daftar, jadi nggak ada yang kelewat.",
-  "Yang ngilang dikejar lagi otomatis, yang udah beli diajak balik lagi.",
+  "Jadwal yang disepakati di chat masuk daftar, nggak ada yang kelewat.",
+  "Yang ngilang dikejar lagi, yang udah beli diajak balik.",
   "Kamu tetep lihat semua chat, dan bisa ambil alih kapan aja.",
 ];
 
@@ -369,7 +369,7 @@ function Sorotan({
 }) {
   return (
     <section className={latar ? "border-y border-ink-200 bg-ink-50/60" : ""}>
-      <div className="mx-auto max-w-6xl px-5 py-12 sm:py-20">
+      <div className="mx-auto max-w-6xl px-5 py-12 sm:py-16">
         <div className="grid items-center gap-7 sm:gap-12 lg:grid-cols-2">
           <div className={balik ? "lg:order-2" : ""}>
             <h2 className="text-[22px] font-semibold leading-snug tracking-tight text-ink-950 sm:text-3xl">
@@ -482,7 +482,7 @@ export default async function LandingPage() {
                 halaman jualan. */}
             <Link
               href={keApp("/masuk")}
-              className="px-3 py-2 text-ink-600 hover:text-ink-900"
+              className="tap-aman px-3 py-2 text-ink-600 hover:text-ink-900"
             >
               Masuk
             </Link>
@@ -494,7 +494,7 @@ export default async function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-6xl px-5 pt-9 sm:pt-24">
+      <section className="mx-auto max-w-6xl px-5 pt-9 sm:pt-20">
         <div className="mx-auto max-w-3xl text-center">
           <span className="badge bg-brand-50 text-brand-700">
             Sepertujuh harga platform sebelah
@@ -612,14 +612,16 @@ export default async function LandingPage() {
               Judul menyebut sakitnya, kalimat ini menyebut obatnya, dan urutan
               itu yang benar: orang harus mengenali dirinya dulu sebelum dia
               peduli kamu jual apa. */}
-          {/* Di HP dipotong jadi satu kalimat. Yang dibuang "sampai orangnya
-              mau pesan, tanpa nambah orang", karena dua-duanya sudah terbaca
-              dari kata "sales" dan "tanpa nambah gaji" di kalimat yang sama. */}
-          <Dua
-            hp="Palwise jadi sales WhatsApp kamu: bales dalam hitungan detik, 24 jam, pakai harga dan jadwal yang kamu isi sendiri. Tanpa nambah gaji."
-            lebar="Palwise jadi sales WhatsApp kamu yang bales dalam hitungan detik, 24 jam, pakai harga dan jadwal yang kamu isi sendiri. Sampai orangnya mau pesan, tanpa nambah gaji dan tanpa nambah orang."
-            className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-ink-700 sm:mt-6 sm:text-lg"
-          />
+          {/* Satu kalimat, dan versinya cuma satu untuk semua layar.
+              Yang dibuang "sampai orangnya mau pesan, tanpa nambah orang",
+              karena dua-duanya sudah terbaca dari kata "sales" dan "tanpa
+              nambah gaji" di kalimat yang sama. Kalimat yang lebih pendek di
+              laptop juga bukan kerugian: di hero, tiap baris tambahan menunda
+              tombolnya, dan tombol yang tertunda tidak ditekan. */}
+          <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-ink-700 sm:mt-6 sm:text-lg">
+            Palwise jadi sales WhatsApp kamu: bales dalam hitungan detik, 24 jam,
+            pakai harga dan jadwal yang kamu isi sendiri, tanpa nambah gaji.
+          </p>
           {/* Tombolnya selebar layar di HP, bukan dua tombol berdampingan.
               Dua tombol yang membungkus jadi dua baris dengan lebar berbeda
               terbaca sebagai berantakan, dan sasaran selebar layar itu yang
@@ -710,9 +712,17 @@ export default async function LandingPage() {
           layar penuh gulir untuk empat kata. Keterangannya juga dipendekkan:
           di sini tugasnya cuma dilirik, bukan dibaca. */}
       <section className="mx-auto max-w-6xl px-5 pt-10 sm:pt-14">
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-5 rounded-2xl border border-ink-200 px-4 py-6 sm:gap-6 sm:px-6 sm:py-8 lg:grid-cols-4">
+        {/* Di HP dibatasi garis, bukan cuma dijarakkan.
+            Empat angka yang cuma dipisah spasi di layar sempit terbaca sebagai
+            satu paragraf yang kebetulan ada angkanya. Garis pemisahnya yang
+            bikin mata langsung tahu ini empat hal, bukan satu. */}
+        {/* Garisnya dibuat dari gap 1px di atas latar abu, bukan dari divide-x.
+            divide-x di grid dua kolom memasang garis kiri juga di baris kedua
+            kolom pertama, tepat di atas garis kotaknya sendiri, dan hasilnya
+            satu sisi terlihat lebih tebal daripada sisi lain. */}
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-ink-200 bg-ink-200 sm:gap-6 sm:bg-transparent sm:px-6 sm:py-8 lg:grid-cols-4">
           {FAKTA.map((f) => (
-            <div key={f.label}>
+            <div key={f.label} className="bg-white p-4 sm:bg-transparent sm:p-0">
               <dt className="text-xl font-bold tracking-tight text-ink-950 sm:text-2xl">
                 {f.nilai}
               </dt>
@@ -742,8 +752,20 @@ export default async function LandingPage() {
           sudah kenyang dijanjikan agensi, itu justru lebih meyakinkan.
 
           GANTI SELURUH BAGIAN INI begitu ada pelanggan berbayar yang mau bicara.
-          Ucapan satu orang sungguhan mengalahkan seluruh paragraf ini. */}
-      <section className="mx-auto max-w-6xl px-5 pt-12 sm:pt-16">
+          Ucapan satu orang sungguhan mengalahkan seluruh paragraf ini.
+
+          TIDAK DIGAMBAR DI HP (10 Agustus 2026, keputusan Kai). Alasannya bukan
+          tempat: blok gelap sebesar ini muncul tepat sesudah hero, dan hal
+          kedua yang dibaca orang di HP jadi "kami masih baru dan belum punya
+          pelanggan". Di layar lebar dia berdampingan dengan bagian lain dan
+          terbaca sebagai kejujuran; di layar sempit dia berdiri sendirian
+          sebagai satu layar penuh keraguan, sebelum orangnya sempat mengerti
+          produknya apa. Menanam ragu sebelum minat itu urutan yang salah.
+
+          Isinya TIDAK hilang: pertanyaan "Udah dipakai siapa aja?" di tanya
+          jawab menjawab hal yang sama persis, dengan jujur, tapi cuma kepada
+          orang yang memang menanyakannya. */}
+      <section className="mx-auto hidden max-w-6xl px-5 pt-12 sm:block sm:pt-16">
         <div className="rounded-2xl border border-ink-900 bg-ink-950 px-5 py-8 sm:px-10 sm:py-10">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold text-ink-400">Jujur dari awal</p>
@@ -762,28 +784,14 @@ export default async function LandingPage() {
                 Jadi paragrafnya dibalik: bukan "kami belum punya bukti", tapi
                 "kamu nggak perlu ambil risiko". Barangnya sama, yang berubah siapa
                 yang jadi pusat kalimatnya. */}
-            <Dua
-              hp={
-                <>
-                  Palwise masih baru, dan kami nggak mau nulis &ldquo;dipercaya
-                  3.000+ bisnis&rdquo; padahal nggak ada. Tanya dia kayak
-                  pelanggan yang paling rewel, dan lihat sendiri jawabannya bener
-                  atau nggak. Kalau nggak cocok, kamu nggak keluar sepeser pun.
-                </>
-              }
-              lebar={
-                <>
-                  Palwise masih baru dan kami nggak mau nulis &ldquo;dipercaya
-                  3.000+ bisnis&rdquo; padahal nggak ada. Yang kami tawarin lebih
-                  enak daripada testimoni orang yang kamu nggak kenal: sambungin
-                  nomor kamu, tanya dia kayak pelanggan yang paling rewel, dan
-                  lihat sendiri jawabannya bener atau nggak buat jualan kamu.
-                  Kalau nggak cocok, kamu nggak keluar sepeser pun dan nggak ada
-                  yang perlu dibatalin.
-                </>
-              }
-              className="mt-3 text-[15px] leading-relaxed text-ink-400 sm:mt-4 sm:text-base"
-            />
+            {/* Cuma satu versi: bagian ini memang tidak digambar di HP. */}
+            <p className="mt-4 leading-relaxed text-ink-400">
+              Kami nggak mau nulis &ldquo;dipercaya 3.000+ bisnis&rdquo; padahal
+              nggak ada. Yang kami tawarin lebih enak daripada testimoni orang
+              yang kamu nggak kenal: sambungin nomor kamu, tanya dia kayak
+              pelanggan yang paling rewel, dan lihat sendiri jawabannya bener
+              atau nggak. Kalau nggak cocok, kamu nggak keluar sepeser pun.
+            </p>
 
             {/* Manusianya, bukan cuma produknya.
 
@@ -795,22 +803,60 @@ export default async function LandingPage() {
                 Tanda tangannya cuma digambar kalau namanya benar-benar diisi.
                 Nama orang tidak boleh dikarang, dan catatan bertanda tangan nama
                 palsu lebih merusak daripada tidak ada catatan sama sekali. */}
+            {/* KECILNYA DIJUAL SEBAGAI AKSES, BUKAN SEBAGAI PERMINTAAN MAAF.
+                Diubah 10 Agustus 2026 karena Kai membaca versi lamanya sebagai
+                merendahkan diri sendiri, dan dia benar.
+
+                Versi lama: "Palwise dikerjakan sendirian, bukan sama tim
+                besar." Kalimat itu menyebut apa yang KURANG dari kami, dan
+                menaruhnya di halaman jualan berarti menawarkan alasan untuk
+                ragu yang tidak diminta siapa pun. Pembaca juga tidak pernah
+                bertanya berapa orang di balik produknya. Yang benar-benar dia
+                pikirkan cuma: "kalau nanti macet, ada yang bantuin nggak?"
+
+                Kenyataannya sama persis, cuma disebut dari sisi yang dia
+                rasakan: yang membalas orang yang membuat produknya, bukan
+                antrean tiket. Itu justru yang tidak bisa ditiru perusahaan
+                besar, jadi disebut sebagai kelebihan, bukan sebagai kekurangan.
+
+                Tombol chatnya menempel di situ karena kalimat "chat aja
+                langsung" tanpa tautan menyuruh orang menyalin nomor dari
+                halaman lain, dan hampir tidak ada yang melakukannya. */}
             {!IDENTITAS.namaPendiri.startsWith("BELUM DIISI") && (
-              <p className="mt-6 border-t border-ink-800 pt-6 text-sm leading-relaxed text-ink-500">
-                Palwise dikerjakan sendirian, bukan sama tim besar. Kalau ada yang
-                error, aneh, atau kamu butuh dibantuin pasang, chat aja langsung.
-                Yang bales saya sendiri.
-                <span className="mt-2 block font-medium text-ink-300">
+              <div className="mt-6 border-t border-ink-800 pt-6">
+                <p className="text-sm leading-relaxed text-ink-500">
+                  Yang bales pertanyaan kamu orang yang bikin Palwise-nya
+                  langsung, bukan nomor antrean tiket. Ada yang error, aneh, atau
+                  kamu butuh dibantuin pasang, tinggal chat.
+                </p>
+                <p className="mt-2 text-sm font-medium text-ink-300">
                   {IDENTITAS.namaPendiri}
-                </span>
-              </p>
+                </p>
+                {tautanBantuanWa(
+                  "Halo, saya mau tanya soal Palwise untuk usaha saya.",
+                ) && (
+                  <a
+                    href={
+                      tautanBantuanWa(
+                        "Halo, saya mau tanya soal Palwise untuk usaha saya.",
+                      )!
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-white underline underline-offset-4"
+                  >
+                    <Ikon nama="whatsapp" size={16} />
+                    Chat langsung
+                  </a>
+                )}
+              </div>
             )}
           </div>
         </div>
       </section>
 
       {/* Masalah dan jalan keluarnya, disandingkan */}
-      <section className="mx-auto max-w-6xl px-5 py-12 sm:py-20">
+      <section className="mx-auto max-w-6xl px-5 py-12 sm:py-16">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
             Yang hilang bukan chatnya, tapi orderannya
@@ -823,7 +869,7 @@ export default async function LandingPage() {
               sangat spesifik, sampai yang lain ikut mengenali polanya. */}
           <Dua
             hp="Pertanyaannya itu-itu aja. Harga berapa, ready nggak, bisa Sabtu nggak. Tapi yang nggak dibalas dalam sejam biasanya udah beli di tempat lain."
-            lebar="Pertanyaannya itu-itu aja. Harga berapa, ready nggak, bisa Sabtu nggak, lokasinya di mana. Gampang semua. Tapi yang nggak dibalas dalam sejam biasanya udah beli di tempat lain, dan kamu nggak akan pernah tahu berapa banyak."
+            lebar="Pertanyaannya itu-itu aja. Harga berapa, ready nggak, bisa Sabtu nggak, lokasinya di mana. Gampang semua. Tapi yang nggak dibalas dalam sejam biasanya udah beli di tempat lain, dan kamu nggak pernah tahu berapa banyak."
             className="mt-3 text-[15px] leading-relaxed text-ink-600 sm:text-base"
           />
         </div>
@@ -874,7 +920,7 @@ export default async function LandingPage() {
       {/* Sorotan 1 */}
       <Sorotan
         judul="Yang nanya tengah malam nggak kabur ke sebelah"
-        body="Jam setengah dua belas malam pun dia tetep dapet harga, jadwal, dan aturan yang bener. Bukan balasan otomatis kaku yang bikin orang makin males, tapi jawaban yang nyambung sama pertanyaannya, terus diarahin sampai dia mau pesan."
+        body="Jam setengah dua belas malam pun dia tetep dapet harga, jadwal, dan aturan yang bener. Bukan balasan otomatis yang kaku, tapi jawaban yang nyambung sama pertanyaannya, terus diarahin sampai dia mau pesan."
         bodyHp="Jam setengah dua belas malam pun dia tetep dapet harga dan jadwal yang bener. Bukan balasan otomatis yang kaku, tapi jawaban yang nyambung sampai dia mau pesan."
         catatan="Foto yang dikirim pelanggan juga dibaca, jadi “yang ini berapa kak?” tetep kejawab."
         gambar={<ContohChat />}
@@ -898,16 +944,16 @@ export default async function LandingPage() {
            nomor usahanya. Jadi yang dijual di sini ketenangan, dan barangnya
            bukan daftar kemampuan tapi daftar LARANGAN. */
         judul="Nggak bakal bikin kamu malu di depan pelanggan"
-        body="Dia cuma boleh jawab dari info jualan kamu sendiri, dan dilarang ngarang harga, stok, jadwal, atau nomor rekening. Tempel daftar hargamu, atau cukup kasih alamat website dan biar dia baca sendiri. Kalau kamu udah lama cerita soal bisnismu ke ChatGPT, itu juga bisa dipindahin ke sini."
+        body="Dia cuma boleh jawab dari info jualan kamu sendiri, dan dilarang ngarang harga, stok, jadwal, atau nomor rekening. Tempel daftar hargamu, atau cukup kasih alamat website dan biar dia baca sendiri. Catatan lamamu di ChatGPT juga bisa dipindahin ke sini."
         bodyHp="Dia cuma boleh jawab dari info jualan kamu, dan dilarang ngarang harga, stok, jadwal, atau nomor rekening. Yang dia nggak tahu, dilempar ke kamu."
-        catatan="Yang dia nggak tahu, dia bilang belum tahu dan lempar ke kamu. Dia juga nggak bisa mastiin jadwal dan nggak bisa ngaku udah ngerjain sesuatu yang belum dikerjain. Kamu bisa tes semua batasan ini sebelum nomor aslimu disambungin."
+        catatan="Yang dia nggak tahu, dia bilang belum tahu dan lempar ke kamu. Dia juga nggak bisa mastiin jadwal sendiri. Semua batasan ini bisa kamu tes sebelum nomor aslimu disambungin."
         gambar={<MockupInfoBisnis />}
       />
 
       {/* Sorotan 3 */}
       <Sorotan
         judul="Pembeli lama balik lagi tanpa kamu inget satu-satu"
-        body="Habis urusannya beres, pelanggannya ditanya kabar dulu. Terus diingetin pas kira-kira waktunya perlu lagi: kopinya udah abis, mobilnya waktunya servis, atau udah waktunya kontrol. Jualan ke yang udah pernah beli itu yang paling murah, dan yang paling sering kelupaan."
+        body="Habis urusannya beres, pelanggannya ditanya kabar dulu. Terus disapa lagi pas kira-kira waktunya perlu lagi: kopinya udah abis, mobilnya waktunya servis, atau udah waktunya kontrol. Jualan ke yang udah pernah beli itu yang paling murah, dan yang paling sering kelupaan."
         bodyHp="Habis urusannya beres, pelanggannya ditanya kabar. Terus disapa lagi pas kira-kira kopinya udah abis atau mobilnya waktunya servis."
         catatan="Dua jalur terpisah, jadi nanya kabar nggak ngabisin jatah ngajak beli lagi."
         gambar={<MockupSapaLagi />}
@@ -923,7 +969,7 @@ export default async function LandingPage() {
         balik
         latar
         judul="Nggak ada lagi yang batal gara-gara jadwalnya kelewat"
-        body="Begitu jamnya disepakati di chat, jadwalnya tercatat sendiri, lengkap dengan buat apa dan lewat mana. Berlaku juga buat meeting online. Semua yang mau datang berderet di satu daftar, dari yang paling deket harinya."
+        body="Begitu jamnya disepakati di chat, jadwalnya tercatat sendiri, lengkap dengan buat apa dan lewat mana. Berlaku juga buat meeting online, dan semuanya berderet di satu daftar dari yang paling deket harinya."
         bodyHp="Begitu jamnya disepakati di chat, jadwalnya tercatat sendiri. Semua yang mau datang berderet di satu daftar, dari yang paling deket harinya."
         catatan="Dia nggak bisa lihat kalender kamu, jadi yang dia catat cuma permintaan. Kamu yang mastiin, sekali klik, dan pelanggannya dikabarin sekalian."
         gambar={<MockupJanji />}
@@ -945,7 +991,7 @@ export default async function LandingPage() {
           kelihatan, bukan cuma di satu titik gulir. Membiarkan dua-duanya
           berarti satu blok penuh yang mengulang tombol yang sedang menempel
           15px di bawahnya. */}
-      <section className="hidden border-t border-ink-200 py-14 sm:block">
+      <section className="hidden border-t border-ink-200 py-12 sm:block">
         <div className="mx-auto max-w-2xl px-5 text-center">
           <p className="text-lg font-medium leading-relaxed text-ink-900">
             Udah kebayang buat jualan kamu?
@@ -985,7 +1031,7 @@ export default async function LandingPage() {
       {/* Cara kerjanya */}
       <section
         id="cara"
-        className="scroll-mt-16 border-t border-ink-200 py-12 sm:scroll-mt-20 sm:py-20"
+        className="scroll-mt-16 border-t border-ink-200 py-12 sm:scroll-mt-20 sm:py-16"
       >
         <div className="mx-auto max-w-5xl px-5">
           <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
@@ -1048,7 +1094,7 @@ export default async function LandingPage() {
           </h2>
           <Dua
             hp="Asistennya sama, jatah balasannya sama, fiturnya sama. Bedanya: chat yang dimulai pelanggan nggak ditagih WhatsApp, dan kami nggak nagih kamu buat hal yang nggak ada biayanya."
-            lebar="Kamu dapat asisten yang sama, jatah balasan yang sama, dan semua fiturnya. Yang beda cuma satu: chat yang dimulai pelanggan itu nggak ditagih WhatsApp sepeser pun selama dibalas dalam 24 jam, dan kami nggak nagih kamu buat hal yang nggak ada biayanya. Sesederhana itu."
+            lebar="Kamu dapat asisten yang sama, jatah balasan yang sama, dan semua fiturnya. Bedanya cuma satu: chat yang dimulai pelanggan nggak ditagih WhatsApp sepeser pun selama dibalas dalam 24 jam, dan kami nggak nagih kamu buat hal yang nggak ada biayanya."
             className="mt-3 max-w-3xl text-[15px] leading-relaxed text-ink-600 sm:text-base"
           />
 
@@ -1103,7 +1149,7 @@ export default async function LandingPage() {
             </table>
           </div>
 
-          <p className="mt-4 text-xs leading-relaxed text-ink-500">
+          <p className="mt-4 max-w-2xl text-xs leading-relaxed text-ink-500">
             Angka pembanding diambil dari paket publik Cekat.AI:{" "}
             {formatIDR(RIVAL_PRICE)} per bulan untuk{" "}
             {RIVAL_CREDITS.toLocaleString("id-ID")} balasan.
@@ -1114,7 +1160,7 @@ export default async function LandingPage() {
       {/* Fitur */}
       <section
         id="fitur"
-        className="mx-auto max-w-6xl scroll-mt-16 px-5 py-12 sm:scroll-mt-20 sm:py-20"
+        className="mx-auto max-w-6xl scroll-mt-16 px-5 py-12 sm:scroll-mt-20 sm:py-16"
       >
         <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
           Yang lain-lainnya, yang ternyata paling kepakai
@@ -1125,32 +1171,39 @@ export default async function LandingPage() {
           className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-600 sm:text-base"
         />
 
-        {/* DI HP JUDULNYA SAJA.
+        {/* DI HP JUDULNYA SAJA, DAN BERDUA-DUA.
             Sepuluh fitur lengkap dengan penjelasannya itu 260 kata, sekitar
             empat layar penuh, dan semuanya sudah lewat sesudah orangnya
             melihat empat sorotan bergambar. Judul-judulnya memang sengaja
             ditulis sebagai kalimat utuh yang menyebut hasilnya ("Foto dan
             voice note tetap kejawab"), jadi tanpa penjelasannya pun tetap
-            terbaca sebagai janji, bukan sebagai nama fitur. Penjelasannya
-            tetap ada di layar lebar, tempat empat kolom bikin dia gratis. */}
-        <ul className="mt-6 divide-y divide-ink-100 border-y border-ink-100 sm:hidden">
+            terbaca sebagai janji, bukan sebagai nama fitur.
+
+            Dua kolom, bukan sepuluh baris ke bawah: diukur di layar 375px,
+            daftar sebarisnya setinggi 865px dan bentuk petak memotongnya jadi
+            sekitar separuh. Bentuk petak juga yang bikin bagian ini kelihatan
+            beda dari daftar-daftar lain di halaman ini, dan mata berhenti
+            menganggapnya paragraf. Penjelasannya tetap ada di layar lebar,
+            tempat empat kolom bikin dia gratis. */}
+        <ul className="mt-6 grid grid-cols-2 gap-2.5 sm:hidden">
           {FEATURES.map((f) => {
             const perlu = f.fitur ? paketFitur[f.fitur] : null;
             return (
-              <li key={f.title} className="flex items-center gap-3 py-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-ink-200 text-ink-900">
-                  <Ikon nama={f.ikon} size={18} />
+              <li
+                key={f.title}
+                className="rounded-xl border border-ink-200 p-3"
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-ink-900 text-white">
+                  <Ikon nama={f.ikon} size={17} />
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-[15px] font-medium leading-snug text-ink-900">
-                    {f.title}
+                <span className="mt-2.5 block text-[13px] font-medium leading-snug text-ink-900">
+                  {f.title}
+                </span>
+                {perlu && (
+                  <span className="mt-1 block text-[10.5px] font-medium text-ink-500">
+                    Mulai paket {perlu}
                   </span>
-                  {perlu && (
-                    <span className="mt-0.5 block text-[11px] font-medium text-ink-500">
-                      Mulai paket {perlu}
-                    </span>
-                  )}
-                </span>
+                )}
               </li>
             );
           })}
@@ -1183,7 +1236,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Bidang usaha */}
-      <section className="border-t border-ink-200 bg-ink-950 py-12 text-white sm:py-20">
+      <section className="border-t border-ink-200 bg-ink-950 py-12 text-white sm:py-16">
         <div className="mx-auto max-w-6xl px-5">
           <div className="max-w-2xl">
             <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
@@ -1237,7 +1290,7 @@ export default async function LandingPage() {
 
           <Dua
             hp="Nggak ada di daftar ini bukan berarti nggak cocok. Dia belajar dari info yang kamu masukin sendiri, jadi dia ngikutin jualanmu apa pun bidangnya."
-            lebar="Nggak ada di daftar ini bukan berarti nggak cocok. Dia belajar dari info yang kamu masukin sendiri, jadi dia ngikutin jualanmu apa pun bidangnya. Yang nggak cocok cuma satu: kalau harganya selalu nego dan nggak ada satu pun yang bisa ditulis sebagai aturan."
+            lebar="Nggak ada di daftar ini bukan berarti nggak cocok. Dia belajar dari info yang kamu masukin sendiri, jadi dia ngikutin jualanmu apa pun bidangnya. Yang nggak cocok cuma satu: kalau harganya selalu nego dan nggak ada yang bisa ditulis sebagai aturan."
             className="mt-8 max-w-2xl text-sm leading-relaxed text-ink-500 sm:mt-12"
           />
         </div>
@@ -1246,7 +1299,7 @@ export default async function LandingPage() {
       {/* Harga */}
       <section
         id="harga"
-        className="scroll-mt-16 border-t border-ink-200 bg-ink-50/60 py-12 sm:scroll-mt-20 sm:py-20"
+        className="scroll-mt-16 border-t border-ink-200 bg-ink-50/60 py-12 sm:scroll-mt-20 sm:py-16"
       >
         <div className="mx-auto max-w-6xl px-5">
           <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
@@ -1255,7 +1308,7 @@ export default async function LandingPage() {
           <Dua
             hp="Bayar per bulan, berhenti kapan aja, tanpa denda dan tanpa biaya pasang."
             lebar="Bayar per bulan, berhenti kapan aja, tanpa denda. Nggak ada biaya pasang dan nggak ada kontrak tahunan."
-            className="mt-3 text-[15px] leading-relaxed text-ink-600 sm:text-base"
+            className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-600 sm:text-base"
           />
 
           {/* items-stretch + flex-col + mt-auto di tombolnya. Tanpa itu, tiap
@@ -1304,7 +1357,14 @@ export default async function LandingPage() {
                     : " per bulan, selamanya"}
                 </p>
 
-                <ul className="mt-5 flex-1 space-y-2.5 border-t border-ink-100 pt-5 text-sm text-ink-700 sm:mt-6 sm:pt-6">
+                {/* ISI PAKET TIDAK DIPOTONG DI HP, dan itu keputusan sadar.
+                    Sempat dicoba cuma lima baris pertama. Kartunya memang
+                    memendek, tapi yang dipotong itu isi barang yang mau dibeli
+                    orang, dan Growth jadi kelihatan punya lebih sedikit
+                    daripada yang sebenarnya. Lagipula kartunya berjajar ke
+                    samping, bukan bertumpuk, jadi yang dibayar cuma tinggi
+                    kartu tertinggi SEKALI, bukan empat kali. */}
+                <ul className="mt-5 flex-1 space-y-2 border-t border-ink-100 pt-5 text-sm text-ink-700 sm:mt-6 sm:space-y-2.5 sm:pt-6">
                   {plan.features.map((f) => (
                     <li key={f} className="flex gap-2.5">
                       {/* Hitam, bukan biru. Ini keterangan isi paket, bukan
@@ -1344,7 +1404,7 @@ export default async function LandingPage() {
       {/* Tanya jawab */}
       <section
         id="tanya"
-        className="mx-auto max-w-3xl scroll-mt-16 px-5 py-12 sm:scroll-mt-20 sm:py-20"
+        className="mx-auto max-w-3xl scroll-mt-16 px-5 py-12 sm:scroll-mt-20 sm:py-16"
       >
         <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
           Yang biasanya ditanyain
@@ -1383,7 +1443,7 @@ export default async function LandingPage() {
           gampang ketinggalan waktu jatahnya diubah: dia tidak akan pernah
           muncul di pencarian angka, dan halaman jualan berakhir menjanjikan
           jatah yang sistemnya sendiri sudah tidak berikan lagi. */}
-      <section className="border-t border-ink-200 bg-ink-50/60 py-12 sm:py-20">
+      <section className="border-t border-ink-200 bg-ink-50/60 py-12 sm:py-16">
         <div className="mx-auto max-w-2xl px-5 text-center">
           <h2 className="text-[22px] font-semibold leading-snug tracking-tight sm:text-3xl">
             Chat yang masuk malam ini, biar dia yang jawab

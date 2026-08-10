@@ -26,14 +26,23 @@ function daftarFounder(): string[] {
 }
 
 /**
- * Sengaja cuma SATU fungsi yang diekspor.
+ * Yang diekspor cuma yang benar-benar dipakai.
  *
  * Sempat ada `halamanFounderAktif()` di sini yang tidak pernah dipanggil dari
  * mana pun. Fungsi yang tidak dipakai di pintu keamanan itu lebih buruk daripada
  * sekadar kode mati: orang berikutnya membacanya sebagai "sudah ada
  * pemeriksaannya", lalu menambah halaman baru tanpa memasang pemeriksaan yang
- * sesungguhnya. Satu pintu, satu fungsi.
+ * sesungguhnya.
+ *
+ * `emailFounder()` bukan pintu kedua. Dia dipakai halaman founder untuk
+ * MENGELUARKAN akun sendiri dari hitungan uang, dan itu tugas yang berbeda dari
+ * menentukan siapa yang boleh masuk. Jangan sekali-kali memakainya sebagai
+ * pemeriksaan akses: yang menjaga pintu tetap `bolehLihatFounder`.
  */
+export function emailFounder(): string[] {
+  return daftarFounder();
+}
+
 export function bolehLihatFounder(email: string | null | undefined): boolean {
   if (!email) return false;
   const daftar = daftarFounder();

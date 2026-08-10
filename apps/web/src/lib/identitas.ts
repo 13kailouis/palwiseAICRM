@@ -60,7 +60,7 @@ export const IDENTITAS = {
   email: "halo@palwise.id",
 
   /** Nomor WhatsApp untuk bantuan, format internasional tanpa tanda plus. */
-  waBantuan: "BELUM DIISI (mis. 6281234567890)",
+  waBantuan: "6281543299968",
 
   /**
    * Nama orang yang membuat Palwise, dipakai menandatangani catatan di halaman
@@ -78,7 +78,10 @@ export const IDENTITAS = {
    * sama sekali. Selama masih "BELUM DIISI", tanda tangannya tidak digambar dan
    * catatannya tetap tampil tanpa nama.
    */
-  namaPendiri: "BELUM DIISI (nama kamu, mis. Kai)",
+  // Diisi "Kai" karena itu nama yang sudah dipakai di repo ini (pemilik akun
+  // git dan contoh di komentar atas). GANTI kalau nama yang mau kamu pajang di
+  // halaman depan berbeda: ini tanda tangan orang sungguhan, bukan contoh.
+  namaPendiri: "Kai",
 
   /** Jam layanan manusia. */
   jamLayanan: "Senin sampai Sabtu, 09.00 sampai 17.00 WIB",

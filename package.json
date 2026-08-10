@@ -23,6 +23,7 @@
     "typecheck": "npm run typecheck --workspace=@palwise/worker && npm run typecheck --workspace=@palwise/web",
     "selftest": "tsx apps/worker/src/scripts/selftest.ts",
     "akun:bantuan": "tsx apps/worker/src/scripts/akunBantuan.ts",
+    "akun:paket": "tsx apps/worker/src/scripts/akunPaket.ts",
     "logo": "node apps/web/scripts/buatLogo.mjs",
     "bisnis:pdf": "node bisnis/buatPdf.mjs",
     "ukur:prompt": "tsx apps/worker/src/scripts/ukurPrompt.ts",

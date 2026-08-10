@@ -33,29 +33,63 @@ export function AjakanBawah({ gratis }: { gratis: number }) {
   const [tampil, setTampil] = useState(false);
 
   useEffect(() => {
-    let menunggu = false;
+    let jeda: ReturnType<typeof setTimeout> | null = null;
+    let terakhir = 0;
 
     const hitung = () => {
-      menunggu = false;
+      terakhir = Date.now();
       const y = window.scrollY;
       const tinggiHalaman = document.documentElement.scrollHeight;
       const sudahLewatHero = y > 520;
       // 360px terakhir dianggap "hampir dasar": di situ ajakan terakhir dan
       // kaki halaman sudah kelihatan sendiri.
       const hampirDasar = y + window.innerHeight > tinggiHalaman - 360;
-      setTampil(sudahLewatHero && !hampirDasar);
+      // Bagian harga punya tombolnya sendiri, dan tombol birunya menyala di
+      // kartu paket yang ditandai. Dua bidang biru sekaligus di satu layar
+      // membuat tidak ada yang jadi utama, dan yang di bawah justru menutupi
+      // yang sedang dibaca. Jadi bar ini yang mengalah selama harga kelihatan.
+      const harga = document.getElementById("harga");
+      let hargaTerlihat = false;
+      if (harga) {
+        const k = harga.getBoundingClientRect();
+        hargaTerlihat = k.top < window.innerHeight && k.bottom > 0;
+      }
+      setTampil(sudahLewatHero && !hampirDasar && !hargaTerlihat);
     };
 
+    /**
+     * Direm 100 ms, pakai jam, BUKAN requestAnimationFrame.
+     *
+     * rAF terlihat lebih rapi dan memang cuma jalan sekali per gambar, tapi
+     * dia berhenti total waktu tabnya tidak digambar (tab latar, jendela
+     * tertutup, atau peramban uji yang tidak menampilkan halaman). Waktu itu
+     * terjadi, hitungannya membeku di posisi terakhir dan barnya bisa
+     * tertinggal tampil di tempat yang salah begitu orangnya kembali.
+     *
+     * Jam tidak peduli halamannya sedang digambar atau tidak, dan 100 ms itu
+     * jauh lebih murah daripada satu gambar penuh.
+     */
     const saatGulir = () => {
-      if (menunggu) return;
-      menunggu = true;
-      requestAnimationFrame(hitung);
+      const kini = Date.now();
+      if (kini - terakhir >= 100) {
+        if (jeda) clearTimeout(jeda);
+        jeda = null;
+        hitung();
+        return;
+      }
+      // Yang terakhir tetap dihitung, jadi posisi berhenti tidak terlewat.
+      if (jeda) return;
+      jeda = setTimeout(() => {
+        jeda = null;
+        hitung();
+      }, 100);
     };
 
     hitung();
     window.addEventListener("scroll", saatGulir, { passive: true });
     window.addEventListener("resize", saatGulir);
     return () => {
+      if (jeda) clearTimeout(jeda);
       window.removeEventListener("scroll", saatGulir);
       window.removeEventListener("resize", saatGulir);
     };

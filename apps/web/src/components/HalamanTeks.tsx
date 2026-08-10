@@ -130,13 +130,22 @@ const TAUTAN: { judul: string; isi: { href: string; label: string }[] }[] = [
 export function KakiHalaman() {
   return (
     <footer className="border-t border-ink-200 bg-ink-50">
-      <div className="mx-auto max-w-6xl px-5 py-14">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="lg:col-span-1">
+      {/* Di HP kolom tautannya berdua-dua, bukan bertiga ke bawah.
+          Diukur di layar 375px: kaki halaman ini sendirian setinggi 848px,
+          satu layar penuh berisi tautan yang hampir tidak pernah ditekan. Dua
+          kolom memotongnya hampir separuh tanpa menghilangkan satu tautan pun,
+          dan tautan hukum wajib tetap bisa ditemukan. */}
+      <div className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-4">
+          <div className="col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2">
               <LogoNama />
             </div>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-600">
+            {/* Kalimat "ini produk apa" tidak digambar di HP. Di layar lebar
+                dia mengisi kolom pertama yang memang kosong; di HP dia jadi
+                tiga baris tambahan di dasar halaman, menjelaskan lagi hal yang
+                baru saja dijelaskan seluruh halaman di atasnya. */}
+            <p className="mt-3 hidden max-w-xs text-sm leading-relaxed text-ink-600 sm:block">
               Asisten WhatsApp yang membalas chat pelanggan dan mencatat calon
               pembeli, buat usaha di Indonesia.
             </p>
@@ -145,10 +154,16 @@ export function KakiHalaman() {
           {TAUTAN.map((kolom) => (
             <div key={kolom.judul}>
               <p className="text-sm font-semibold text-ink-900">{kolom.judul}</p>
-              <ul className="mt-3 space-y-2 text-sm">
+              {/* space-y dilepas di HP: luas sentuhnya yang jadi jaraknya.
+                  Tautan setinggi 19px itu separuh ujung jari, dan tiga tautan
+                  hukum yang salah tekan bikin orang menyerah mencarinya. */}
+              <ul className="mt-1 text-sm sm:mt-3 sm:space-y-2">
                 {kolom.isi.map((t) => (
                   <li key={t.href}>
-                    <Link href={t.href} className="text-ink-600 hover:text-ink-900">
+                    <Link
+                      href={t.href}
+                      className="tap-aman py-1.5 text-ink-600 hover:text-ink-900 sm:py-0"
+                    >
                       {t.label}
                     </Link>
                   </li>
@@ -158,7 +173,11 @@ export function KakiHalaman() {
           ))}
         </div>
 
-        <div className="mt-12 space-y-2 border-t border-ink-200 pt-6 text-xs leading-relaxed text-ink-500">
+        {/* max-w-3xl bukan hiasan: tanpa itu dua baris ini membentang 1112px,
+            sekitar 185 huruf per baris di layar 1280. Yang mahal bukan panjang
+            kalimatnya, tapi lompatan balik matanya ke awal baris berikutnya,
+            dan itu paling sering meleset ke baris yang salah. */}
+        <div className="mt-10 max-w-3xl space-y-2 border-t border-ink-200 pt-6 text-xs leading-relaxed text-ink-500 sm:mt-12">
           {/* Nama produk duluan, badan usahanya menyusul.
               Yang dikenali orang "Palwise", bukan nama PT-nya. Tapi badan
               usahanya tetap harus tertulis, karena dialah yang menandatangani

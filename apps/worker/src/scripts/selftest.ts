@@ -4961,9 +4961,23 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /namaPendiri/.test(baca("apps/web/src/lib/identitas.ts")) &&
         /!IDENTITAS\.namaPendiri\.startsWith\("BELUM DIISI"\)/.test(depan),
     );
+    // Sejak 10 Agustus 2026 namanya SUDAH diisi, jadi yang dijaga berbalik:
+    // isinya tidak boleh kembali jadi tanda "BELUM DIISI" (catatannya hilang
+    // dari halaman depan tanpa satu pun galat), dan tidak boleh berisi contoh
+    // yang tertinggal seperti "mis." atau tanda kurung petunjuk.
+    const identitasTeks = baca("apps/web/src/lib/identitas.ts");
     check(
-      "nama pendiri belum diisi tetap terdaftar sebagai yang kurang",
-      /namaPendiri: "BELUM DIISI/.test(baca("apps/web/src/lib/identitas.ts")),
+      "nama pendiri terisi nama orang, bukan contoh yang tertinggal",
+      /namaPendiri: "[^"]+"/.test(identitasTeks) &&
+        !/namaPendiri: "(BELUM DIISI|.*mis\.|.*\()/.test(identitasTeks),
+    );
+    // Nomor bantuan disimpan tanpa tanda plus, spasi, dan strip, karena
+    // tautan wa.me cuma menerima angka. tautanBantuanWa memang membersihkannya
+    // sendiri, tapi nomor yang ditulis rapi di sini juga yang ditempel orang ke
+    // tempat lain.
+    check(
+      "nomor bantuan WhatsApp berupa angka saja, siap dipakai wa.me",
+      /waBantuan: "62\d{8,13}"/.test(identitasTeks),
     );
     // "Tambah admin" punya bacaan kedua yang salah di produk berlangganan:
     // terdengar seperti menambah akun pengguna untuk tim, bukan menggantikan
@@ -5172,6 +5186,14 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     check(
       "tombol nempel menyingkir menjelang kaki halaman",
       /hampirDasar/.test(barBawah),
+    );
+    // Aturan satu bidang biru per layar. Kartu paket yang ditandai punya
+    // tombol biru sendiri, jadi kalau bar ini ikut tampil di atasnya, ada dua
+    // biru bersamaan dan yang bawah menutupi yang sedang dibaca.
+    check(
+      "tombol nempel mengalah waktu bagian harga kelihatan",
+      /hargaTerlihat/.test(barBawah) &&
+        /getElementById\("harga"\)/.test(barBawah),
     );
     // Di HP menu atas menyembunyikan tautan Harga dan Fitur, jadi tanpa
     // pintasan ini tidak ada satu pun jalan ke bagian tertentu selain
@@ -6889,10 +6911,23 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // `halamanFounderAktif()` pernah ada di sini dan tidak pernah dipanggil dari
     // mana pun. Di pintu keamanan itu lebih buruk daripada kode mati biasa: yang
     // membaca menyimpulkan pemeriksaannya sudah ada.
+    //
+    // Yang dijaga BUKAN jumlah ekspornya, tapi bahwa tidak ada satu pun yang
+    // menganggur. `emailFounder()` ditambahkan 10 Agustus 2026 untuk
+    // mengeluarkan akun founder dari hitungan MRR, dan itu tugas yang berbeda
+    // dari menjaga pintu. Menghitung ekspor akan melarang penambahan yang
+    // memang dipakai; yang benar memeriksa dipakainya.
+    const eksporFounder = [
+      ...modulFounder.matchAll(/^export function (\w+)/gm),
+    ].map((m) => m[1]);
     check(
-      "modul founder cuma mengekspor satu pintu",
-      (modulFounder.match(/^export function/gm) ?? []).length === 1 &&
-        /export function bolehLihatFounder/.test(modulFounder),
+      "tiap fungsi yang diekspor modul founder benar-benar dipakai",
+      eksporFounder.length > 0 &&
+        /export function bolehLihatFounder/.test(modulFounder) &&
+        eksporFounder.every((nama) =>
+          new RegExp(`\\b${nama}\\(`).test(halamanFounder),
+        ),
+      eksporFounder.join(", "),
     );
     // Halamannya harus 404, BUKAN "kamu tidak punya akses". Yang menjawab
     // "dilarang" memberi tahu bahwa halamannya ada.
@@ -6906,6 +6941,63 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     check(
       "halaman founder tidak pernah membaca isi pesan",
       !/prisma\.message\.find|include: \{ messages/.test(halamanFounder),
+    );
+    // Daftar akun boleh menyebut pendaftarnya, TIDAK boleh menyebut pelanggan
+    // dia. Batasnya: kontak dan obrolan cuma boleh lewat `_count`. Begitu ada
+    // `contacts: { select` atau `conversations: { select`, halaman ini mulai
+    // memuat nama dan nomor orang yang tidak pernah setuju datanya dibaca
+    // siapa pun di Palwise.
+    check(
+      "daftar akun cuma menghitung pelanggan, tidak membukanya",
+      /_count: \{ select: \{ contacts: true, conversations: true \} \}/.test(
+        halamanFounder,
+      ) &&
+        !/contacts: \{ select/.test(halamanFounder) &&
+        !/conversations: \{ select/.test(halamanFounder),
+    );
+    // Yang bisa ditindaklanjuti hari ini: orang yang sudah daftar tapi berhenti
+    // satu langkah sebelum produknya jalan.
+    check(
+      "daftar akun menandai yang belum nyambungin nomor",
+      /Belum nyambungin nomor/.test(halamanFounder),
+    );
+
+    // ── Paket yang diberikan, bukan dibayar ─────────────────────────────────
+    //
+    // `npm run akun:paket` menyalakan paket berbayar tanpa Midtrans, untuk akun
+    // founder dan akun demo. Itu boleh, TAPI cuma sebagai perintah di server.
+    const skripPaket = baca("apps/worker/src/scripts/akunPaket.ts");
+    const akarPaket = baca("package.json");
+    check(
+      "perintah akun:paket terdaftar dan memakai jalur langganan yang sama",
+      /"akun:paket": "tsx apps\/worker\/src\/scripts\/akunPaket\.ts"/.test(
+        akarPaket,
+      ) && /aktifkanLangganan\(/.test(skripPaket),
+    );
+    // Dia TIDAK boleh membuat baris Pembayaran. Uang yang tidak pernah masuk
+    // tapi tercatat sebagai lunas akan muncul di "Masuk 30 hari terakhir" dan
+    // di MRR, dan angka itu yang dipakai memutuskan harga.
+    check(
+      "paket yang diberikan tidak dicatat sebagai uang masuk",
+      !/pembayaran\.create/.test(skripPaket),
+    );
+    // Langganan dua tahun tidak boleh berarti jatah dua tahun sekali tuang.
+    // Kalau quotaResetAt ikut dijauhkan, embernya habis di bulan ketiga dan
+    // asistennya diam sampai tanggal itu tiba.
+    //
+    // Yang diperiksa: tanggal langganannya ditulis sendirian, dan tidak ada
+    // satu pun `data:` di berkas ini yang ikut menulis quotaResetAt. Membacanya
+    // untuk ditampilkan ke layar tetap boleh, dan itu memang dilakukan.
+    check(
+      "paket yang diberikan tetap menolkan jatah tiap bulan",
+      /data: \{ langgananSampai: sampai \}/.test(skripPaket) &&
+        !/data: \{[^}]*quotaResetAt/.test(skripPaket),
+    );
+    // Akun founder sendiri tidak boleh terhitung sebagai pendapatan.
+    check(
+      "MRR mengeluarkan akun founder yang paketnya diberikan",
+      /emailFounder\(\)/.test(halamanFounder) &&
+        /berbayarPelanggan/.test(halamanFounder),
     );
 
     // LENSA 5: pekerjaan orangnya hilang tanpa dia sadari.

@@ -199,7 +199,10 @@ export function MockupJanji() {
       pasti: true,
     },
     {
-      nama: "Kai",
+      // Bukan "Kai" lagi: nama itu sekarang tanda tangan pendirinya di halaman
+      // yang sama, dan nama yang sama muncul dua kali sebagai dua orang berbeda
+      // bikin gambar ini terbaca sebagai contoh yang asal comot.
+      nama: "Pak Arif",
       untuk: "meeting online lewat Google Meet",
       kapan: "Sabtu jam 10.00",
       pasti: false,
