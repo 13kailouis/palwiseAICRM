@@ -6962,6 +6962,50 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /Belum nyambungin nomor/.test(halamanFounder),
     );
 
+    // ── Halaman satu akun ───────────────────────────────────────────────────
+    //
+    // Kartunya bisa diklik, dan yang dibuka Info bisnis serta setelan asisten
+    // milik akun itu sendiri. Itu yang dibutuhkan waktu orangnya bertanya
+    // "kenapa asisten saya jawabnya begitu".
+    const halamanAkun = baca("apps/web/src/app/app/founder/[id]/page.tsx");
+    check(
+      "kartu akun bisa dibuka ke halamannya sendiri",
+      /href=\{`\/app\/founder\/\$\{w\.id\}`\}/.test(halamanFounder),
+    );
+    // Pintunya HARUS dipasang lagi di halaman anak. Halaman induk yang aman
+    // tidak menjaga anaknya: alamat /app/founder/<id> bisa dibuka langsung.
+    check(
+      "halaman satu akun memasang pintunya sendiri",
+      /if \(!bolehLihatFounder\(user\.email\)\) notFound\(\)/.test(halamanAkun),
+    );
+    // GARIS PRIVASINYA. Kebijakan privasi menulis karyawan Palwise tidak
+    // membaca isi chat kecuali diizinkan pemiliknya. Jadi halaman ini boleh
+    // membuka tulisan pemilik akun tentang usahanya sendiri (Info bisnis,
+    // setelan asisten), dan TIDAK boleh membuka apa pun milik pelanggan dia.
+    check(
+      "halaman satu akun tidak pernah mengambil isi pesan",
+      !/prisma\.message\.|messages: \{|include: \{ messages/.test(halamanAkun),
+    );
+    check(
+      "halaman satu akun tidak mengambil nama atau nomor pelanggan",
+      !/contact: \{ select|contacts: \{ select|waJid/.test(halamanAkun),
+    );
+    // Percakapan boleh disentuh untuk tanggal terakhirnya saja. Kalau suatu
+    // hari ada yang menambah `select` berisi kolom lain di sini, tes ini yang
+    // menahannya.
+    check(
+      "percakapan cuma diambil tanggalnya, bukan isinya",
+      /select: \{ lastMessageAt: true \}/.test(halamanAkun),
+    );
+    // Batasnya ditulis di layar, bukan cuma di komentar. Yang membaca halaman
+    // itu perlu tahu kenapa chatnya tidak ada, kalau tidak dia akan mengira
+    // fiturnya belum jadi lalu menambahkannya.
+    check(
+      "halaman satu akun mengumumkan apa yang sengaja tidak ada",
+      /Isi chat pelanggannya tidak bisa dibuka dari sini/.test(halamanAkun) &&
+        /kebijakan privasi/i.test(halamanAkun),
+    );
+
     // ── Paket yang diberikan, bukan dibayar ─────────────────────────────────
     //
     // `npm run akun:paket` menyalakan paket berbayar tanpa Midtrans, untuk akun

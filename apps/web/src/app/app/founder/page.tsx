@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   BAYAR_GAGAL,
@@ -367,7 +368,14 @@ export default async function FounderPage() {
                   w.langgananSampai.getTime() > sekarang.getTime();
 
                 return (
-                  <div key={w.id} className="card-pad">
+                  // Seluruh kartunya yang diklik, bukan tautan kecil di
+                  // sudutnya. Sasaran sebesar kartu tidak pernah meleset di HP,
+                  // dan tidak ada yang perlu dicari dulu.
+                  <Link
+                    key={w.id}
+                    href={`/app/founder/${w.id}`}
+                    className="card-pad block transition hover:border-ink-300 hover:bg-ink-50/60"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate font-medium text-ink-900">
@@ -460,7 +468,7 @@ export default async function FounderPage() {
                         })}
                       </p>
                     )}
-                  </div>
+                  </Link>
                 );
               })}
             </div>
