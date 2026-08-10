@@ -233,7 +233,15 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
   },
   {
     t: "Data pelanggan saya dipakai buat apa?",
-    j: "Cuma buat jalanin sales kamu. Nggak dijual, nggak dipakai ngelatih AI, dan nggak dibaca karyawan kami. Rinciannya ada di kebijakan privasi.",
+    // KALIMAT INI WAJIB SAMA DENGAN HALAMAN PRIVASI, dan sempat tidak.
+    //
+    // Dulu di sini tertulis "nggak dibaca karyawan kami". Sejak 10 Agustus 2026
+    // halaman founder bisa membuka obrolan untuk membantu dan memperbaiki
+    // produk, jadi kalimat itu berubah jadi tidak benar. Halaman jualan yang
+    // menjanjikan lebih daripada yang dijalankan itu jenis kebohongan yang
+    // paling mahal: yang membacanya baru tahu setelah dia menyambungkan nomor
+    // usahanya.
+    j: "Cuma buat jalanin sales kamu, dan nggak pernah dijual atau dipakai ngelatih AI. Isi chatnya bisa dibuka tim Palwise buat benerin masalah dan memperbaiki produk, dan tiap bukaan tercatat. Rinciannya ada di kebijakan privasi.",
   },
   {
     t: "Udah dipakai siapa aja?",

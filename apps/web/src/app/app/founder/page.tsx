@@ -12,6 +12,7 @@ import {
 } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
 import { bolehLihatFounder, emailFounder } from "@/lib/founder";
+import { bacaJejakBuka } from "@/lib/jejakFounder";
 import { PageHeader } from "@/components/ui";
 import { tandaiMasukanDibacaAction } from "@/app/actions/masukan";
 
@@ -211,6 +212,9 @@ export default async function FounderPage() {
   // Kalau suatu hari akun teman ikut digratiskan, dia akan terhitung lagi, dan
   // saat itu tanda "komplimen" perlu jadi kolom sendiri di database. Sekarang
   // belum, karena satu-satunya akun yang digratiskan memang akun founder.
+  // Dibaca dari berkas, bukan database, jadi tidak ikut Promise.all di atas.
+  const jejak = bacaJejakBuka(30);
+
   const founder = new Set(emailFounder());
   const punyaFounder = (w: { users: { email: string }[] }) =>
     w.users.some((u) => founder.has(u.email.trim().toLowerCase()));
@@ -527,6 +531,49 @@ export default async function FounderPage() {
                       {b.status}
                     </span>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Catatan bukaan chat, dipajang di sini juga.
+            Halaman privasi menjanjikan tiap bukaan tercatat. Catatan yang cuma
+            bisa dibaca lewat SSH itu, dalam praktiknya, catatan yang tidak
+            pernah dibaca siapa pun, dan yang tidak pernah dibaca tidak
+            menahan siapa-siapa. Ditaruh di halaman yang sama dengan tombol
+            yang membukanya, jadi yang membuka melihat jejaknya sendiri
+            bertambah. */}
+        <div>
+          <h2 className="font-semibold text-ink-900">Catatan bukaan chat</h2>
+          <p className="mt-1 text-xs leading-relaxed text-ink-500">
+            Kebijakan privasi kita menulis tiap bukaan tercatat. Ini catatannya,
+            dan dia cuma bisa ditambah, tidak bisa dihapus dari aplikasi.
+          </p>
+
+          {jejak.length === 0 ? (
+            <p className="mt-4 text-sm leading-relaxed text-ink-500">
+              Belum ada satu pun obrolan pelanggan yang dibuka.
+            </p>
+          ) : (
+            <div className="card mt-4 divide-y divide-ink-100">
+              {jejak.map((j) => (
+                <div
+                  key={`${j.waktu}-${j.conversationId}`}
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2.5 text-sm"
+                >
+                  <span className="min-w-0 truncate text-ink-800">
+                    {j.oleh} membuka obrolan di {j.namaUsaha}
+                  </span>
+                  <span className="shrink-0 text-xs text-ink-500">
+                    {new Date(j.waktu).toLocaleString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
                 </div>
               ))}
             </div>

@@ -6978,32 +6978,98 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "halaman satu akun memasang pintunya sendiri",
       /if \(!bolehLihatFounder\(user\.email\)\) notFound\(\)/.test(halamanAkun),
     );
-    // GARIS PRIVASINYA. Kebijakan privasi menulis karyawan Palwise tidak
-    // membaca isi chat kecuali diizinkan pemiliknya. Jadi halaman ini boleh
-    // membuka tulisan pemilik akun tentang usahanya sendiri (Info bisnis,
-    // setelan asisten), dan TIDAK boleh membuka apa pun milik pelanggan dia.
-    check(
-      "halaman satu akun tidak pernah mengambil isi pesan",
-      !/prisma\.message\.|messages: \{|include: \{ messages/.test(halamanAkun),
+    // ── Membaca chat pelanggan: boleh, TAPI dengan syaratnya ────────────────
+    //
+    // Diubah 10 Agustus 2026 atas keputusan Kai, dan yang dijaga tesnya ikut
+    // berubah. Dulu: "halaman founder tidak boleh menyentuh isi pesan".
+    // Sekarang isinya boleh dibuka untuk membantu dan memperbaiki produk, dan
+    // yang dijaga jadi TIGA syarat yang membuat itu jujur.
+    //
+    // Syarat 1: halaman privasi TIDAK BOLEH lagi berjanji chatnya tak dibaca.
+    // Ini pasangan yang paling gampang terlupa, dan yang paling mahal: fitur
+    // menyala sementara janjinya masih berdiri berarti berbohong ke orang yang
+    // memakai janji itu untuk memutuskan menyambungkan nomor usahanya.
+    const halamanPrivasi = baca("apps/web/src/app/privasi/page.tsx");
+    const halamanObrolan = baca(
+      "apps/web/src/app/app/founder/[id]/[obrolan]/page.tsx",
     );
+    const modulJejak = baca("apps/web/src/lib/jejakFounder.ts");
     check(
-      "halaman satu akun tidak mengambil nama atau nomor pelanggan",
-      !/contact: \{ select|contacts: \{ select|waJid/.test(halamanAkun),
+      "halaman privasi tidak lagi berjanji chat tidak pernah dibaca",
+      !/tidak membaca isi chat/.test(halamanPrivasi) &&
+        /tim Palwise/i.test(halamanPrivasi) &&
+        /[Tt]iap bukaan tercatat/.test(halamanPrivasi),
     );
-    // Percakapan boleh disentuh untuk tanggal terakhirnya saja. Kalau suatu
-    // hari ada yang menambah `select` berisi kolom lain di sini, tes ini yang
-    // menahannya.
+    // Halaman jualan menjanjikan hal yang sama persis ke orang yang belum jadi
+    // pelanggan, dan dua halaman yang berbeda soal ini pernah terjadi.
+    // Komentarnya dibuang dulu, dan ini KEEMPAT kalinya pola yang sama menjebak
+    // di berkas ini. Komentar di halaman jualan berisi kalimat LAMA beserta
+    // alasan kenapa diganti, jadi memeriksa berkas mentahnya berarti menuduh
+    // copy yang justru sudah dibetulkan.
+    const depanBersih = depan
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
     check(
-      "percakapan cuma diambil tanggalnya, bukan isinya",
-      /select: \{ lastMessageAt: true \}/.test(halamanAkun),
+      "tanya jawab halaman jualan ikut disesuaikan",
+      !/nggak dibaca karyawan kami/.test(depanBersih) &&
+        /tiap bukaan tercatat/.test(depanBersih),
     );
-    // Batasnya ditulis di layar, bukan cuma di komentar. Yang membaca halaman
-    // itu perlu tahu kenapa chatnya tidak ada, kalau tidak dia akan mengira
-    // fiturnya belum jadi lalu menambahkannya.
+    // Yang TIDAK boleh berubah: dijual dan dipakai melatih AI. Dua kalimat itu
+    // yang tersisa sebagai janji, jadi keduanya wajib tetap tertulis.
     check(
-      "halaman satu akun mengumumkan apa yang sengaja tidak ada",
-      /Isi chat pelanggannya tidak bisa dibuka dari sini/.test(halamanAkun) &&
-        /kebijakan privasi/i.test(halamanAkun),
+      "janji tidak dijual dan tidak melatih AI tetap berdiri",
+      /[Tt]idak dijual/.test(halamanPrivasi) &&
+        /melatih model AI/.test(halamanPrivasi) &&
+        /ngelatih AI/.test(depan),
+    );
+    // Syarat 2: pencatatannya benar-benar ada, dan dipanggil SEBELUM isinya
+    // digambar. Kalau ditaruh di belakang, satu galat render membuat orangnya
+    // tetap sempat membaca sementara catatannya tidak pernah ditulis.
+    check(
+      "tiap bukaan chat benar-benar dicatat",
+      /catatBukaChat\(/.test(halamanObrolan) &&
+        /appendFileSync/.test(modulJejak) &&
+        halamanObrolan.indexOf("catatBukaChat({") <
+          halamanObrolan.indexOf("<PageHeader"),
+    );
+    // Catatannya menyimpan PENUNJUK, bukan isi. Kalau isi pesan ikut disalin ke
+    // sana, catatan itu jadi salinan kedua data pelanggan yang tidak ikut
+    // terhapus waktu orangnya minta datanya dihapus.
+    check(
+      "catatan bukaan tidak menyalin isi percakapan",
+      /conversationId: string/.test(modulJejak) &&
+        !/content|isi(Pesan)?:/.test(
+          modulJejak.slice(modulJejak.indexOf("export interface JejakBuka")),
+        ),
+    );
+    // Catatan yang cuma bisa dibaca lewat SSH itu catatan yang tidak pernah
+    // dibaca, dan yang tidak pernah dibaca tidak menahan siapa-siapa.
+    check(
+      "catatan bukaan dipajang di halaman founder juga",
+      /bacaJejakBuka\(/.test(halamanFounder) &&
+        /Catatan bukaan chat/.test(halamanFounder),
+    );
+    // Syarat 3: membaca saja. Mengirim pesan atas nama toko orang lain itu hal
+    // yang sama sekali berbeda, dan tidak ada satu kalimat pun di halaman
+    // privasi yang mengizinkannya.
+    check(
+      "halaman obrolan founder cuma bisa membaca, tidak membalas",
+      !/appendMessage|kirimPesan|action=|<form/.test(halamanObrolan),
+    );
+    // Pintunya dipasang lagi, dan alamat yang tidak cocok dijawab 404 bukan
+    // diperbaiki diam-diam.
+    check(
+      "halaman obrolan founder memasang pintunya sendiri",
+      /if \(!bolehLihatFounder\(user\.email\)\) notFound\(\)/.test(
+        halamanObrolan,
+      ) && /workspaceId !== id\) notFound\(\)/.test(halamanObrolan),
+    );
+    // Ruang coba bukan pelanggan sungguhan, cuma pemiliknya sedang mencoba
+    // asistennya sendiri. Ikut terdaftar bikin daftar obrolannya menyesatkan.
+    check(
+      "daftar obrolan membuang ruang coba",
+      /playground:/.test(halamanAkun),
     );
 
     // ── Paket yang diberikan, bukan dibayar ─────────────────────────────────

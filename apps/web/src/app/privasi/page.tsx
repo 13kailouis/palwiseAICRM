@@ -25,8 +25,10 @@ export default function PrivasiPage() {
         <li>Kami tidak menjual data kamu atau data pelangganmu ke siapa pun.</li>
         <li>Kami tidak memakai isi chat pelangganmu untuk melatih model AI.</li>
         <li>
-          Karyawan kami tidak membaca isi chat kamu, kecuali kamu sendiri yang
-          meminta bantuan dan mengizinkannya.
+          Isi chat cuma bisa dibuka oleh kamu, tim kamu, dan sejumlah kecil orang
+          di tim Palwise yang memang perlu, untuk menjalankan layanannya,
+          membantu kalau ada masalah, dan memperbaiki produknya. Tiap bukaan
+          tercatat.
         </li>
         <li>Kamu bisa minta seluruh datamu dihapus, kapan saja.</li>
       </ul>
@@ -157,6 +159,43 @@ export default function PrivasiPage() {
         kamu butuh menghapus satu pelanggan, itu bisa kamu lakukan sendiri dari
         halaman Pelanggan.
       </p>
+
+      {/* Bagian ini ditulis lengkap dan terbuka, bukan disamarkan.
+          Kalimat "tim kami tidak pernah membaca" jauh lebih enak dibaca, tapi
+          begitu satu kalimat di halaman ini terbukti tidak benar, harga dan
+          janji lain di halaman jualan ikut kehilangan kepercayaan, dan harga
+          itu satu-satunya pembeda Palwise. Yang menenangkan orang bukan janji
+          "tidak pernah", tapi batas yang jelas: siapa, untuk apa, tercatat, dan
+          apa yang tidak kami lakukan. */}
+      <h2>Siapa yang bisa melihat isi chat</h2>
+      <ul>
+        <li>
+          <strong>Kamu dan tim kamu</strong>, lewat akunmu sendiri.
+        </li>
+        <li>
+          <strong>Sejumlah kecil orang di tim Palwise</strong>, dan cuma untuk
+          tiga hal: menjalankan layanannya, membantu kalau ada yang error atau
+          kamu minta tolong, dan memperbaiki produknya supaya jawabannya makin
+          benar.
+        </li>
+        <li>
+          <strong>Tiap bukaan tercatat</strong>: siapa yang membuka, obrolan yang
+          mana, dan kapan. Catatan itu kami simpan supaya bisa ditelusuri.
+        </li>
+      </ul>
+      <p>Yang TIDAK kami lakukan dengan isi chat kamu:</p>
+      <ul>
+        <li>Tidak dijual, tidak ditukar, dan tidak disewakan ke siapa pun.</li>
+        <li>Tidak dipakai melatih model AI, milik kami maupun milik orang lain.</li>
+        <li>
+          Tidak dipakai untuk menghubungi pelangganmu di luar keperluan asisten
+          yang kamu atur sendiri.
+        </li>
+        <li>
+          Tidak dibagikan ke pengguna Palwise yang lain, dalam bentuk apa pun
+          yang bisa dikenali sebagai punya kamu.
+        </li>
+      </ul>
 
       <h2>Keamanan</h2>
       <ul>

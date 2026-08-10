@@ -9,31 +9,29 @@ import { Ikon } from "@/components/Ikon";
 /**
  * Satu akun, dibuka dari daftar di halaman founder.
  *
- * ── APA YANG BOLEH DIBUKA DI SINI, DAN KENAPA GARISNYA DI SITU ──────────────
+ * ── APA YANG BOLEH DIBUKA DI SINI ───────────────────────────────────────────
  *
- * Kebijakan privasi Palwise berbunyi: "Karyawan kami tidak membaca isi chat
- * kamu, KECUALI kamu sendiri yang meminta bantuan dan mengizinkannya."
+ * Diubah 10 Agustus 2026, dan diubah dengan URUTAN YANG BENAR: kalimat di
+ * halaman privasi dan di tanya jawab halaman jualan diperbarui LEBIH DULU, baru
+ * fiturnya dinyalakan. Sebelum itu halaman privasi berjanji "karyawan kami
+ * tidak membaca isi chat kamu", jadi menyalakan pembacaan chat sambil
+ * membiarkan kalimat itu berdiri berarti berbohong ke orang yang justru
+ * memakainya untuk memutuskan menyambungkan nomor usahanya.
  *
- * Kalimat itu bukan hiasan. Dia yang membuat pemilik toko mau menyambungkan
- * nomor WhatsApp usahanya ke produk yang belum punya reputasi, dan dia juga
- * yang mengikat kita di depan UU 27/2022: di sana pemilik tokonya pengendali
- * data, kita cuma pemroses.
+ * Yang sekarang tertulis di halaman privasi, dan yang WAJIB tetap benar:
  *
- * Jadi halaman ini dibagi dua, dan pembatasnya BUKAN selera:
+ *   Isi chat cuma bisa dibuka oleh kamu, tim kamu, dan sejumlah kecil orang di
+ *   tim Palwise yang memang perlu, untuk menjalankan layanannya, membantu kalau
+ *   ada masalah, dan memperbaiki produknya. TIAP BUKAAN TERCATAT.
  *
- * BOLEH — punya akunnya sendiri, yang dia ketik sendiri tentang usahanya
- * sendiri: nama usaha, email, paket, pemakaian, setelan asisten, dan isi Info
- * bisnis. Itu yang dibutuhkan waktu dia bertanya "kenapa asisten saya jawabnya
- * begitu?", dan tidak satu pun di antaranya milik pelanggan dia.
+ * Kalimat terakhir itu ditegakkan `lib/jejakFounder.ts`: tiap obrolan yang
+ * dibuka menambah satu baris ke `data/log/buka-chat.jsonl`, berisi penunjuknya
+ * saja, bukan isinya. Kalau pencatatannya suatu hari dilepas, kalimat di
+ * halaman privasi wajib ikut dilepas di menit yang sama.
  *
- * TIDAK BOLEH — apa pun milik PELANGGAN DIA: nama kontak, nomor WhatsApp, isi
- * pesan, catatan CRM. Yang ditampilkan cuma hitungan dan waktu terakhir, karena
- * hitungan menjawab "hidup atau tidak" tanpa membuka satu kalimat pun.
- *
- * Kalau suatu hari isi chat memang perlu dibuka untuk membantu yang komplain,
- * urutannya sudah jelas dan tidak boleh dipotong: minta izin pemiliknya, catat
- * siapa membuka apa dan kapan, dan ubah dulu kalimat di halaman privasi kalau
- * izinnya mau dibuat berlaku umum. Jangan diselipkan diam-diam ke halaman ini.
+ * Yang tetap TIDAK dilakukan, dan itu juga tertulis di sana: isi chat tidak
+ * dijual, tidak dipakai melatih model AI, dan tidak dibagikan ke pengguna
+ * Palwise lain dalam bentuk yang bisa dikenali.
  */
 
 export const dynamic = "force-dynamic";
@@ -152,9 +150,7 @@ export default async function FounderAkunPage({
 
   if (!ws) notFound();
 
-  // Hitungan saja, tanpa satu pun isi. Yang dijawab: hidup atau tidak, dan
-  // kapan terakhir ada tanda kehidupan.
-  const [obrolanTerbuka, perluManusia, terakhirChat, balasan30] =
+  const [obrolanTerbuka, perluManusia, daftarObrolan, balasan30] =
     await Promise.all([
       prisma.conversation.count({
         where: { workspaceId: ws.id, status: "open" },
@@ -162,17 +158,32 @@ export default async function FounderAkunPage({
       prisma.conversation.count({
         where: { workspaceId: ws.id, needsHuman: true },
       }),
-      prisma.conversation.findFirst({
-        where: { workspaceId: ws.id },
+      // Daftar obrolannya. Ruang coba dibuang: itu bukan pelanggan sungguhan,
+      // cuma pemiliknya sendiri sedang mencoba asistennya.
+      prisma.conversation.findMany({
+        where: {
+          workspaceId: ws.id,
+          contact: { OR: [{ waJid: null }, { NOT: { waJid: { startsWith: "playground:" } } }] },
+        },
         orderBy: { lastMessageAt: "desc" },
-        // HANYA tanggalnya. Bukan id kontaknya, bukan cuplikan pesannya.
-        select: { lastMessageAt: true },
+        take: 40,
+        select: {
+          id: true,
+          status: true,
+          needsHuman: true,
+          aiEnabled: true,
+          lastMessageAt: true,
+          contact: { select: { name: true, phone: true } },
+          _count: { select: { messages: true } },
+        },
       }),
       hitungBalasan(
         ws.id,
         new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       ),
     ]);
+
+  const terakhirChat = daftarObrolan[0] ?? null;
 
   const paket = getPlan(ws.plan);
   const pemilik = ws.users.find((u) => u.role === "owner") ?? ws.users[0];
@@ -249,7 +260,9 @@ export default async function FounderAkunPage({
                 {ws._count.contacts.toLocaleString("id-ID")}
               </Baris>
               <Baris label="Chat terakhir masuk">
-                {terakhirChat ? jamTanggal(terakhirChat.lastMessageAt) : "belum pernah"}
+                {terakhirChat
+                  ? jamTanggal(terakhirChat.lastMessageAt)
+                  : "belum pernah"}
               </Baris>
             </div>
           </div>
@@ -372,25 +385,63 @@ export default async function FounderAkunPage({
           </div>
         ))}
 
-        {/* Yang TIDAK ada di halaman ini, ditulis terang-terangan supaya orang
-            berikutnya tidak menambahkannya tanpa berpikir. */}
-        <div className="card-pad bg-ink-50">
-          <h2 className="font-semibold text-ink-900">
-            Isi chat pelanggannya tidak bisa dibuka dari sini
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-ink-600">
-            Kebijakan privasi kita menulis: karyawan Palwise tidak membaca isi
-            chat kamu, kecuali kamu sendiri yang meminta bantuan dan
-            mengizinkannya. Jadi yang muncul di atas cuma hitungan dan waktu
-            terakhir, bukan nama, nomor, atau kalimat pelanggannya.
+        {/* Obrolan pelanggannya.
+            Yang di daftar ini masih penunjuk: nama, nomor, jumlah pesan, dan
+            kapan terakhir. Isinya baru terbuka waktu diklik, dan bukaan itu
+            yang dicatat. Membedakan keduanya bukan formalitas: menggulir daftar
+            untuk mencari akun mana yang hidup tidak sama dengan membaca
+            percakapan orang, dan cuma yang kedua yang perlu ditelusuri nanti. */}
+        <div>
+          <h2 className="font-semibold text-ink-900">Obrolan pelanggannya</h2>
+          <p className="mt-1 text-xs leading-relaxed text-ink-500">
+            Buka isinya cuma kalau memang perlu buat bantuin atau mbenerin
+            produknya. Tiap yang kamu buka tercatat di{" "}
+            <code className="rounded bg-ink-100 px-1 py-0.5 font-mono text-[11px]">
+              data/log/buka-chat.jsonl
+            </code>
+            , sesuai yang tertulis di kebijakan privasi.
           </p>
-          <p className="mt-2 text-sm leading-relaxed text-ink-600">
-            Kalau ada yang komplain dan chatnya memang perlu dibuka, mintanya ke
-            orangnya langsung, dan bukaannya harus tercatat. Menambahkannya
-            diam-diam di sini membuat kalimat di halaman privasi jadi bohong,
-            dan kalimat itu salah satu alasan orang mau menyambungkan nomor
-            usahanya.
-          </p>
+
+          {daftarObrolan.length === 0 ? (
+            <p className="mt-4 text-sm leading-relaxed text-ink-500">
+              Belum ada obrolan sama sekali.
+            </p>
+          ) : (
+            <div className="card mt-4 divide-y divide-ink-100">
+              {daftarObrolan.map((o) => (
+                <Link
+                  key={o.id}
+                  href={`/app/founder/${ws.id}/${o.id}`}
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 transition hover:bg-ink-50"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-ink-900">
+                      {o.contact.name || o.contact.phone || "tanpa nama"}
+                    </p>
+                    <p className="truncate text-xs text-ink-500">
+                      {o._count.messages} pesan · terakhir{" "}
+                      {jamTanggal(o.lastMessageAt)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {o.needsHuman && (
+                      <span className="badge bg-amber-50 text-amber-800">
+                        Nunggu manusia
+                      </span>
+                    )}
+                    {!o.aiEnabled && (
+                      <span className="badge bg-ink-100 text-ink-600">
+                        Asisten mati
+                      </span>
+                    )}
+                    <span className="badge bg-ink-100 text-ink-700">
+                      {o.status === "open" ? "Berjalan" : "Beres"}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </>

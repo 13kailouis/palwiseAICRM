@@ -30,6 +30,16 @@ function cariAkarProyek(mulai: string): string {
 
 const AKAR = cariAkarProyek(process.cwd());
 
+/**
+ * Akar proyek, dipakai juga oleh berkas lain yang menulis ke `data/`.
+ *
+ * Diekspor supaya folder catatan tidak menghitung akarnya sendiri dengan cara
+ * yang berbeda. Dua cara menghitung akar berarti dua folder `data/` yang
+ * berbeda begitu ada yang menjalankan perintah dari subfolder, dan yang kedua
+ * biasanya baru ketahuan waktu isinya dicari dan tidak ada.
+ */
+export const AKAR_PROYEK = AKAR;
+
 export const MEDIA_DIR = (() => {
   const dari = process.env.MEDIA_DIR ?? "./data/media";
   const p = path.isAbsolute(dari) ? dari : path.resolve(AKAR, dari);
