@@ -62,11 +62,33 @@ const AMBIL: { id: Tab; label: string; ikon: NamaIkon; saran?: string }[] = [
  *
  * Sebagai tombol, contohnya benar-benar masuk ke kolomnya, lalu tinggal
  * ditimpa. Itu yang sebenarnya dimau orang waktu melihat contoh.
+ *
+ * ISINYA DIROMBAK 10 AGUSTUS 2026, karena contoh yang lama mengajarkan bentuk
+ * yang tidak bisa dipakai menjawab pertanyaan yang paling sering masuk.
+ *
+ * Yang lama dua baris produk, tanpa varian, dan TANPA STOK sama sekali. Padahal
+ * "ready gak kak?" itu pertanyaan nomor satu di WhatsApp toko Indonesia. Orang
+ * yang menekan "Pakai contoh" lalu mengikuti bentuknya menghasilkan catatan
+ * yang tidak punya jawabannya, dan asistennya jadi tidak pernah bisa menjawab
+ * hal yang paling ditanyakan.
+ *
+ * Tiga hal yang sekarang sengaja diajarkan lewat bentuknya, bukan lewat
+ * penjelasan:
+ *
+ * 1. Ada kolom stok. Tanpa dicontohkan, hampir tidak ada yang menuliskannya.
+ * 2. Varian punya BARIS SENDIRI-SENDIRI, bukan digabung jadi "tersedia ukuran
+ *    200gr dan 500gr". Yang digabung tidak bisa dijawab per varian, dan
+ *    pelanggan selalu bertanya per varian.
+ * 3. Ada satu baris yang stoknya 0. Ini bukan hiasan: asisten cuma boleh
+ *    menyatakan sesuatu habis kalau catatannya memang menulis begitu, jadi
+ *    pemiliknya perlu tahu caranya menandai barang yang lagi kosong.
  */
 const CONTOH_ISI = [
-  "DAFTAR HARGA",
-  "Arabika Gayo 200gr, Rp 85.000",
-  "Robusta Temanggung 200gr, Rp 55.000",
+  "DAFTAR HARGA DAN STOK",
+  "Arabika Gayo 200gr, Rp 85.000, stok 12",
+  "Arabika Gayo 500gr, Rp 190.000, stok 4",
+  "Robusta Temanggung 200gr, Rp 55.000, stok 0",
+  "Robusta Temanggung 500gr, Rp 125.000, stok 30",
   "",
   "PENGIRIMAN",
   "Dikirim dari Bandung pakai JNE atau J&T.",
@@ -155,10 +177,16 @@ export function KnowledgeAdd({
           harganya".
 
           Dan itu bukan cuma sia-sia, tapi merugikan: pencarian cuma mengambil
-          lima potongan paling mirip per pertanyaan, jadi tumpukan tulisan
-          pemasaran justru MENDORONG KELUAR potongan yang berguna. Info bisnis
-          500 huruf berisi daftar harga mengalahkan 30.000 huruf berisi profil
-          perusahaan.
+          sebagian isi catatan per pertanyaan, jadi tumpukan tulisan pemasaran
+          justru MENDORONG KELUAR bagian yang berguna. Info bisnis 500 huruf
+          berisi daftar harga mengalahkan 30.000 huruf berisi profil perusahaan.
+
+          Perhatikan bedanya dengan keterangan di bawah kotak "Ketik sendiri",
+          yang justru menyuruh menulis sebanyak-banyaknya. Dua-duanya benar dan
+          tidak bertentangan: yang dilawan di sini BASA-BASI yang panjang, bukan
+          DATA yang panjang. Daftar harga seribu baris tetap terjawab per baris,
+          sedangkan seribu baris "komitmen kami pada kualitas" tidak menjawab
+          apa pun sambil menyulitkan yang lain ditemukan.
 
           Ditulis di bawah tombolnya, bukan sesudah impornya selesai, supaya
           orangnya tahu harus memeriksa apa sebelum dia merasa pekerjaannya
@@ -241,8 +269,27 @@ export function KnowledgeAdd({
               className="textarea"
               value={isi}
               onChange={(e) => setIsi(e.target.value)}
-              placeholder="Daftar harga, cara pesan, jam buka, aturan retur, pertanyaan yang sering ditanya."
+              placeholder="Daftar harga dan stok, cara pesan, jam buka, aturan retur, pertanyaan yang sering ditanya."
             />
+            {/* Keterangan ini ada karena contoh di atas cuma bisa mengajarkan
+                BENTUKNYA, tidak bisa mengajarkan seberapa banyak.
+
+                Contoh yang isinya empat baris diam-diam mengajarkan bahwa empat
+                baris itu cukup, dan orang berhenti di situ. Lalu pelanggannya
+                menanyakan barang kelima dan asistennya tidak punya jawabannya.
+
+                Pelanggan sungguhan 10 Agustus 2026 menempelkan 842 baris hasil
+                ekspor Excel, dan itu justru yang paling benar. Tapi dia harus
+                menebak sendiri bahwa itu boleh, karena tidak ada satu kalimat
+                pun di layar ini yang mengatakannya. Yang lain berhenti di lima
+                baris karena mengira daftar panjang bikin asistennya bingung. */}
+            <p className="mt-2 text-xs leading-relaxed text-ink-500">
+              Tulis <strong className="font-medium text-ink-700">semua</strong>{" "}
+              barang atau layananmu, satu baris satu item, lengkap dengan
+              harganya. Daftar panjang justru bagus, ratusan baris tidak apa-apa.
+              Kalau datamu sudah ada di Excel atau Google Sheets, salin saja
+              kolomnya lalu tempel di sini apa adanya.
+            </p>
           </div>
         )}
 

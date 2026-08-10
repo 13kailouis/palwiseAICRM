@@ -7696,6 +7696,63 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /jalur: "\/panduan"/.test(baca("apps/web/src/app/sitemap.ts")),
     );
 
+    // ─── Contoh isi Info bisnis mengajarkan bentuk yang bisa dipakai ─────────
+    //
+    // Contoh itu perintah yang paling patuh diikuti orang, jauh lebih patuh
+    // daripada penjelasan di sebelahnya. Jadi apa pun yang TIDAK ada di contoh
+    // praktis tidak akan pernah ditulis pemilik toko.
+    //
+    // Sampai 10 Agustus 2026 dua contoh ini tidak punya kolom stok sama sekali,
+    // padahal "ready gak kak?" pertanyaan nomor satu di WhatsApp toko. Orang
+    // yang menekan "Pakai contoh" lalu mengikuti bentuknya menghasilkan catatan
+    // yang tidak bisa menjawab hal yang paling sering ditanyakan.
+    const knowledgeAdd = baca("apps/web/src/components/KnowledgeAdd.tsx");
+
+    for (const [nama, isi] of [
+      ["kotak Ketik sendiri", knowledgeAdd],
+      ["panduan", panduan],
+    ] as const) {
+      check(
+        `contoh info bisnis di ${nama} punya kolom stok`,
+        /stok \d/.test(isi),
+      );
+      // Satu baris berstok 0 itu bukan hiasan. Asisten cuma boleh menyatakan
+      // sesuatu habis kalau catatannya memang menulis begitu, jadi pemiliknya
+      // perlu melihat caranya menandai barang yang lagi kosong.
+      check(
+        `contoh info bisnis di ${nama} mencontohkan barang yang habis`,
+        /stok 0/.test(isi),
+      );
+      // Varian harus punya baris sendiri-sendiri. Yang digabung jadi "tersedia
+      // ukuran 200gr dan 500gr" tidak bisa dijawab per varian, dan pelanggan
+      // selalu bertanya per varian.
+      check(
+        `contoh info bisnis di ${nama} memberi varian barisnya sendiri`,
+        /200gr/.test(isi) && /500gr/.test(isi),
+      );
+    }
+
+    // Bentuknya sudah dicontohkan, tapi contoh tidak bisa mengajarkan SEBERAPA
+    // BANYAK: contoh empat baris diam-diam mengajarkan bahwa empat baris cukup.
+    // Pelanggan sungguhan menempelkan 842 baris dan itu justru yang paling
+    // benar, tapi dia harus menebak sendiri bahwa itu boleh.
+    check(
+      "kotak Ketik sendiri bilang daftar panjang itu bagus",
+      /ratusan baris/.test(knowledgeAdd) && /Excel/.test(knowledgeAdd),
+    );
+    check(
+      "panduan menjawab yang cuma menulis barang terlaris",
+      /paling laku/.test(panduan) && /ratusan baris/.test(panduan),
+    );
+    // Saran lama "pecah jadi beberapa catatan kalau tulisannya panjang" ditulis
+    // waktu pencariannya masih murni per potongan. Sekarang dia bertentangan
+    // dengan keterangan di kotak Ketik sendiri, dan nasihat yang bertentangan
+    // di dua layar bikin orang berhenti mempercayai dua-duanya.
+    check(
+      "panduan tidak lagi menyuruh memecah daftar harga yang panjang",
+      !/pecah jadi beberapa catatan/.test(panduan),
+    );
+
     // ─── Jalur tercepat mengisi info bisnis ──────────────────────────────────
     //
     // Info bisnis yang kosong itu tempat orang paling sering menyerah, jadi

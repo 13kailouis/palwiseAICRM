@@ -65,10 +65,11 @@ const SIAPKAN: { ikon: NamaIkon; judul: string; body: string }[] = [
 ];
 
 /** Contoh isi Info bisnis yang benar-benar bisa ditempel. */
-const CONTOH_ISI = `HARGA
-Arabika Gayo 200gr Rp 85.000
-Robusta Temanggung 200gr Rp 55.000
-Paket sampler 3 x 50gr Rp 75.000
+const CONTOH_ISI = `HARGA DAN STOK
+Arabika Gayo 200gr Rp 85.000 stok 12
+Arabika Gayo 500gr Rp 190.000 stok 4
+Robusta Temanggung 200gr Rp 55.000 stok 0
+Paket sampler 3 x 50gr Rp 75.000 stok 8
 
 PENGIRIMAN
 Dikirim dari Bandung pakai JNE dan J&T.
@@ -107,6 +108,19 @@ const SALAH_BENAR: { salah: string; benar: string; kenapa: string }[] = [
     kenapa:
       "Pelanggan menanyakan jam, bukan hari. Dan kalau Minggu sebenarnya tutup, “setiap hari” bikin asistenmu menjanjikan yang nggak ada.",
   },
+  {
+    salah: "Stoknya banyak kok, ready semua",
+    benar:
+      "Arabika Gayo 200gr Rp 85.000 stok 12. Robusta Temanggung 200gr Rp 55.000 stok 0",
+    kenapa:
+      "“Ready semua” besok jadi bohong. Tulis stoknya per barang, dan tulis 0 buat yang lagi habis. Asistenmu cuma boleh bilang sesuatu kosong kalau catatanmu memang menulis begitu, jadi barang yang nggak kamu tulis bakal dijawab “saya cek dulu ke tim”, bukan dijawab kosong.",
+  },
+  {
+    salah: "Nulis 5 barang yang paling laku aja, sisanya nanti",
+    benar: "Semua barangmu, satu baris satu barang, walaupun jadi ratusan baris",
+    kenapa:
+      "Barang yang nggak kamu tulis nggak akan pernah bisa dia jawab, dan yang nanya barang itu bakal dilempar ke kamu terus. Daftar panjang nggak bikin dia bingung, dia nyari per baris. Kalau datamu udah ada di Excel, salin kolomnya terus tempel apa adanya.",
+  },
 ];
 
 const SERING_BINGUNG: { t: string; j: string }[] = [
@@ -124,7 +138,7 @@ const SERING_BINGUNG: { t: string; j: string }[] = [
   },
   {
     t: "Asistennya bilang nggak tahu padahal ada di info bisnis",
-    j: "Cek dulu catatannya sudah bertanda selesai dihafal di halaman Info bisnis. Kalau baru ditempel, tunggu sebentar. Kalau tulisannya panjang sekali dalam satu catatan, pecah jadi beberapa catatan menurut topiknya, biar dia gampang menemukan yang tepat.",
+    j: "Cek dulu catatannya sudah bertanda selesai dihafal di halaman Info bisnis. Kalau baru ditempel, tunggu sebentar. Daftar harga yang panjang nggak masalah, dia nyari per baris. Yang bikin susah ketemu itu catatan yang isinya cerita panjang tentang usahamu, jadi pisahin yang begitu dari daftar harganya.",
   },
   {
     t: "Aku mau pegang sendiri satu pelanggan",
