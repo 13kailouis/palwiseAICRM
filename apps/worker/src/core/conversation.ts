@@ -1527,6 +1527,18 @@ async function applySideEffects(
     );
   }
 
+  // Pengakuan sudah bayar.
+  //
+  // Sumbu sendiri, bukan tahap, dan cuma DIISI, tidak pernah dikosongkan AI.
+  // Yang berhak menyatakan uangnya benar-benar masuk itu pemilik toko sesudah
+  // melihat rekeningnya, bukan model yang membaca kalimat pelanggan.
+  //
+  // Waktunya dicatat sekali, waktu pengakuannya pertama muncul, supaya "sudah
+  // menunggu dicek berapa lama" tidak ter-reset tiap balasan berikutnya.
+  if (reply.klaimBayar && !current.klaimBayarSejak) {
+    contactData.klaimBayarSejak = new Date();
+  }
+
   // Masalah pelanggan.
   //
   // Cuma DIISI di sini, tidak pernah dikosongkan. Yang berhak menyatakan

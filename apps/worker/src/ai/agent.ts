@@ -60,9 +60,18 @@ const ARTI_TAHAP: Record<PipelineStage, string> = {
     "menawar, minta diskon, membandingkan pilihan atau paket, atau menghitung total biaya",
   closing:
     "sudah menyatakan mau pesan, booking, atau ambil layanannya, memberi alamat atau tanggal, atau menanyakan cara bayar",
+  // "Urusan beres" DI SINI berarti ada transaksi yang benar-benar terjadi lalu
+  // rampung. Bukan sekadar obrolannya habis.
+  //
+  // Sebelum 10 Agustus 2026 kalimatnya cuma "urusannya sudah beres", dan
+  // pelanggan yang menjawab "tidak kak, terima kasih" masuk ke sini: dari sisi
+  // model urusannya memang beres. Akibatnya dia terhitung sebagai pembeli, dan
+  // sebelum ada `klaimBayar` dia juga muncul di Ringkasan sebagai orang yang
+  // mengaku sudah bayar.
   selesai:
-    "sudah mengaku transfer, kirim bukti bayar, atau urusannya sudah beres: pesanannya diterima, jadwalnya jalan, layanannya selesai dikerjakan",
-  batal: "menyatakan tidak jadi, terlalu mahal, atau memilih tempat lain",
+    "ada transaksi yang benar-benar terjadi dan sudah rampung: dia sudah bayar atau kirim bukti transfer, pesanannya sudah diterima, jadwalnya sudah jalan, atau layanannya selesai dikerjakan. JANGAN dipakai kalau dia tidak pernah jadi memesan atau memakai layanannya",
+  batal:
+    "menyatakan tidak jadi, tidak butuh, terlalu mahal, memilih tempat lain, atau menutup obrolan tanpa pernah jadi memesan (termasuk yang cuma menjawab \"tidak, terima kasih\")",
 };
 
 /** Urutan maju. "batal" sejajar dengan "selesai" karena sama-sama akhir. */
@@ -108,6 +117,13 @@ export interface AgentReply {
   stage: string | null;
   /** Masalah yang dialami pelanggan, mis. minta refund. Null kalau tidak ada. */
   masalah: string | null;
+  /**
+   * Pelanggan MENGAKU sudah bayar, atau mengirim bukti transfer.
+   *
+   * Sumbu sendiri, bukan tahap, karena tahap "selesai" punya dua arti dan yang
+   * satunya sama sekali bukan soal uang. Lihat `Contact.klaimBayarSejak`.
+   */
+  klaimBayar: boolean;
   /** Janji temu yang disepakati di obrolan. Null kalau belum pasti. */
   janjiPada: Date | null;
   janjiCatatan: string | null;
@@ -424,6 +440,7 @@ ${PIPELINE_STAGES.map((s) => `    ${s} = ${ARTI_TAHAP[s]}`).join("\n")}
   Kosongkan kalau belum yakin. Jangan menurunkan tahap customer yang sudah mau membeli hanya karena dia bertanya hal lain.
 - "tags": maksimal 3 label pendek huruf kecil untuk kebutuhan/minat customer, contoh ["arabika","grosir"]. Boleh kosong.
 - "masalah": satu kalimat pendek KALAU customer sedang mengeluhkan sesuatu yang merugikan dia. Yang dihitung merugikan: dia minta uangnya kembali, dia sudah bayar tapi belum dilayani atau belum diproses, barangnya rusak atau salah kirim, paketnya tidak sampai, jadwal atau bookingnya dibatalkan atau ditunda sepihak, hasil pengerjaannya tidak sesuai yang dijanjikan, atau dia sudah lama menunggu jawaban yang dijanjikan tim. Contoh: "minta refund, paket belum sampai 9 hari" atau "jadwal perawatannya dibatalkan sepihak, minta ganti". Kosongkan (null) kalau dia cuma bertanya biasa atau menawar. Jangan mengisi ini untuk keluhan ringan seperti harga kemahalan.
+- "klaim_bayar": true HANYA kalau di pesan terakhir customer menyatakan dia SUDAH membayar, atau mengirim bukti transfer. Contoh: "sudah saya transfer ya kak", "ini buktinya", atau mengirim foto struk atau tangkapan layar mutasi. Kalau dia baru menanyakan cara bayar, baru berjanji mau bayar nanti, atau cuma menutup obrolan dengan "tidak, terima kasih", isi false. Field ini bikin pemilik usaha membuka rekeningnya untuk mencocokkan uang, jadi salah mengisinya berarti menyuruh orang mencari uang yang tidak pernah ada.
 - "janji": diisi HANYA kalau customer sudah menyebut waktu yang jelas untuk bertemu atau dilayani. Termasuk yang tatap muka (jadwal kontrol, booking servis, jam datang, survei lokasi, kelas percobaan) DAN yang online (meeting Zoom atau Google Meet, video call, telepon terjadwal, demo online). "pada" ditulis persis dengan format "YYYY-MM-DD HH:mm", dihitung dari WAKTU SEKARANG di KONTEKS INTERNAL. "catatan" satu potong pendek soal janjinya DAN caranya bertemu, misalnya "kontrol gigi dengan dokter Rina, datang ke klinik", "survei unit tipe 36 di lokasi", atau "meeting online lewat Google Meet". Kosongkan DUA-DUANYA kalau waktunya belum pasti, masih ditanya-tanya, atau kamu harus menebak tanggalnya. Menebak tanggal bikin orang datang di hari yang salah, jadi ragu sedikit saja lebih baik dikosongkan.
 - "media_note": diisi HANYA kalau customer barusan mengirim lampiran. Satu kalimat yang menjelaskan isinya, misalnya "foto bukti transfer BCA Rp 340.000" atau "pesan suara menanyakan stok arabika". Kamu tidak akan bisa melihat lampiran itu lagi di pesan berikutnya, jadi tulis yang penting saja. Kosongkan ("") kalau pesan terakhir tidak ada lampirannya.${
     assets.length > 0
@@ -978,6 +995,8 @@ export async function generateReply(
     contactUpdates: {},
     stage: null,
     masalah: null,
+    // Jalur darurat: model gagal, jadi tidak ada pengakuan bayar apa pun.
+    klaimBayar: false,
     janjiPada: null,
     janjiCatatan: null,
     tags: [],
@@ -1025,6 +1044,8 @@ function bacaKeluaran(
         contactUpdates: {},
         stage: null,
         masalah: null,
+        // Jalur darurat: model gagal, jadi tidak ada pengakuan bayar apa pun.
+        klaimBayar: false,
         janjiPada: null,
         janjiCatatan: null,
         tags: [],
@@ -1049,6 +1070,8 @@ function bacaKeluaran(
         contactUpdates: {},
         stage: null,
         masalah: null,
+        // Jalur darurat: model gagal, jadi tidak ada pengakuan bayar apa pun.
+        klaimBayar: false,
         janjiPada: null,
         janjiCatatan: null,
         tags: [],
@@ -1105,6 +1128,10 @@ function bacaKeluaran(
     // pelanggan. Yang perlu dilihat pemilik toko itu "ada apa", bukan
     // seluruh riwayat obrolannya.
     masalah: (cleanField(parsed.masalah) ?? "").slice(0, 160) || null,
+    // Sengaja `=== true`, bukan yang truthy. Model kadang mengembalikan "false"
+    // sebagai teks, dan teks "false" itu truthy: satu pelanggan yang jelas-jelas
+    // belum bayar akan dilaporkan sudah bayar.
+    klaimBayar: parsed.klaim_bayar === true || parsed.klaim_bayar === "true",
     // Catatannya cuma ikut kalau tanggalnya sendiri lolos pemeriksaan. Catatan
     // janji tanpa waktu itu setengah kabar yang bikin orang mengira ada janji
     // padahal tidak ada yang tahu kapan.

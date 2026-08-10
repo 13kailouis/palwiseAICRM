@@ -323,10 +323,15 @@ export default async function KontakDetailPage({
                   Simpan
                 </button>
               </form>
-              {contact.stage === "selesai" && contact.closedAt && (
+              {/* Yang menentukan kalimat soal uang itu pengakuan bayarnya,
+                  BUKAN tahapnya. Tahap "selesai" juga dipakai untuk urusan yang
+                  rampung tanpa ada uang yang berpindah, dan kalimat ini pernah
+                  menuduh pelanggan mengaku bayar padahal dia tidak pernah
+                  menyebut apa pun soal itu. */}
+              {contact.klaimBayarSejak && (
                 <p className="mt-2 text-xs text-ink-500">
-                  Dia mengaku sudah bayar {formatWaktu(contact.closedAt)}. Bukti
-                  transfernya, kalau ada, muncul di daftar lampiran.
+                  Dia mengaku sudah bayar {formatWaktu(contact.klaimBayarSejak)}.
+                  Bukti transfernya, kalau ada, muncul di daftar lampiran.
                 </p>
               )}
             </div>

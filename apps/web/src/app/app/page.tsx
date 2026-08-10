@@ -72,16 +72,24 @@ export default async function DashboardPage() {
       // Menghitung baris pesan berarti menghitung bubble, dan satu balasan
       // bisa jadi tiga bubble.
       hitungBalasan(workspaceId, since),
-      // Pelanggan yang baru masuk tahap "selesai". Tahap itu diisi AI begitu
-      // pelanggan MENGAKU sudah transfer atau mengirim bukti bayar, bukan
-      // setelah uangnya benar-benar dicek. Jadi angka ini bukan laporan
-      // pemasukan, dia daftar yang masih perlu dicocokkan ke rekening.
+      // Pelanggan yang MENGAKU sudah bayar, bukan yang tahapnya "selesai".
+      //
+      // Bug 10 Agustus 2026: dulu yang dihitung `stage: "selesai"`. Tahap itu
+      // punya dua arti, dan yang satunya sama sekali bukan soal uang. Seorang
+      // pelanggan yang cuma menjawab "tidak kak, terima kasih" masuk "selesai"
+      // karena urusannya memang beres, lalu muncul di sini sebagai orang yang
+      // mengaku sudah bayar, lengkap dengan ajakan mengecek rekening.
+      //
+      // Yang rusak bukan cuma satu spanduk: pemiliknya membuka rekening
+      // mencari uang yang tidak pernah ada, dan sesudah dua kali begitu dia
+      // berhenti mempercayai kabar uang dari Palwise, termasuk yang benar.
+      // Sekarang sumbernya `klaimBayarSejak`, yang cuma terisi kalau
+      // pelanggannya benar-benar bilang sudah transfer atau kirim buktinya.
       prisma.contact.count({
         where: {
           workspaceId,
           ...HANYA_PELANGGAN_ASLI,
-          stage: "selesai",
-          closedAt: { gte: since },
+          klaimBayarSejak: { gte: since },
         },
       }),
       prisma.conversation.findMany({
@@ -240,7 +248,7 @@ export default async function DashboardPage() {
              cuma karena pernah ditutup sekali. */
           <SpandukTutup tanda={`bayar:${baruSelesai}`}>
           <Link
-            href="/app/kontak?stage=selesai"
+            href="/app/kontak?stage=klaim-bayar"
             className="flex flex-wrap items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 pr-12 transition hover:border-brand-400"
           >
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-semibold text-white">

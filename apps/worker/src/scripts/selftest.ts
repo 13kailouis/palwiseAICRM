@@ -2539,6 +2539,157 @@ async function main() {
   const beres = await prisma.contact.findUniqueOrThrow({ where: { id: kMasalah.id } });
   check("pemilik toko bisa menandai beres", beres.masalah === null);
 
+  // ── Pengakuan sudah bayar: sumbu sendiri, bukan tahap ─────────────────────
+  //
+  // Bug sungguhan 10 Agustus 2026, dan bentuknya menyesatkan pemilik usaha
+  // soal UANG. Seorang pelanggan cuma menjawab "Tidak kak terimakasihhh",
+  // tidak pernah memesan apa pun, dan tidak pernah menyebut pembayaran. Dia
+  // masuk tahap "selesai" karena artinya waktu itu termasuk "urusannya sudah
+  // beres", lalu Ringkasan menghitung tahap itu sebagai "mengaku sudah bayar"
+  // dan menyuruh pemiliknya mengecek rekening.
+  //
+  // Dua akibatnya, dan yang kedua yang paling mahal: dia mencari uang yang
+  // tidak pernah ada, dan sesudah dua kali begitu dia berhenti mempercayai
+  // kabar uang dari Palwise, termasuk yang benar.
+  const kTolak = await getOrCreateContact({
+    workspaceId: workspace.id,
+    waJid: "628999000111@s.whatsapp.net",
+  });
+  const oTolak = await getOrCreateConversation({
+    workspaceId: workspace.id,
+    contactId: kTolak.id,
+    agentId: agent.id,
+  });
+  scriptedReply = {
+    reply: ["Sama-sama kak, semoga harinya menyenangkan!"],
+    // Model boleh saja menilai urusannya beres. Yang TIDAK boleh, itu dibaca
+    // sebagai uang.
+    stage: "selesai",
+    klaim_bayar: false,
+  };
+  await appendMessage({
+    conversationId: oTolak.id,
+    workspaceId: workspace.id,
+    role: "customer",
+    content: "Tidak kak terimakasihhh",
+  });
+  await runAgentOnConversation({ conversationId: oTolak.id });
+  const setelahTolak = await prisma.contact.findUniqueOrThrow({
+    where: { id: kTolak.id },
+  });
+  check(
+    "pelanggan yang cuma menolak sopan tidak dianggap mengaku bayar",
+    setelahTolak.klaimBayarSejak === null,
+    setelahTolak.klaimBayarSejak ? "DIANGGAP BAYAR" : "aman",
+  );
+
+  const kBayar = await getOrCreateContact({
+    workspaceId: workspace.id,
+    waJid: "628999000222@s.whatsapp.net",
+  });
+  const oBayar = await getOrCreateConversation({
+    workspaceId: workspace.id,
+    contactId: kBayar.id,
+    agentId: agent.id,
+  });
+  scriptedReply = {
+    reply: ["Terima kasih kak, saya cek dulu ya."],
+    stage: "selesai",
+    klaim_bayar: true,
+  };
+  await appendMessage({
+    conversationId: oBayar.id,
+    workspaceId: workspace.id,
+    role: "customer",
+    content: "Sudah saya transfer ya kak, ini buktinya",
+  });
+  await runAgentOnConversation({ conversationId: oBayar.id });
+  const setelahBayar = await prisma.contact.findUniqueOrThrow({
+    where: { id: kBayar.id },
+  });
+  check(
+    "yang benar-benar mengaku transfer tercatat",
+    setelahBayar.klaimBayarSejak !== null,
+  );
+
+  // Waktunya dicatat sekali. Kalau ikut diperbarui tiap balasan, "sudah
+  // menunggu dicek berapa lama" selalu terbaca "baru saja", dan pengakuan yang
+  // menggantung tiga hari kelihatan sama dengan yang barusan masuk.
+  const bayarSejakAwal = setelahBayar.klaimBayarSejak;
+  scriptedReply = {
+    reply: ["Siap kak, ditunggu ya."],
+    klaim_bayar: true,
+  };
+  await appendMessage({
+    conversationId: oBayar.id,
+    workspaceId: workspace.id,
+    role: "customer",
+    content: "Sudah ya kak",
+  });
+  await runAgentOnConversation({ conversationId: oBayar.id });
+  const bayarLagi = await prisma.contact.findUniqueOrThrow({
+    where: { id: kBayar.id },
+  });
+  check(
+    "waktu pengakuan bayar tidak ter-reset tiap balasan",
+    bayarLagi.klaimBayarSejak?.getTime() === bayarSejakAwal?.getTime(),
+  );
+
+  // Teks "false" itu truthy di JavaScript, dan model kadang mengembalikannya
+  // sebagai teks. Tanpa perbandingan yang ketat, pelanggan yang jelas-jelas
+  // belum bayar dilaporkan sudah bayar.
+  const kPalsu = await getOrCreateContact({
+    workspaceId: workspace.id,
+    waJid: "628999000333@s.whatsapp.net",
+  });
+  const oPalsu = await getOrCreateConversation({
+    workspaceId: workspace.id,
+    contactId: kPalsu.id,
+    agentId: agent.id,
+  });
+  scriptedReply = { reply: ["Baik kak."], klaim_bayar: "false" };
+  await appendMessage({
+    conversationId: oPalsu.id,
+    workspaceId: workspace.id,
+    role: "customer",
+    content: "Nanti saya bayar ya",
+  });
+  await runAgentOnConversation({ conversationId: oPalsu.id });
+  const palsu = await prisma.contact.findUniqueOrThrow({ where: { id: kPalsu.id } });
+  check(
+    'teks "false" tidak dibaca sebagai sudah bayar',
+    palsu.klaimBayarSejak === null,
+  );
+
+  // Spanduk uang di Ringkasan dan halaman yang dituju tombolnya WAJIB memakai
+  // saringan yang sama. Kalau tidak, angkanya bilang satu orang dan halamannya
+  // menampilkan orang yang berbeda.
+  const halamanRingkasan = fs.readFileSync(
+    new URL("../../../web/src/app/app/page.tsx", import.meta.url),
+    "utf8",
+  );
+  const halamanKontakDaftar = fs.readFileSync(
+    new URL("../../../web/src/app/app/kontak/page.tsx", import.meta.url),
+    "utf8",
+  );
+  // Komentarnya dibuang dulu. KELIMA kalinya pola ini menjebak di berkas ini:
+  // komentar berisi kalimat lama beserta alasan penggantiannya, jadi memeriksa
+  // berkas mentahnya berarti menuduh kode yang justru sudah dibetulkan.
+  const ringkasanBersih = halamanRingkasan
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+  check(
+    "spanduk uang dihitung dari pengakuan bayar, bukan dari tahap",
+    /klaimBayarSejak: \{ gte: since \}/.test(ringkasanBersih) &&
+      !/stage: "selesai"/.test(ringkasanBersih),
+  );
+  check(
+    "tombol spanduk uang membuka daftar yang sama dengan hitungannya",
+    /stage=klaim-bayar/.test(halamanRingkasan) &&
+      /where\.klaimBayarSejak = \{ not: null \}/.test(halamanKontakDaftar),
+  );
+
   // Ingatan percakapan panjang -------------------------------------------------
   //
   // Bug sungguhan 2026-08-02: customer menjawab "Clipping" di baris ke-5, lalu

@@ -47,6 +47,16 @@ export default async function KontakPage({
     delete where.stage;
     where.janjiPada = { gte: new Date() };
   }
+
+  // Sumbu ketiga yang bukan tahap: yang mengaku sudah bayar. Spanduk uang di
+  // Ringkasan mengarah ke sini, dan dia HARUS memakai saringan yang sama
+  // dengan yang menghitung angkanya. Dulu spanduknya mengarah ke tahap
+  // "selesai", jadi angka di spanduk dan isi halamannya bisa berbeda.
+  const cumaKlaimBayar = stage === "klaim-bayar";
+  if (cumaKlaimBayar) {
+    delete where.stage;
+    where.klaimBayarSejak = { not: null };
+  }
   if (q) {
     where.OR = [
       { name: { contains: q } },
@@ -380,10 +390,17 @@ export default async function KontakPage({
                               yang terjadi tadi pagi dan yang terjadi sebulan
                               lalu kelihatan sama persis, padahal yang satu
                               perlu dicek uangnya sekarang. */}
-                          {c.stage === "selesai" && c.closedAt && (
+                          {c.klaimBayarSejak ? (
                             <p className="mt-1 text-[11px] text-ink-400">
-                              selesai {formatWaktu(c.closedAt)}
+                              ngaku bayar {formatWaktu(c.klaimBayarSejak)}
                             </p>
+                          ) : (
+                            c.stage === "selesai" &&
+                            c.closedAt && (
+                              <p className="mt-1 text-[11px] text-ink-400">
+                                selesai {formatWaktu(c.closedAt)}
+                              </p>
+                            )
                           )}
                         </td>
                         <td className="px-4 py-3 text-xs text-ink-500">

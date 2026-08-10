@@ -491,6 +491,28 @@ model Contact {
   /// tanya kabar dan ajakan beli lagi.
   closedAt DateTime?
 
+  /// Kapan dia MENGAKU sudah bayar, atau mengirim bukti transfer.
+  ///
+  /// SUMBU SENDIRI, bukan tahap. Pola yang sama dengan `masalah`, dan lahir
+  /// dari bug yang sama persis bentuknya (10 Agustus 2026).
+  ///
+  /// Sebelum ini yang dihitung sebagai "mengaku sudah bayar" adalah tahap
+  /// "selesai". Padahal tahap itu punya DUA arti: sudah transfer, ATAU
+  /// urusannya sudah beres. Seorang pelanggan yang cuma menjawab "tidak kak,
+  /// terima kasih" masuk "selesai" karena urusannya memang beres, lalu muncul
+  /// di Ringkasan sebagai orang yang mengaku sudah bayar, lengkap dengan
+  /// ajakan "perlu dicek uangnya".
+  ///
+  /// Yang rusak bukan cuma satu spanduk. Pemilik toko disuruh membuka rekening
+  /// mencari uang yang tidak pernah ada, dan sesudah dua kali begitu dia
+  /// berhenti mempercayai kabar soal uang dari Palwise, termasuk yang benar.
+  ///
+  /// Cuma DIISI, tidak pernah dikosongkan AI: yang berhak menyatakan uangnya
+  /// benar-benar masuk itu pemilik toko, bukan model. Waktunya juga dicatat
+  /// sekali, waktu pengakuannya pertama muncul, supaya "sudah menunggu berapa
+  /// lama" tidak ikut ter-reset tiap balasan.
+  klaimBayarSejak DateTime?
+
   /// Janji temu yang sudah disepakati di obrolan: jadwal kontrol, survei unit,
   /// booking servis, jam datang ke salon.
   ///
