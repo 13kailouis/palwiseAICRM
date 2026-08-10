@@ -258,6 +258,32 @@ Dikirim dari Bandung memakai JNE dan J&T. Gratis ongkir di atas Rp 300.000.
 RETUR
 Kemasan rusak diganti penuh, lapor maksimal 3 hari dengan foto.`;
 
+/**
+ * Tiruan katalog sungguhan milik pelanggan: ekspor stok dari Excel, satu baris
+ * satu barang, merek-mereknya berselang-seling supaya barang satu keluarga
+ * TIDAK berdekatan di berkasnya.
+ *
+ * Berselang-selingnya penting, dan itu bukan dibuat-buat: di katalog aslinya
+ * shade 29 sebuah lip cream ada di huruf ke-24.006 sementara shade 11 sampai 27
+ * tersebar entah di mana. Itulah yang membuat pencarian per potongan gagal —
+ * tidak ada satu potongan pun yang memuat satu keluarga barang secara utuh.
+ */
+const MEREK_UJI = [
+  "ACNES", "AZARINE", "CETAPHIL", "GLAD2GLOW", "HANASUI",
+  "NIVEA", "OMG", "PURBASARI", "SCARLETT", "WARDAH",
+];
+
+const KATALOG_UJI: string[] = [];
+for (let varian = 1; varian <= 14; varian++) {
+  for (const merek of MEREK_UJI) {
+    const nomor = String(varian).padStart(2, "0");
+    const stok = merek === "CETAPHIL" ? varian * 7 : varian * 13;
+    KATALOG_UJI.push(
+      `${merek} SERI LENGKAP ${nomor}\tMerek = ${merek}\tJumlah Stok = ${stok}\tHarga jual = ${20000 + varian * 500}`,
+    );
+  }
+}
+
 async function main() {
   // env sudah dibaca saat import, jadi objeknya yang di-set — bukan process.env.
   env.AI_PROVIDER = "gemini";
@@ -300,6 +326,30 @@ async function main() {
     "tidak ada harga yang terbelah di batas potongan",
     hargaTerbelah === 0,
     `${hargaTerbelah} terbelah`,
+  );
+
+  // Daftar barang tempelan dari Excel: satu baris satu barang, tanpa baris
+  // kosong, ratusan baris. Ini bentuk info bisnis yang paling sering dipakai,
+  // dan yang paling gampang dirusak pemotongan.
+  const katalog = KATALOG_UJI.join("\n");
+  const potonganKatalog = chunkText(katalog);
+  const barisAsli = new Set(KATALOG_UJI);
+  const barisRusak = potonganKatalog
+    .flatMap((p) => p.split("\n"))
+    .map((b) => b.trim())
+    .filter((b) => b.length > 0 && !barisAsli.has(b));
+  // Dulu tumpang tindih dihitung per huruf, jadi potongan bisa dimulai dengan
+  // "FECT WHITE  Jumlah Stok = 0" — sisa buntung dari "PERFECT WHITE SERIES".
+  // Dibaca model, itu barang yang tidak pernah ada, dinyatakan habis, lengkap
+  // dengan harga.
+  check(
+    "tidak ada baris katalog yang terbelah jadi barang palsu",
+    barisRusak.length === 0,
+    barisRusak.slice(0, 2).join(" | "),
+  );
+  check(
+    "semua baris katalog terbawa",
+    KATALOG_UJI.every((b) => potonganKatalog.some((p) => p.includes(b))),
   );
 
   const a = fakeEmbed("harga arabika gayo");
@@ -380,6 +430,77 @@ async function main() {
       pulih.length > 0,
       `${pulih.length} potongan`,
     );
+  }
+
+  // 2b. Katalog panjang: barang yang ada harus KETEMU, bukan dinyatakan habis --
+  //
+  // Ini uji untuk kegagalan yang paling mahal yang pernah kena pelanggan
+  // sungguhan (10 Agustus 2026). Pencarian dulu murni vektor, dan di daftar
+  // yang barisnya nyaris identik, vektor tidak bisa membedakan varian 03 dari
+  // varian 11. Yang tidak kebetulan terambil dilaporkan "stoknya kosong",
+  // berganti-ganti dalam satu obrolan yang sama.
+  console.log("\nPencarian di katalog panjang");
+  {
+    const sumberKatalog = await prisma.knowledgeSource.create({
+      data: {
+        agentId: agent.id,
+        type: "text",
+        title: "Harga & Stok Produk",
+        content: KATALOG_UJI.join("\n"),
+        status: "pending",
+      },
+    });
+    await indexSource(sumberKatalog.id);
+    invalidateAgentCache(agent.id);
+
+    // Satu varian tertentu. Yang dulu terjadi: baris ini ada di database,
+    // tidak pernah sampai ke model, lalu dijawab "kosong".
+    const satuVarian = await searchKnowledge(agent.id, "CETAPHIL SERI LENGKAP 09 ready?");
+    const isiSatu = formatKnowledge(satuVarian);
+    check(
+      "varian yang ditanya persis ikut terkirim ke model",
+      isiSatu.includes("CETAPHIL SERI LENGKAP 09") && isiSatu.includes("Jumlah Stok = 63"),
+      `${satuVarian.length} bagian, ${isiSatu.length} huruf`,
+    );
+
+    // Pertanyaan "ukuran/varian apa saja yang ready" — yang paling sering
+    // ditanya pembeli grosir, dan yang paling mustahil dijawab lima potongan
+    // acak, karena empat belas barisnya tersebar di seluruh berkas.
+    const seluruhMerek = await searchKnowledge(agent.id, "CETAPHIL varian apa saja yang ready");
+    const isiMerek = formatKnowledge(seluruhMerek);
+    const ketemu = KATALOG_UJI.filter(
+      (b) => b.startsWith("CETAPHIL") && isiMerek.includes(b.split("\t")[0]),
+    ).length;
+    check(
+      "semua varian satu merek ikut terkirim, bukan cuma yang kebetulan sepotongan",
+      ketemu === 14,
+      `${ketemu} dari 14 varian`,
+    );
+
+    // Dan tidak boleh kebablasan jadi seluruh katalog: prompt yang kebanjiran
+    // sama tidak bisa dibacanya.
+    check(
+      "merek lain tidak ikut terbawa banyak-banyak",
+      !isiMerek.includes("PURBASARI SERI LENGKAP 09"),
+      isiMerek.slice(0, 120),
+    );
+
+    // Pertanyaan borongan: dua keluarga barang sekaligus, persis bentuk pesan
+    // yang bikin pembeli grosir itu pergi.
+    const borongan = await searchKnowledge(
+      agent.id,
+      "HANASUI SERI LENGKAP 03 sama OMG SERI LENGKAP 05 ready stok berapa aja kak?",
+    );
+    const isiBorongan = formatKnowledge(borongan);
+    check(
+      "pertanyaan dua barang sekaligus tetap dapat dua-duanya",
+      isiBorongan.includes("HANASUI SERI LENGKAP 03") &&
+        isiBorongan.includes("OMG SERI LENGKAP 05"),
+      `${borongan.length} bagian`,
+    );
+
+    await prisma.knowledgeSource.delete({ where: { id: sumberKatalog.id } });
+    invalidateAgentCache(agent.id);
   }
 
   const contact = await getOrCreateContact({
@@ -554,6 +675,21 @@ async function main() {
   check(
     "aturan anti-halusinasi terpasang",
     capturedPrompt.includes("JANGAN PERNAH mengarang"),
+  );
+  // Ini pagar untuk kesalahan yang paling mahal yang pernah kita lihat di
+  // pelanggan sungguhan: barang yang tidak ketemu di hasil pencarian
+  // dinyatakan habis, berkali-kali, ke pembeli grosir.
+  check(
+    "aturan tidak-ketemu-bukan-tidak-ada terpasang",
+    capturedPrompt.includes("TIDAK KETEMU TIDAK SAMA DENGAN TIDAK ADA"),
+  );
+  check(
+    "larangan membalik keterangan sendiri terpasang",
+    capturedPrompt.includes("JANGAN membalik keterangan yang sudah kamu sebut sendiri"),
+  );
+  check(
+    "aturan rincian total terpasang",
+    capturedPrompt.includes("WAJIB tulis rinciannya dulu"),
   );
   check(
     "kondisi eskalasi terpasang",

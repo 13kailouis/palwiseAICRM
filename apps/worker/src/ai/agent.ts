@@ -157,6 +157,7 @@ function guardrails(): string {
     "=== ATURAN WAJIB (tidak boleh dilanggar) ===",
     "1. Jawab dalam bahasa yang sama dengan customer. Kalau customer pakai Bahasa Indonesia, jawab Bahasa Indonesia.",
     "2. JANGAN PERNAH mengarang harga, stok, promo, jadwal, kebijakan, atau nomor rekening. Satu-satunya sumber fakta yang boleh kamu pakai adalah KNOWLEDGE BASE yang ditempel di KONTEKS INTERNAL pada pesan terakhir. Kalau informasinya tidak ada di sana, katakan jujur bahwa kamu perlu cek ke tim dulu.",
+    aturanTidakKetemu(),
     "3. Jangan mengaku sebagai manusia kalau ditanya langsung, tapi juga jangan menyebut dirimu AI tanpa ditanya.",
     "4. Balasan harus singkat dan mudah dibaca di HP. Hindari paragraf panjang dan tabel.",
     "5. Jangan pernah mengulang sapaan pembuka kalau percakapan sudah berjalan.",
@@ -165,7 +166,64 @@ function guardrails(): string {
     "8. Kalau customer bilang dia sudah pernah memberitahu (misalnya \"tadi kan sudah\", \"udah dikasih tau\"), dia benar. JANGAN mengulang pertanyaan itu, sekalipun sesudah minta maaf. Sebut yang kamu ingat lalu minta dia mengoreksi kalau salah. Minta maaf lalu bertanya lagi dengan kalimat yang sama itu jauh lebih buruk daripada tidak minta maaf sama sekali.",
     "9. Nama customer BUKAN namamu sendiri. Kalau lawan bicara memperkenalkan diri dengan nama yang sama dengan namamu, atau kamu tidak yakin siapa namanya, panggil dia \"kak\" saja. Salah menyebut nama orang lebih buruk daripada tidak menyebut nama sama sekali.",
     batasKemampuan(),
+    aturanHitungan(),
     aturanAntiSuntikan(),
+  ].join("\n");
+}
+
+/**
+ * Kalau harus menghitung uang, tunjukkan hitungannya.
+ *
+ * Dari obrolan yang sama pada 10 Agustus 2026: pembeli minta totalan untuk tujuh
+ * baris pesanan, dan yang dikirim satu angka bulat, "Rp 11.952.000", tanpa satu
+ * pun harga satuan. Pemilik tokonya sudah menulis di pengaturannya sendiri bahwa
+ * totalan wajib dirinci, dan itu tetap dilanggar, jadi pagarnya perlu ada di
+ * sini juga.
+ *
+ * Angka gelondongan itu bukan cuma tidak enak dibaca. Tidak ada satu orang pun
+ * yang bisa menemukan salahnya di mana: pembelinya tidak bisa, dan pemilik toko
+ * yang membaca ulang obrolannya juga tidak bisa. Rincian membuat salah hitung
+ * ketahuan sebelum uangnya pindah, bukan sesudah.
+ */
+function aturanHitungan(): string {
+  return [
+    "17. Kalau kamu menyebut total harga, WAJIB tulis rinciannya dulu, satu baris per barang: nama, jumlah, harga satuan, lalu hasil kalinya. Baru total di baris terakhir. Jangan pernah mengirim angka total saja. Semua harga satuannya harus berasal dari KNOWLEDGE BASE; kalau ada satu saja yang tidak kamu temukan, jangan menghitung apa pun, sebutkan yang mana yang belum kamu punya lalu minta tim memastikannya.",
+  ].join("\n");
+}
+
+/**
+ * Bedanya "tidak ketemu" dan "tidak ada".
+ *
+ * Aturan 2 sudah melarang mengarang fakta, dan ternyata itu tidak menutup lubang
+ * yang paling merusak dari semuanya. Model tidak mengarang, dia MENYIMPULKAN:
+ * barang yang tidak dia temukan di potongan yang kebetulan disodorkan
+ * dinyatakan habis. Dari sisi model itu terasa seperti kehati-hatian. Dari sisi
+ * pemilik toko itu penjualan yang batal.
+ *
+ * Kejadian nyata pada pelanggan sungguhan, 10 Agustus 2026, satu obrolan, 53
+ * menit. Pembeli grosir menanyakan empat shade cushion; dijawab lengkap dengan
+ * angka stok. Dia bilang "iya kak buatkan listnya"; dijawab "mohon maaf,
+ * stoknya tidak tersedia". Pola yang sama berulang untuk lima produk berbeda,
+ * sampai dia menulis "walah semua kosong jualan apa sih anda ini?", lalu
+ * "mana yg bener ini?". Nilai pesanan yang sedang dibicarakan waktu itu
+ * belasan juta rupiah.
+ *
+ * Penyebab teknisnya sudah diperbaiki di rag.ts. Aturan-aturan di sini pagar
+ * keduanya, dan tetap perlu: pencarian sebaik apa pun kadang meleset, dan yang
+ * membedakan meleset yang tertolong dari meleset yang merugikan adalah apa yang
+ * dikatakan model waktu dia tidak menemukan sesuatu.
+ *
+ * Aturan 2c yang paling sering terlewat kalau ditulis lebih pendek: begitu
+ * pelanggan membantah, model cenderung memakai angka yang DIA sebutkan supaya
+ * terdengar setuju. Di obrolan itu pembelinya menulis "kata orang gudang tadi
+ * ada kak 01 ada 26, 04 ada 305", dan satu giliran kemudian angka-angka itu
+ * dibacakan balik seolah hasil pengecekan sistem.
+ */
+function aturanTidakKetemu(): string {
+  return [
+    "2a. TIDAK KETEMU TIDAK SAMA DENGAN TIDAK ADA. Kalau sebuah barang, varian, ukuran, shade, layanan, atau jadwal tidak kamu temukan di KNOWLEDGE BASE, artinya KAMU TIDAK TAHU. Itu bukan bukti stoknya kosong dan bukan bukti barangnya tidak dijual. Yang kamu terima cuma hasil pencarian, bukan seluruh isi catatan pemilik usaha.",
+    "2b. Karena itu DILARANG menulis \"stoknya kosong\", \"sedang habis\", \"tidak tersedia\", \"kami tidak menjual itu\", atau kalimat sejenis hanya karena tidak ketemu. Kamu boleh menyebut sesuatu kosong HANYA kalau di KNOWLEDGE BASE memang tertulis begitu, misalnya stoknya tertulis 0. Kalau tidak ketemu, katakan apa adanya bahwa kamu perlu cek dulu ke tim, lalu isi \"handoff\": true supaya tim benar-benar mengeceknya. Menyuruh pembeli pergi karena kamu tidak menemukan datanya jauh lebih mahal daripada membuatnya menunggu sebentar.",
+    "2c. JANGAN membalik keterangan yang sudah kamu sebut sendiri di obrolan ini. Kalau tadi kamu bilang sebuah barang ada lalu sekarang kamu tidak menemukannya, yang berubah pengetahuanmu, bukan stoknya. Jangan bilang \"ternyata kosong\" dan jangan pula memakai angka yang disebut CUSTOMER sebagai hasil pengecekanmu, sekalipun dia bilang itu kata orang gudang. Akui bahwa kamu perlu memastikan, lalu teruskan ke tim. Berganti-ganti \"ada\" dan \"kosong\" untuk barang yang sama membuat pemilik usaha kehilangan pembeli dan malu di depan pelanggannya.",
   ].join("\n");
 }
 
@@ -562,9 +620,16 @@ export function buildTurnContext(
           .map((d) => `- ${daftarJam(d)}`)
           .join("\n")}`
       : "",
+    // Kepalanya menyebut "hasil pencarian", bukan "isi catatan".
+    //
+    // Bedanya satu kata dan akibatnya besar. Blok yang diperkenalkan sebagai
+    // satu-satunya sumber fakta gampang dibaca sebagai SELURUH fakta, jadi apa
+    // pun yang tidak tercantum di dalamnya dianggap tidak ada. Untuk daftar
+    // barang, isi blok ini memang tidak pernah lengkap: dia potongan yang paling
+    // cocok dengan pertanyaan, diambil dari catatan yang jauh lebih panjang.
     knowledge
-      ? `=== KNOWLEDGE BASE (satu-satunya sumber fakta yang boleh kamu pakai) ===\n${knowledge}`
-      : "=== KNOWLEDGE BASE ===\nKosong untuk pertanyaan ini. Jangan berspekulasi soal detail bisnis — tawarkan untuk menghubungkan ke tim.",
+      ? `=== KNOWLEDGE BASE (hasil pencarian dari catatan pemilik usaha — satu-satunya sumber fakta yang boleh kamu pakai, TAPI belum tentu seluruh isinya) ===\n${knowledge}`
+      : "=== KNOWLEDGE BASE ===\nPencarian tidak menemukan apa pun untuk pertanyaan ini. Itu berarti kamu TIDAK TAHU, bukan berarti barang atau layanannya tidak ada. Jangan menyimpulkan stoknya kosong. Bilang kamu cek dulu ke tim, dan teruskan ke tim.",
     contactContext(contact),
     daftarSudahDikirim(assets),
   ].filter(Boolean);
