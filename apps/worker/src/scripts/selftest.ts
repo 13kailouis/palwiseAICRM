@@ -2083,6 +2083,17 @@ async function main() {
     !ikutMenyala.some((c) => c.id === nomorMati.id),
   );
 
+  // Arah sebaliknya, dan ini yang kena 10 Agustus 2026: nomor yang BENAR-BENAR
+  // tersambung tapi penandanya masih `false` dari entah kapan. Dia melayani
+  // pelanggan seharian, lalu satu deploy membuatnya diam selamanya tanpa
+  // keterangan apa pun di layar. Nomor yang tersambung itu bukti niat yang
+  // lebih kuat daripada penanda lama, jadi penandanya ikut dibetulkan di titik
+  // sambungannya terbuka.
+  check(
+    "nomor yang tersambung ikut ditandai supaya hidup lagi setelah restart",
+    /status: "connected",[\s\S]{0,220}autoStart: true/.test(manajer),
+  );
+
   await prisma.channel.delete({ where: { id: nomorMati.id } });
 
   await prisma.channel.deleteMany({ where: { workspaceId: workspace.id } });

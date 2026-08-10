@@ -332,12 +332,27 @@ async function connect(session: Session): Promise<void> {
       log.ok(
         `WhatsApp tersambung: ${phone ?? "nomor tidak terbaca"} (channel ${channelId})`,
       );
+      // autoStart ikut dinyalakan DI SINI, bukan cuma waktu tombol ditekan.
+      //
+      // Kejadian 10 Agustus 2026: nomor Kai jalan normal seharian dan membalas
+      // pelanggan, tapi penandanya masih `false` dari entah kapan. Begitu
+      // worker direstart untuk deploy, nomor itu tidak ikut dinyalakan lagi dan
+      // diam selamanya. Di layar sebelumnya tertulis "Aktif", sesudahnya cuma
+      // mati tanpa satu pun keterangan, dan pelanggan yang chat malam itu tidak
+      // pernah dibalas siapa pun.
+      //
+      // Nomor yang BENAR-BENAR tersambung itu bukti niat yang lebih kuat
+      // daripada penanda lama: kalau pemiliknya tidak mau nomor ini hidup, dia
+      // tidak akan tersambung sekarang. Yang mematikannya lewat "Matikan
+      // sementara" tetap aman, karena sambungannya ikut ditutup dan baris ini
+      // tidak pernah tercapai lagi.
       await setChannelStatus(channelId, {
         status: "connected",
         lastQr: null,
         lastError: null,
         phoneNumber: phone,
         connectedAt: new Date(),
+        autoStart: true,
       });
 
       // Baru sesudah nomornya benar-benar tersambung, bukan di awal start.
