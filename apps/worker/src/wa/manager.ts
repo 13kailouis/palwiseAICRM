@@ -387,6 +387,31 @@ async function connect(session: Session): Promise<void> {
     }
   });
 
+  /**
+   * Kabar dari WhatsApp soal nasib pesan yang KITA kirim.
+   *
+   * Angkanya: 0 galat, 1 masih di kita, 2 diterima server WhatsApp, 3 sampai
+   * ke HP tujuan, 4 dibaca. Yang bikin bug 10 Agustus 2026 mahal adalah kita
+   * tidak pernah melihat angka ini sama sekali: pesan yang berhenti di 1
+   * kelihatan persis sama dengan pesan yang sampai, karena dua-duanya tidak
+   * menghasilkan galat apa pun.
+   *
+   * Cuma dicatat, tidak dijadikan keputusan. Menahan balasan berikutnya karena
+   * status belum 3 akan membuat asisten diam di jaringan yang lambat, dan itu
+   * kerusakan yang lebih besar daripada yang sedang dijaga.
+   */
+  sock.ev.on("messages.update", (updates: any[]) => {
+    for (const u of updates) {
+      const status = u?.update?.status;
+      if (status === undefined || !u?.key?.fromMe) continue;
+      log.info(
+        `status pesan ${u.key.id} ke ${u.key.remoteJid}: ${status}${
+          status <= 1 ? " (belum diterima server WhatsApp)" : ""
+        }`,
+      );
+    }
+  });
+
   sock.ev.on("messages.upsert", async (upsert: any) => {
     // "notify" = pesan yang datang sekarang, selagi kita hidup.
     // "append" = pesan susulan yang dikirim WhatsApp waktu kita menyambung
@@ -1068,10 +1093,16 @@ async function handleIncoming(
   //
   // Pesan dari WhatsApp versi baru datang dari `...@lid`, angka acak yang
   // menyembunyikan nomor asli. Membalas ke alamat itu diterima Baileys tanpa
-  // galat sedikit pun, tapi tidak pernah sampai ke HP orangnya. Nomor aslinya
-  // ada di `senderPn` dan sudah diambil di atas sebagai `nomor`, jadi itu yang
-  // dipakai mengirim. Lihat `alamatKirim`.
-  const jidKirim = alamatKirim(jid, nomor) ?? jid;
+  // galat sedikit pun, tapi tidak pernah sampai ke HP orangnya.
+  //
+  // NOMORNYA DIAMBIL DARI KONTAK, BUKAN DARI PESAN INI SAJA. `senderPn` cuma
+  // ikut di sebagian pesan, dan itu yang bikin perbaikan pertama cuma separuh
+  // jalan: pesan pertama terkirim benar karena nomornya kebetulan ikut, pesan
+  // berikutnya balik lagi ke LID karena `senderPn` tidak ada, dan gagalnya
+  // tetap diam-diam. Kontak menyimpan nomor yang sudah pernah dikenali, jadi
+  // dia yang jadi patokan; `nomor` dari pesan ini cuma cadangan untuk kontak
+  // yang benar-benar baru.
+  const jidKirim = alamatKirim(jid, contact.phone ?? nomor) ?? jid;
 
   if (isFirstMessage && agent?.welcomeMessage && conversation.aiEnabled) {
     await sendBubbles(sock, jidKirim, [agent.welcomeMessage], agent.typingSpeedMs);
@@ -1189,7 +1220,17 @@ export async function sendBubbles(
       await sock.sendPresenceUpdate("composing", jid);
       await sleep(delay);
       await sock.sendPresenceUpdate("paused", jid);
-      await sock.sendMessage(jid, { text });
+      const hasil = await sock.sendMessage(jid, { text });
+      // Dicatat SELALU, bukan cuma waktu ada galat.
+      //
+      // 10 Agustus 2026: empat balasan "terkirim" tanpa satu pun galat dan
+      // tidak satu pun sampai. Yang bikin itu makan waktu berjam-jam adalah
+      // tidak ada catatan apa pun soal ke alamat mana pesannya pergi dan apa
+      // jawaban WhatsApp. Satu baris ini yang membedakan "kita tahu" dari
+      // "kita menebak", dan ongkosnya satu baris log per balasan.
+      log.info(
+        `kirim ke ${jid}: id=${hasil?.key?.id ?? "?"} status=${hasil?.status ?? "?"}`,
+      );
     } catch (err) {
       log.error(`gagal kirim pesan ke ${jid}: ${err instanceof Error ? err.message : err}`);
       throw err;
