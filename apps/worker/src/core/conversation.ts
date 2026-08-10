@@ -242,6 +242,54 @@ const INTI_SALAM = new Set([
  * stoknya", "ada kabar". Waktu "sudah" dan "bisa" sempat masuk daftar,
  * balasan "Sudah bisa dijawab kak" ikut dianggap basa-basi.
  */
+/**
+ * Kalimat yang menjanjikan sesuatu akan dicek atau diteruskan ke tim.
+ *
+ * Ada karena janji itu SELAMA INI tidak pernah sampai ke siapa pun.
+ *
+ * Bendera "nunggu kamu" cuma naik kalau model mengisi `handoff: true` di
+ * keluarannya. Menuliskan "saya cek dulu ke tim ya kak" di kalimat balasan
+ * tidak menaikkan apa-apa. Jadi asistennya menyuruh pelanggan menunggu, dan
+ * tidak ada satu pun layar yang memberi tahu pemilik toko bahwa ada yang
+ * sedang menunggu.
+ *
+ * Terukur di akun pelanggan sungguhan 10 Agustus 2026: delapan balasan
+ * menjanjikan pengecekan ke tim, nol obrolan yang benderanya naik. Salah satu
+ * penanyanya menunggu jawaban soal status promo pesanannya sampai obrolannya
+ * berhenti sendiri.
+ *
+ * Ini jadi jauh lebih penting sesudah aturan "tidak ketemu bukan berarti
+ * habis": asisten sekarang MEMANG lebih sering bilang akan dicek dulu, dan itu
+ * perbaikan hanya kalau ada yang benar-benar mengeceknya. Kalau tidak, kita
+ * cuma menukar jawaban yang salah dengan janji yang tidak pernah ditepati, dan
+ * yang kedua lebih merusak kepercayaan.
+ *
+ * Polanya sengaja EKSPLISIT, bukan sekadar "ada kata tim dan ada kata cek di
+ * satu kalimat". Kalimat "saya sudah cek di sistem, stok gudang ada 100" punya
+ * dua-duanya dan sama sekali bukan janji. Bendera yang sering salah naik jauh
+ * lebih berbahaya daripada bendera yang sesekali tidak naik: begitu pemilik
+ * toko dua kali membuka obrolan yang ternyata tidak perlu ditangani, dia
+ * berhenti mempercayai benderanya, termasuk waktu benderanya benar.
+ */
+const POLA_JANJI_KE_TIM: RegExp[] = [
+  // "cek dulu ke tim", "teruskan ke admin", "tanyakan ke gudang"
+  /\b(?:cek|cekkan|cekin|periksa|tanya|tanyakan|konfirmasi|konfirmasikan|teruskan|sampaikan|koordinasikan|infokan|laporkan)\w*\b[^.!?]{0,30}?\bke(?:pada)?\s+(?:tim|admin|gudang|owner|pemilik|atasan|kantor)\b/,
+  // "perlu bantuan tim dulu", "minta bantuan admin"
+  /\b(?:butuh|perlu|minta)\b[^.!?]{0,20}?\bbantuan\s+(?:tim|admin)\b/,
+  // "tim kami akan menghubungi", "nanti tim segera kabari"
+  /\btim\s+(?:kami\s+|kita\s+)?(?:yang\s+)?(?:akan|nanti|segera|bakal)\b/,
+  /\b(?:nanti|segera)\s+tim\b/,
+  /\btim\s+(?:kami|kita)\s+(?:cek|periksa|hubungi|kabari|balas|bantu|urus|proses)\w*\b/,
+];
+
+export function janjiKeTim(bubbles: string[]): boolean {
+  for (const b of bubbles) {
+    const bersih = (b ?? "").toLowerCase().replace(/\s+/g, " ");
+    if (POLA_JANJI_KE_TIM.some((p) => p.test(bersih))) return true;
+  }
+  return false;
+}
+
 export function cumaBasaBasi(teks: string): boolean {
   const bersih = (teks ?? "")
     .toLowerCase()
@@ -930,10 +978,17 @@ export async function runAgentOnConversation(params: {
         conversation.workspaceId,
         `Sudah ${JEDA_ESKALASI_JAM} jam sejak asisten minta bantuan dan belum ada yang menangani, jadi dia lanjut menjawab supaya pelanggannya tidak didiamkan. Tandanya sengaja dibiarkan menyala.`,
       );
+      // Catatannya ikut di dalam sini, bukan di luar.
+      //
+      // Di luar, dia ditulis untuk SETIAP pesan yang masuk sesudahnya, dan
+      // sekarang juga untuk obrolan yang benderanya naik karena asisten
+      // menjanjikan pengecekan ke tim. Yang terakhir itu `handoffAt`-nya
+      // memang kosong sejak awal dan tidak pernah kena rem tiga jam sama
+      // sekali, jadi catatan "sudah lewat tiga jam" untuk dia salah.
+      log.info(
+        `eskalasi pada obrolan ${conversation.id} sudah lewat ${JEDA_ESKALASI_JAM} jam, asisten melanjutkan`,
+      );
     }
-    log.info(
-      `eskalasi pada obrolan ${conversation.id} sudah lewat ${JEDA_ESKALASI_JAM} jam, asisten melanjutkan`,
-    );
   }
 
   const agent = await resolveAgent(conversation);
@@ -1587,7 +1642,21 @@ async function applySideEffects(
     });
   }
 
-  if (reply.handoff && !conversation.needsHuman) {
+  // Dua sebab bendera "nunggu kamu" boleh naik, dan akibatnya SENGAJA berbeda.
+  //
+  // Eskalasi yang disengaja model (`handoff: true`) berarti obrolannya memang
+  // diserahkan, jadi asisten berhenti dulu supaya pemiliknya sempat masuk.
+  //
+  // Janji "saya cek dulu ke tim" beda: yang menggantung cuma SATU pertanyaan,
+  // bukan seluruh obrolannya. Pelanggan yang sama biasanya lanjut menanyakan
+  // hal lain yang asistennya sanggup jawab, dan mendiamkan dia tiga jam karena
+  // satu stok yang perlu dicek justru merugikan pemilik tokonya. Jadi
+  // benderanya naik supaya kelihatan di dashboard, tapi `handoffAt` dibiarkan
+  // kosong, dan itulah yang membuat rem tiga jam di [runAgentOnConversation]
+  // tidak ikut menyala.
+  const dijanjikanKeTim = !reply.handoff && janjiKeTim(reply.bubbles);
+
+  if ((reply.handoff || dijanjikanKeTim) && !conversation.needsHuman) {
     await prisma.conversation.update({
       where: { id: conversation.id },
       data: {
@@ -1605,11 +1674,17 @@ async function applySideEffects(
         // berarti eskalasi menggantung dan asisten cuma menunggu sebentar.
         // Tombolnya diselesaikan di kotak masuk, bukan dengan menumpangi kolom
         // yang artinya lain.
-        handoffAt: new Date(),
-        handoffReason: reply.handoffReason ?? "AI meminta bantuan manusia",
+        handoffAt: reply.handoff ? new Date() : null,
+        handoffReason: reply.handoff
+          ? (reply.handoffReason ?? "AI meminta bantuan manusia")
+          : "Asisten menjanjikan ke pelanggan bahwa ini dicek dulu ke tim",
       },
     });
-    log.info(`handoff diminta pada percakapan ${conversation.id}`);
+    log.info(
+      reply.handoff
+        ? `handoff diminta pada percakapan ${conversation.id}`
+        : `asisten menjanjikan pengecekan ke tim pada percakapan ${conversation.id}`,
+    );
     bus.publish({
       type: "conversation",
       workspaceId: conversation.workspaceId,

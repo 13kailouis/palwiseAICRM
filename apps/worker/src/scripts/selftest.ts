@@ -23,6 +23,7 @@ import {
   cariEmail,
   catatanMasihBerlaku,
   cumaBasaBasi,
+  janjiKeTim,
   kabariEskalasiSekali,
   PESAN_ESKALASI,
   giliranAiSejak,
@@ -691,6 +692,39 @@ async function main() {
     "aturan rincian total terpasang",
     capturedPrompt.includes("WAJIB tulis rinciannya dulu"),
   );
+
+  // Janji "saya cek dulu ke tim" harus sampai ke dashboard.
+  //
+  // Kalimat-kalimat ini diambil APA ADANYA dari balasan yang benar-benar
+  // terkirim ke pelanggan pada 10 Agustus 2026. Delapan janji seperti ini
+  // terkirim dan tidak satu pun benderanya naik, jadi pemilik tokonya tidak
+  // pernah tahu ada yang menunggu.
+  console.log("\nJanji dicek ke tim sampai ke dashboard");
+  for (const kalimat of [
+    "Mohon maaf kak, untuk pengecekan status promo pada pesanan, saya perlu bantuan tim terlebih dahulu untuk memastikannya.",
+    "Boleh saya minta nama lengkap dan detail pesanannya agar saya bisa bantu teruskan ke tim untuk dicekkan?",
+    "Baik kak, saya cek dulu ke tim ya soal stoknya.",
+    "Nanti tim kami kabari lagi untuk memastikan jamnya kosong.",
+    "Tim kami akan segera menghubungi Kakak.",
+  ]) {
+    check(`janji ke tim terbaca: "${kalimat.slice(0, 40)}…"`, janjiKeTim([kalimat]));
+  }
+
+  // Dan yang PALING penting: yang bukan janji tidak boleh ikut menaikkan
+  // bendera. Bendera yang sering salah naik bikin pemilik toko berhenti
+  // mempercayainya, termasuk waktu benderanya benar.
+  for (const kalimat of [
+    "Saya sudah cek di sistem, stok gudang ada 100 pcs ya kak.",
+    "Barangnya dikirim dari gudang Bandung, sampai 2 hari kak.",
+    "Tim kami buka setiap hari jam 9 pagi sampai 5 sore.",
+    "Boleh dibantu list barang apa saja yang ingin dipesan?",
+    "Untuk shade 11 stoknya tersedia 766 pcs dengan harga Rp 20.600 per pcs.",
+  ]) {
+    check(
+      `bukan janji, bendera tidak naik: "${kalimat.slice(0, 40)}…"`,
+      !janjiKeTim([kalimat]),
+    );
+  }
   check(
     "kondisi eskalasi terpasang",
     capturedPrompt.includes("minta bicara dengan manusia"),
@@ -1184,6 +1218,84 @@ async function main() {
   await runAgentOnConversation({ conversationId: conversation.id });
   const c2 = await prisma.contact.findUniqueOrThrow({ where: { id: contact.id } });
   check("nama hasil koreksi manual tidak ditimpa AI", c2.name === "Andi (VIP)", c2.name);
+
+  // 4b. Janji "dicek ke tim" harus kelihatan pemilik toko ---------------------
+  //
+  // Bendera "nunggu kamu" dulu cuma naik kalau model mengisi handoff. Asisten
+  // yang menulis "saya cek dulu ke tim" di kalimat balasan tidak menaikkan
+  // apa-apa, jadi pelanggannya disuruh menunggu sesuatu yang tidak pernah
+  // sampai ke siapa pun. Terukur di akun pelanggan sungguhan: 8 janji, 0
+  // bendera.
+  console.log("\nJanji ke tim menaikkan bendera tanpa mendiamkan asisten");
+  {
+    const kanalJanji = await prisma.channel.create({
+      data: { workspaceId: workspace.id, name: "Nomor janji", agentId: agent.id },
+    });
+    const kontakJanji = await getOrCreateContact({
+      workspaceId: workspace.id,
+      waJid: "628555000111@s.whatsapp.net",
+    });
+    const obrolanJanji = await getOrCreateConversation({
+      workspaceId: workspace.id,
+      contactId: kontakJanji.id,
+      channelId: kanalJanji.id,
+      agentId: agent.id,
+    });
+
+    scriptedReply = {
+      reply: ["Baik kak, saya cek dulu ke tim ya soal stok shade 04 nya 🙏"],
+      handoff: false,
+      contact: {},
+      stage: "",
+      tags: [],
+    };
+    await appendMessage({
+      conversationId: obrolanJanji.id,
+      workspaceId: workspace.id,
+      role: "customer",
+      content: "shade 04 ready gak kak?",
+    });
+    const rj = await runAgentOnConversation({ conversationId: obrolanJanji.id });
+    check("asisten tetap membalas", rj.status === "replied", rj.status);
+
+    const cj = await prisma.conversation.findUniqueOrThrow({
+      where: { id: obrolanJanji.id },
+    });
+    check("janji ke tim menaikkan bendera nunggu kamu", cj.needsHuman === true);
+    check(
+      "alasannya terbaca pemilik toko",
+      (cj.handoffReason ?? "").includes("dicek dulu ke tim"),
+      cj.handoffReason ?? "",
+    );
+    // Ini yang membedakannya dari eskalasi sungguhan. Yang menggantung cuma
+    // satu pertanyaan, bukan seluruh obrolannya, jadi pelanggan yang lanjut
+    // bertanya hal lain tidak boleh ikut didiamkan tiga jam.
+    check(
+      "rem tiga jam TIDAK ikut menyala",
+      cj.handoffAt === null,
+      String(cj.handoffAt),
+    );
+
+    scriptedReply = {
+      reply: ["Ongkir ke Jakarta Rp 20.000 ya kak."],
+      handoff: false,
+      contact: {},
+      stage: "",
+      tags: [],
+    };
+    await appendMessage({
+      conversationId: obrolanJanji.id,
+      workspaceId: workspace.id,
+      role: "customer",
+      content: "ongkir ke jakarta berapa kak?",
+    });
+    const rj2 = await runAgentOnConversation({ conversationId: obrolanJanji.id });
+    check(
+      "pertanyaan lain sesudahnya tetap dijawab",
+      rj2.status === "replied",
+      rj2.status === "skipped" ? rj2.code : rj2.status,
+    );
+  }
 
   // 5. Handoff ----------------------------------------------------------------
   console.log("\nEskalasi ke manusia");
