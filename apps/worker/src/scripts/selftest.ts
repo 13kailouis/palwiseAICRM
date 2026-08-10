@@ -7696,6 +7696,55 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /jalur: "\/panduan"/.test(baca("apps/web/src/app/sitemap.ts")),
     );
 
+    // ─── Preset tidak boleh lebih miskin daripada prompt bawaan ─────────────
+    //
+    // Tombol "Mulai dari contoh" di halaman Asisten menimpa prompt yang sudah
+    // ada. Selama presetnya cuma satu paragraf sementara prompt bawaan sudah
+    // berbagian, menekan tombol itu MENURUNKAN mutu asisten orang: hilang
+    // aturan panjang bubble, hilang larangan mengarang harga dan stok, hilang
+    // kerangka yang bikin pemiliknya tahu harus menambah aturannya di mana.
+    // Fitur yang dibuat untuk membantu memulai justru bikin hasilnya lebih
+    // buruk daripada tidak menekannya. Begitu selama berbulan-bulan.
+    const presetFile = baca("apps/web/src/lib/preset.ts");
+    const bawaanFile = baca("apps/web/src/app/actions/auth.ts");
+    const jumlahPreset = (presetFile.match(/^    id: "/gm) ?? []).length;
+
+    check("preset usaha memang ada isinya", jumlahPreset >= 8, `${jumlahPreset} preset`);
+
+    for (const bagian of ["TUGASMU", "GAYA BICARA", "ALUR", "BATASAN"]) {
+      const ada = (presetFile.match(new RegExp(bagian, "g")) ?? []).length;
+      check(
+        `tiap preset punya bagian ${bagian}`,
+        ada >= jumlahPreset,
+        `${ada} dari ${jumlahPreset}`,
+      );
+      // Bawaannya juga, kalau tidak yang dibandingkan tidak ada artinya.
+      check(
+        `prompt bawaan punya bagian ${bagian}`,
+        bawaanFile.includes(bagian),
+      );
+    }
+
+    // Aturan panjang bubble cuma ada di prompt bawaan selama ini. Tanpa ini
+    // asisten hasil preset mengirim paragraf panjang yang tidak enak dibaca di
+    // HP, dan pemiliknya tidak pernah tahu kenapa punyanya beda.
+    const rem = (presetFile.match(/maksimal 3 kalimat per bubble/g) ?? []).length;
+    check(
+      "tiap preset membatasi panjang bubble seperti bawaannya",
+      rem >= jumlahPreset,
+      `${rem} dari ${jumlahPreset}`,
+    );
+
+    // Dan tiap preset harus menyuruh cek ke tim, bukan menebak. Ini cerminan
+    // aturan wajib yang sudah ditegakkan sistem, ditulis di prompt yang DILIHAT
+    // pemiliknya supaya dia tahu asistennya akan begitu.
+    const cek = (presetFile.match(/cek dulu ke (tim|dapur)/g) ?? []).length;
+    check(
+      "tiap preset menyuruh cek ke tim daripada menebak",
+      cek >= jumlahPreset,
+      `${cek} dari ${jumlahPreset}`,
+    );
+
     // ─── Contoh isi Info bisnis mengajarkan bentuk yang bisa dipakai ─────────
     //
     // Contoh itu perintah yang paling patuh diikuti orang, jauh lebih patuh
