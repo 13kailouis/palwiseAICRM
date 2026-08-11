@@ -879,12 +879,8 @@ async function main() {
   // "maaf sepertinya pesan sebelumnya kosong ya", padahal fotonya sampai
   // dengan selamat dan terlihat jelas oleh pemilik tokonya di kotak masuk.
   {
-    await prisma.workspace.update({
-      where: { id: workspace.id },
-      data: { plan: "free" },
-    });
     scriptedReply = {
-      reply: ["Maaf kak, fotonya belum bisa saya buka. Boleh dituliskan intinya?"],
+      reply: ["Maaf kak, suaranya kepanjangan. Boleh dikirim lebih pendek?"],
       handoff: false,
       contact: {},
       stage: "",
@@ -895,41 +891,36 @@ async function main() {
       workspaceId: workspace.id,
       role: "customer",
       content: "",
-      mediaType: "image",
-      mediaPath: "terkunci.jpg",
+      mediaType: "audio",
+      mediaPath: "panjang.ogg",
     });
+    // Persis yang dikirim pengelola WhatsApp waktu durasinya lewat batas:
+    // lampirannya TIDAK ikut, cuma alasannya.
     await runAgentOnConversation({
       conversationId: conversation.id,
-      media: { mimeType: "image/jpeg", data: "CCCC" },
+      lampiranMasalah: "panjang",
     });
 
     check(
-      "paket tanpa baca lampiran tetap tahu ada lampiran masuk",
-      capturedSemua.includes("TIDAK bisa membukanya") &&
+      "lampiran yang tidak terbaca tetap diakui ada, bukan dibilang kosong",
+      capturedSemua.includes("TIDAK bisa membaca isinya") &&
         capturedSemua.includes("JANGAN bilang pesannya kosong"),
     );
-    // Alasannya tidak boleh sampai ke pelanggan. Dia pelanggannya toko itu,
-    // dan mengumumkan tokonya belum berlangganan bikin pemiliknya malu di
-    // depan pembelinya sendiri.
     check(
-      "alasan paket tidak diceritakan ke pelanggan",
-      capturedSemua.includes("jangan singgung soal paket atau langganan"),
+      "batas dua menit disebut ke pelanggan supaya dia bisa kirim ulang",
+      capturedSemua.includes("di bawah dua menit"),
     );
-    // Tapi pemiliknya WAJIB tahu, kalau tidak dia menyimpulkan asistennya rusak.
+    // Pemiliknya WAJIB tahu, kalau tidak dia menyimpulkan asistennya rusak.
     const catatan = await prisma.message.findFirst({
       where: { conversationId: conversation.id, role: "system" },
       orderBy: { createdAt: "desc" },
     });
     check(
-      "pemilik usaha diberi tahu lampirannya belum bisa dibaca",
-      (catatan?.content ?? "").includes("belum bisa membacanya") &&
-        (catatan?.content ?? "").includes("Starter"),
+      "pemilik usaha diberi tahu suaranya tidak didengarkan",
+      (catatan?.content ?? "").includes("lebih dari 2 menit") &&
+        (catatan?.content ?? "").includes("tetap tersimpan"),
       catatan?.content ?? "(tidak ada catatan)",
     );
-    await prisma.workspace.update({
-      where: { id: workspace.id },
-      data: { plan: "growth" },
-    });
   }
 
   // Foto lalu keterangannya, dua pesan terpisah yang terkumpul jadi satu
@@ -2296,20 +2287,28 @@ async function main() {
     check(
       "lampiran yang lebih baru tetap menang",
       gabungTertunda(
-        { media: fotoBaru, lampiranDitolak: false },
-        { media: foto, lampiranDitolak: false },
+        { media: fotoBaru, lampiranMasalah: undefined },
+        { media: foto, lampiranMasalah: undefined },
       ).media?.storedPath === "kedua.jpg",
     );
     check(
       "penolakan karena ukuran juga tidak hilang",
       gabungTertunda(
-        { media: null, lampiranDitolak: false },
-        { media: null, lampiranDitolak: true },
-      ).lampiranDitolak === true,
+        { media: null, lampiranMasalah: undefined },
+        { media: null, lampiranMasalah: "besar" as const },
+      ).lampiranMasalah === "besar",
+    );
+    // Sebab yang lebih baru menang, tapi yang lama tidak boleh menimpanya.
+    check(
+      "sebab lampiran yang lebih baru yang dipakai",
+      gabungTertunda(
+        { media: null, lampiranMasalah: "panjang" as const },
+        { media: null, lampiranMasalah: "besar" as const },
+      ).lampiranMasalah === "panjang",
     );
     check(
       "tanpa antrean sebelumnya, isinya apa adanya",
-      gabungTertunda({ media: foto, lampiranDitolak: false }, undefined).media
+      gabungTertunda({ media: foto, lampiranMasalah: undefined }, undefined).media
         ?.storedPath === "bukti.jpg",
     );
   }
@@ -2744,10 +2743,19 @@ async function main() {
   // pembagian yang tidak pernah ditegakkan.
   console.log("\nKunci fitur per paket");
 
+  // Paket gratis dapat SATU fitur: membaca lampiran. Lihat catatan di
+  // `FITUR_GRATIS` soal kenapa dia pindah ke sini 11 Agustus 2026. Yang lain
+  // tetap berbayar, dan itu yang diperiksa di bawah.
   check(
-    "paket gratis tidak dapat fitur apa pun",
-    fiturPaket("free").length === 0,
+    "paket gratis cuma dapat baca lampiran",
+    fiturPaket("free").length === 1 && bolehPakai("free", "bacaMedia"),
     fiturPaket("free").join(","),
+  );
+  check(
+    "paket gratis tidak dapat kirim media, sapaan otomatis, atau jam kerja",
+    !bolehPakai("free", "kirimMedia") &&
+      !bolehPakai("free", "sapaOtomatis") &&
+      !bolehPakai("free", "jamKerja"),
   );
   check(
     "Starter dapat baca dan kirim media, tapi bukan sapaan otomatis",
@@ -2764,7 +2772,8 @@ async function main() {
   );
   check(
     "paket karangan diperlakukan sebagai gratis",
-    !bolehPakai("paket-ngawur", "bacaMedia"),
+    !bolehPakai("paket-ngawur", "kirimMedia") &&
+      bolehPakai("paket-ngawur", "bacaMedia"),
   );
   check(
     "paket termurah untuk sapaan otomatis adalah Growth",
@@ -5108,9 +5117,13 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       keGratis.nomorDimatikan === 2,
       String(keGratis.nomorDimatikan),
     );
+    // Tiga, bukan empat: baca lampiran sekarang ikut paket gratis, jadi dia
+    // TIDAK hilang waktu turun ke gratis. Kalau angka ini balik jadi empat,
+    // berarti ada yang menguncinya lagi tanpa memperbarui halaman harga.
     check(
       "fitur yang hilang ikut disebut satu per satu",
-      keGratis.fiturHilang.length === 4,
+      keGratis.fiturHilang.length === 3 &&
+        !keGratis.fiturHilang.includes("bacaMedia"),
       keGratis.fiturHilang.join(", "),
     );
     check("jatah balasan yang menyusut ikut disebut", !!keGratis.balasanMenyusut);
@@ -6203,9 +6216,38 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // diulangi pertanyaannya?". Pelanggan mengulang mengirim berkas yang sama,
     // gagal lagi, tanpa pernah tahu apa yang salah.
     const pengelola = baca("apps/worker/src/wa/manager.ts");
+    // Kalimatnya sekarang disusun di conversation.ts, satu tempat untuk semua
+    // sebab. Yang diperiksa di sini: pengelolanya benar-benar meneruskan
+    // alasannya, dan kalimatnya benar-benar ada di ujung sana.
+    const percakapanSrc = baca("apps/worker/src/core/conversation.ts");
     check(
       "lampiran yang ditolak diberitahukan, bukan didiamkan",
-      /lampiranDitolak/.test(pengelola) && /berkasnya kebesaran/.test(pengelola),
+      /lampiranMasalah/.test(pengelola) &&
+        /berkasnya kebesaran/.test(percakapanSrc) &&
+        /JANGAN bilang pesannya kosong/.test(percakapanSrc),
+    );
+    // Suara panjang punya kalimatnya sendiri, karena ini satu-satunya sebab
+    // yang bisa diperbaiki pelanggannya sendiri: kirim ulang lebih pendek.
+    check(
+      "suara yang kepanjangan diberitahukan beserta batasnya",
+      /di bawah dua menit/.test(percakapanSrc) &&
+        /MAKS_DETIK_MEDIA/.test(pengelola),
+    );
+    // Yang kepanjangan TETAP disimpan, supaya pemiliknya bisa mendengarkan
+    // sendiri. Cuma isinya yang tidak dibacakan ke model.
+    check(
+      "suara yang kepanjangan tetap tersimpan untuk pemiliknya",
+      /if \(!terlaluPanjang\) \{/.test(pengelola),
+    );
+    // Alasan paket punya kalimatnya sendiri, dan kalimat itu SENGAJA tidak
+    // menyinggung langganan: pelanggan toko itu bukan pelanggan kita.
+    //
+    // Arm ini tidak terpakai selama semua paket boleh membaca lampiran, tapi
+    // gerbangnya masih hidup di kode, jadi kalimatnya dijaga di sini supaya
+    // tidak ikut hilang waktu ada yang merapikan.
+    check(
+      "alasan paket punya kalimat yang tidak menyinggung langganan",
+      /jangan singgung soal paket atau langganan/.test(percakapanSrc),
     );
     // Ukurannya diperiksa dari angka yang diakui pengirim SEBELUM diunduh.
     // Satu VPS 8 GB tidak punya ruang untuk video 200 MB yang ujungnya dibuang.

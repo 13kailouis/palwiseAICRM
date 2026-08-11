@@ -930,6 +930,13 @@ export async function runAgentOnConversation(params: {
    */
   ruangCoba?: boolean;
   systemHint?: string;
+  /**
+   * Kenapa lampirannya tidak sampai ke model, kalau memang tidak sampai.
+   *
+   * Alasannya yang diteruskan, bukan kalimatnya, supaya semua sebab
+   * lampiran-tidak-terbaca disusun di satu tempat. Lihat [alasanLampiran].
+   */
+  lampiranMasalah?: "besar" | "panjang";
 }): Promise<RunResult> {
   const conversation = await prisma.conversation.findUnique({
     where: { id: params.conversationId },
@@ -1220,42 +1227,56 @@ export async function runAgentOnConversation(params: {
   // jauh lebih mahal daripada satu balasan pendek yang tidak perlu, dan "ok"
   // kadang memang berarti "iya, lanjut". Jadi dia tetap dijawab, cuma dilarang
   // menambah barang dagangan baru.
-  // Lampiran yang tidak boleh dibaca paketnya HARUS diberitahukan ke model.
+  // Lampiran yang tidak sampai ke model HARUS diberitahukan ke model.
   //
   // Tanpa ini modelnya tidak diberi tahu apa-apa: lampirannya tidak dikirim,
-  // teksnya kosong karena foto biasanya tanpa keterangan, jadi yang sampai ke
-  // dia cuma "(customer mengirim pesan kosong)". Lalu dia menjawab persis
+  // dan foto atau voice note biasanya datang tanpa keterangan, jadi yang sampai
+  // ke dia cuma "(customer mengirim pesan kosong)". Lalu dia menjawab persis
   // seperti yang disuruh: pesanmu kosong.
   //
-  // Kejadian nyata di akun gratis 10 Agustus 2026, pesan PERTAMA seorang
-  // pelanggan berupa foto, dan dia dibalas "maaf sepertinya pesan sebelumnya
-  // kosong ya". Padahal fotonya sampai dengan selamat, tersimpan rapi, dan
-  // terlihat jelas oleh pemilik tokonya di kotak masuk. Yang bohong bukan
-  // pelanggannya, tapi kita.
+  // Kejadian nyata 10 Agustus 2026, pesan PERTAMA seorang pelanggan berupa
+  // foto, dibalas "maaf sepertinya pesan sebelumnya kosong ya". Padahal fotonya
+  // sampai dengan selamat, tersimpan rapi, dan terlihat jelas oleh pemilik
+  // tokonya di kotak masuk. Yang bohong bukan pelanggannya, tapi kita.
   //
-  // Alasannya SENGAJA tidak disebut ke pelanggan. Dia pelanggannya toko itu,
-  // bukan pelanggan kita, dan mengumumkan bahwa tokonya belum berlangganan
-  // bikin pemilik usahanya malu di depan pembelinya sendiri.
-  const hintMediaTerkunci =
-    params.media && !bolehBacaMedia
-      ? "Customer barusan mengirim lampiran, dan kamu TIDAK bisa membukanya. JANGAN bilang pesannya kosong, karena dia benar-benar mengirim sesuatu. Jangan pula menebak isinya. Akui bahwa kamu belum bisa melihat lampiran, lalu minta dia menuliskan intinya lewat teks. Jangan sebut alasan teknis apa pun dan jangan singgung soal paket atau langganan."
-      : undefined;
+  // Semua sebabnya disusun DI SINI, satu tempat. Waktu kalimatnya disusun di
+  // dua tempat, yang satu ikut diperbarui dan yang lain tertinggal.
+  const alasanLampiran: "besar" | "panjang" | "paket" | null =
+    params.lampiranMasalah ?? (params.media && !bolehBacaMedia ? "paket" : null);
 
-  // Dan pemiliknya diberi tahu, sekali per giliran, di kotak masuknya sendiri.
+  // Yang sama untuk semua sebab, dan ini bagian yang paling menentukan: dilarang
+  // bilang pesannya kosong, dilarang menebak isinya.
+  const PEMBUKA_LAMPIRAN =
+    "Customer barusan mengirim lampiran dan kamu TIDAK bisa membaca isinya. JANGAN bilang pesannya kosong, karena dia benar-benar mengirim sesuatu, dan jangan menebak isinya.";
+
+  const hintLampiran = alasanLampiran
+    ? {
+        besar: `${PEMBUKA_LAMPIRAN} Berkasnya terlalu besar. Beri tahu dengan sopan bahwa berkasnya kebesaran, lalu minta dikirim ulang lebih kecil atau dijelaskan lewat teks.`,
+        // Panjangnya disebut apa adanya ke pelanggan, karena ini satu-satunya
+        // sebab yang bisa dia perbaiki sendiri dengan mudah: kirim ulang lebih
+        // pendek. Menyembunyikannya cuma bikin dia mengirim yang panjang lagi.
+        panjang: `${PEMBUKA_LAMPIRAN} Suara atau videonya terlalu panjang untuk didengarkan. Minta maaf, lalu minta dia mengirim ulang yang lebih pendek, di bawah dua menit, atau menuliskan intinya lewat teks.`,
+        // Alasan paket SENGAJA tidak disebut ke pelanggan. Dia pelanggannya toko
+        // itu, bukan pelanggan kita, dan mengumumkan bahwa tokonya belum
+        // berlangganan bikin pemilik usahanya malu di depan pembelinya sendiri.
+        paket: `${PEMBUKA_LAMPIRAN} Akui saja belum bisa melihat lampiran, lalu minta dia menuliskan intinya lewat teks. Jangan sebut alasan teknis apa pun dan jangan singgung soal paket atau langganan.`,
+      }[alasanLampiran]
+    : undefined;
+
+  // Pemiliknya diberi tahu terpisah, di kotak masuknya sendiri, sekali per
+  // giliran. Tanpa ini dia melihat lampirannya di layar, melihat asistennya
+  // menjawab tidak nyambung, lalu menyimpulkan asistennya rusak.
   //
-  // Batas yang tidak diumumkan lebih menjengkelkan daripada batas yang kecil.
-  // Tanpa catatan ini pemilik toko melihat fotonya di layar, melihat asistennya
-  // menjawab ngawur, dan menyimpulkan asistennya rusak. Yang sebenarnya terjadi
-  // dia memang belum berhak membacanya, dan itu bisa dia ubah kapan saja.
-  //
-  // `catatanMasihBerlaku` menahan pengulangan: selama belum ada balasan baru
-  // sesudah catatan terakhir, catatannya tidak ditulis dua kali.
-  if (hintMediaTerkunci && !catatanMasihBerlaku(mentah)) {
-    await catatSistem(
-      conversation.id,
-      conversation.workspaceId,
-      `Pelanggan mengirim lampiran, tapi asisten belum bisa membacanya. ${pesanTerkunci("bacaMedia", paketSekarang)} Lampirannya tetap tersimpan dan bisa kamu buka sendiri di sini.`,
-    );
+  // Kalimatnya beda per sebab, karena yang bisa dia lakukan juga beda.
+  if (alasanLampiran && !catatanMasihBerlaku(mentah)) {
+    const catatan = {
+      besar:
+        "Pelanggan mengirim lampiran yang terlalu besar, jadi tidak ikut diunduh dan asisten tidak bisa membacanya.",
+      panjang:
+        "Pelanggan mengirim suara atau video lebih dari 2 menit. Asisten tidak mendengarkannya, tapi berkasnya tetap tersimpan dan bisa kamu buka sendiri di sini.",
+      paket: `Pelanggan mengirim lampiran, tapi asisten belum bisa membacanya. ${pesanTerkunci("bacaMedia", paketSekarang)} Lampirannya tetap tersimpan dan bisa kamu buka sendiri di sini.`,
+    }[alasanLampiran];
+    await catatSistem(conversation.id, conversation.workspaceId, catatan);
   }
 
   const hintTandaTerima =
@@ -1278,7 +1299,7 @@ export async function runAgentOnConversation(params: {
         : null,
       // Instruksi sekali pakai. Milik pemanggil didahulukan, karena sapaan
       // otomatis memang punya maksudnya sendiri.
-      systemHint: params.systemHint ?? hintMediaTerkunci ?? hintTandaTerima,
+      systemHint: params.systemHint ?? hintLampiran ?? hintTandaTerima,
       jadwalTerisi: await jadwalTerisi(conversation.workspaceId, conversation.contactId),
       assets: semuaAsset.map((a) => ({
         code: a.code,

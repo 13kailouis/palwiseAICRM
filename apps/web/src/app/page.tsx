@@ -114,8 +114,11 @@ const FEATURES: {
   {
     ikon: "suara" as NamaIkon,
     title: "Foto dan voice note tetap kejawab",
-    body: "Pelanggan kirim foto barang sambil nanya \"ini berapa?\", atau voice note panjang. Dua-duanya dibaca dan dibalas.",
-    fitur: "bacaMedia",
+    // Tanpa penanda paket, karena sekarang paket gratis pun dapat. Dan "voice
+    // note panjang" diganti angka yang sebenarnya: batasnya dua menit, dan
+    // menjanjikan "panjang" ke orang yang lalu mengirim rekaman sepuluh menit
+    // itu bohong yang ketahuannya di depan pelanggannya sendiri.
+    body: "Pelanggan kirim foto barang sambil nanya \"ini berapa?\", atau voice note sampai 2 menit. Dua-duanya dibaca dan dibalas, termasuk di paket gratis.",
   },
   {
     ikon: "kirim" as NamaIkon,

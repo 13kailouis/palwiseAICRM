@@ -35,11 +35,37 @@ export type Fitur =
   /** Jadwal jam kerja tim. */
   | "jamKerja";
 
-const FITUR_STARTER: Fitur[] = ["bacaMedia", "kirimMedia"];
+/**
+ * Membaca foto dan voice note ikut paket gratis, dan itu keputusan sadar.
+ *
+ * Dulu dia mulai dari Starter, dengan alasan token gambar dan suara jauh lebih
+ * mahal daripada teks. Itu benar secara perbandingan dan menyesatkan secara
+ * angka: di Flash-Lite satu foto sekitar Rp 5 dan voice note setengah menit
+ * sekitar Rp 3,5, sementara 51 balasan gratis sudah menghabiskan sekitar
+ * Rp 816. Yang dihemat dengan menguncinya kira-kira Rp 150 sebulan per akun.
+ *
+ * Yang dibayar untuk penghematan itu jauh lebih mahal. Paket gratis itu
+ * etalase, dan fitur yang boleh dicabut dari etalase cuma yang ketidakhadirannya
+ * tidak bikin produknya kelihatan rusak. Baca lampiran gagal di ujian itu:
+ * terukur dua kali di akun sungguhan, pesan PERTAMA seorang pelanggan berupa
+ * foto, dan asistennya menjawab "pesanmu kosong". Orang yang menyimpulkan
+ * asisten ini bego di hari pertama tidak akan pernah sampai ke halaman harga.
+ *
+ * Yang membatasi pemakaian tetap jatah balasannya. Satu balasan cuma membawa
+ * SATU lampiran (lihat `gabungTertunda` di worker), jadi 51 balasan berarti
+ * paling banyak 51 lampiran sebulan, tanpa perlu penghitung kedua di layar.
+ * Yang menjaga sisi biayanya batas durasi per pesan, dua menit, berlaku untuk
+ * semua paket.
+ *
+ * `kirimMedia` SENGAJA tetap berbayar. Mengirim foto produk itu yang menjual,
+ * bukan yang bikin asisten kelihatan waras.
+ */
+const FITUR_GRATIS: Fitur[] = ["bacaMedia"];
+const FITUR_STARTER: Fitur[] = [...FITUR_GRATIS, "kirimMedia"];
 const FITUR_GROWTH: Fitur[] = [...FITUR_STARTER, "sapaOtomatis", "jamKerja"];
 
 const FITUR_PAKET: Record<PlanId, readonly Fitur[]> = {
-  free: [],
+  free: FITUR_GRATIS,
   starter: FITUR_STARTER,
   growth: FITUR_GROWTH,
   pro: FITUR_GROWTH,
@@ -146,6 +172,13 @@ export const PLANS: Record<PlanId, Plan> = {
       `${BALASAN_GRATIS} balasan per bulan`,
       "1 nomor WhatsApp",
       "Isi harga, layanan, dan aturan usahamu",
+      // Batas dua menitnya ikut disebut, bukan disembunyikan.
+      //
+      // Ini fitur yang paling sering kepakai di pesan PERTAMA pelanggan, dan
+      // batas yang tidak diumumkan lebih menjengkelkan daripada batas yang
+      // kecil. Angkanya diturunkan dari MAKS_DETIK_MEDIA di worker; kalau
+      // batasnya diubah, kalimat ini wajib ikut.
+      "Asisten membaca foto dan mendengar voice note sampai 2 menit",
       "Kotak masuk, bisa kamu ambil alih kapan saja",
       "Data pelanggan, janji temu, dan ringkasan AI terisi sendiri",
       // Batasnya disebut di SEMUA kartu, termasuk yang gratis.
@@ -174,7 +207,6 @@ export const PLANS: Record<PlanId, Plan> = {
     features: [
       "Semua yang ada di Coba Gratis",
       "3.000 balasan per bulan",
-      "Asisten bisa membaca foto dan pesan suara pelanggan",
       // Bukan cuma foto. Galeri menerima JPG, PNG, WebP, MP4, dan PDF, dan
       // worker mengirim PDF sebagai dokumen WhatsApp, bukan gambar. Menulis
       // "foto produk" saja bikin orang mengira daftar harga PDF dan katalognya

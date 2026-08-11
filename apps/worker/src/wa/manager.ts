@@ -36,6 +36,25 @@ const MAX_TYPING_MS = 4_000;
 const MIN_TYPING_MS = 700;
 const MAX_MEDIA_BYTES = 12 * 1024 * 1024;
 
+/**
+ * Sepanjang apa suara atau video yang masih dibacakan ke model.
+ *
+ * Batas byte SAMA SEKALI tidak menjaga sisi ini. Voice note WhatsApp itu Opus
+ * sekitar 8 sampai 16 kbps, jadi 12 MB yang lolos batas ukuran masih muat dua
+ * sampai tiga jam suara dalam satu pesan, dan yang ditagih penyedia AI dihitung
+ * per detik audio, bukan per byte. Satu pesan begitu bisa ratusan ribu token,
+ * dan hampir pasti gagal sendiri sebelum sempat berguna.
+ *
+ * Dua menit dipilih karena jauh di atas voice note biasa, yang di lapangan
+ * hampir selalu di bawah satu menit, tapi masih murah kalau memang dipakai
+ * penuh. Berlaku untuk SEMUA paket, termasuk yang berbayar: yang dijaga di sini
+ * bukan jatah orangnya, tapi lubang yang tidak punya dasar sama sekali.
+ */
+const MAKS_DETIK_MEDIA = 120;
+
+/** Kenapa sebuah lampiran tidak sampai ke model. */
+export type LampiranMasalah = "besar" | "panjang";
+
 interface Session {
   channelId: string;
   workspaceId: string;
@@ -682,7 +701,7 @@ interface Tertunda {
    * Dia akan mengulang mengirim berkas yang sama, dan gagal lagi, tanpa pernah
    * tahu apa yang salah.
    */
-  lampiranDitolak?: boolean;
+  lampiranMasalah?: LampiranMasalah;
   /** Berapa kali balasan ini sudah ditunda karena nomornya sedang menyambung. */
   percobaanUlang?: number;
 }
@@ -730,17 +749,17 @@ function batalkanBalasanTertunda(channelId: string) {
 export function gabungTertunda<
   T extends {
     media: IncomingMedia | null;
-    lampiranDitolak?: boolean;
+    lampiranMasalah?: LampiranMasalah;
   },
 >(baru: T, lama: T | undefined): T {
   if (!lama) return baru;
   return {
     ...baru,
     media: baru.media ?? lama.media,
-    // Penolakan karena ukuran juga tidak boleh hilang. Kalau hilang, pelanggan
-    // yang mengirim video kebesaran lalu mengetik sesuatu tidak pernah diberi
-    // tahu bahwa berkasnya tidak terbaca.
-    lampiranDitolak: baru.lampiranDitolak || lama.lampiranDitolak,
+    // Lampiran yang tidak terbaca juga tidak boleh hilang. Kalau hilang,
+    // pelanggan yang mengirim video kebesaran lalu mengetik sesuatu tidak
+    // pernah diberi tahu bahwa berkasnya tidak terbaca.
+    lampiranMasalah: baru.lampiranMasalah ?? lama.lampiranMasalah,
   };
 }
 
@@ -924,12 +943,17 @@ async function balasSekarang(
     return;
   }
 
+  // Kalimat penolakannya TIDAK disusun di sini.
+  //
+  // Alasannya saja yang diteruskan, dan yang menyusun kalimatnya
+  // `runAgentOnConversation`, supaya semua sebab lampiran-tidak-terbaca punya
+  // satu tempat. Waktu kalimatnya disusun di dua tempat, yang satu ikut
+  // diperbarui dan yang lain tertinggal, dan yang tertinggal itu tidak akan
+  // ketahuan sampai ada pelanggan yang kena.
   const result = await runAgentOnConversation({
     conversationId,
     media: data.media,
-    systemHint: data.lampiranDitolak
-      ? "Customer barusan mengirim lampiran yang terlalu besar untuk diproses, jadi kamu TIDAK bisa melihat isinya. Beri tahu dia dengan sopan bahwa berkasnya kebesaran, lalu minta dikirim ulang dalam ukuran lebih kecil atau dijelaskan lewat teks. Jangan menebak isi berkasnya."
-      : undefined,
+    lampiranMasalah: data.lampiranMasalah,
   });
 
   const sock = session.sock;
@@ -1130,6 +1154,20 @@ async function handleIncoming(
     );
   }
 
+  // Terlalu panjang TETAP DIUNDUH DAN DISIMPAN, cuma tidak dibacakan ke model.
+  //
+  // Bedanya dengan terlalu besar disengaja. Yang kebesaran ditolak sebelum
+  // diunduh karena memang tidak muat di memori; yang kepanjangan ukurannya
+  // masih di bawah batas byte, jadi menyimpannya murah, dan pemilik usahanya
+  // justru paling butuh bisa mendengarkan sendiri voice note panjang itu.
+  const terlaluPanjang =
+    extracted.durasiDetik !== null && extracted.durasiDetik > MAKS_DETIK_MEDIA;
+  if (terlaluPanjang) {
+    log.info(
+      `lampiran ${extracted.mediaType} ${extracted.durasiDetik} detik, lewat batas ${MAKS_DETIK_MEDIA} — disimpan tapi tidak dibacakan ke AI`,
+    );
+  }
+
   if (extracted.isMedia && extracted.mediaType !== "sticker" && !terlaluBesarDiakui) {
     try {
       const buffer = (await downloadMediaMessage(
@@ -1144,11 +1182,15 @@ async function handleIncoming(
         const filename = `${randomUUID()}.${ext}`;
         fs.writeFileSync(path.join(env.MEDIA_DIR, filename), buffer);
         mediaPath = filename;
-        media = {
-          mimeType: normalizeMime(extracted.mimeType),
-          data: buffer.toString("base64"),
-          storedPath: filename,
-        };
+        // Yang kepanjangan berhenti di sini: berkasnya tersimpan dan bisa
+        // dibuka pemilik usahanya, tapi isinya tidak ikut ke model.
+        if (!terlaluPanjang) {
+          media = {
+            mimeType: normalizeMime(extracted.mimeType),
+            data: buffer.toString("base64"),
+            storedPath: filename,
+          };
+        }
       } else {
         log.warn(`media terlalu besar (${buffer.length} byte) — dilewati`);
       }
@@ -1266,8 +1308,14 @@ async function handleIncoming(
     // Ditolak karena ukurannya, entah dari angka yang diakui pengirim atau
     // dari ukuran sesungguhnya setelah diunduh. Dua-duanya berakhir sama dari
     // sisi asisten: dia tidak punya isinya sama sekali.
-    lampiranDitolak:
-      extracted.isMedia && extracted.mediaType !== "sticker" && !media,
+    // Stiker sengaja tidak dihitung: dia memang tidak pernah diunduh, dan
+    // memberitahu orang bahwa stikernya tidak terbaca cuma bikin bingung.
+    lampiranMasalah:
+      extracted.isMedia && extracted.mediaType !== "sticker" && !media
+        ? terlaluPanjang
+          ? "panjang"
+          : "besar"
+        : undefined,
   });
 }
 

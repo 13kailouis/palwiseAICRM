@@ -16,6 +16,24 @@ export interface ExtractedMessage {
    * dan yang itu tertangkap di sini tanpa satu byte pun masuk memori.
    */
   ukuranBytes: number | null;
+  /**
+   * Lama suara atau video dalam detik, dari pesannya sendiri. Null untuk yang
+   * memang tidak punya durasi (foto, dokumen, stiker).
+   *
+   * Ukuran berkas TIDAK bisa menggantikan ini. Voice note WhatsApp itu Opus
+   * sekitar 8 sampai 16 kbps, jadi 12 MB yang lolos batas ukuran masih muat dua
+   * sampai tiga jam suara dalam satu pesan. Yang dibayar ke penyedia AI
+   * dihitung per detik audio, bukan per byte, jadi batas byte sama sekali tidak
+   * menjaga sisi itu.
+   */
+  durasiDetik: number | null;
+}
+
+/** Durasi datang dari luar, jadi yang tidak masuk akal dianggap tidak diketahui. */
+function bacaDurasi(nilai: unknown): number | null {
+  const n = typeof nilai === "number" ? nilai : Number(nilai);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
 }
 
 /**
@@ -59,6 +77,7 @@ export function extractMessage(raw: proto.IMessage | null | undefined): Extracte
     mimeType: null,
     isMedia: false,
     ukuranBytes: null,
+    durasiDetik: null,
   };
   if (!m) return empty;
 
@@ -75,6 +94,7 @@ export function extractMessage(raw: proto.IMessage | null | undefined): Extracte
       mimeType: m.imageMessage.mimetype ?? "image/jpeg",
       isMedia: true,
       ukuranBytes: bacaUkuran(m.imageMessage.fileLength),
+      durasiDetik: null,
     };
   }
 
@@ -85,6 +105,7 @@ export function extractMessage(raw: proto.IMessage | null | undefined): Extracte
       mimeType: m.audioMessage.mimetype ?? "audio/ogg",
       isMedia: true,
       ukuranBytes: bacaUkuran(m.audioMessage.fileLength),
+      durasiDetik: bacaDurasi(m.audioMessage.seconds),
     };
   }
 
@@ -95,6 +116,7 @@ export function extractMessage(raw: proto.IMessage | null | undefined): Extracte
       mimeType: m.videoMessage.mimetype ?? "video/mp4",
       isMedia: true,
       ukuranBytes: bacaUkuran(m.videoMessage.fileLength),
+      durasiDetik: bacaDurasi(m.videoMessage.seconds),
     };
   }
 
@@ -105,6 +127,7 @@ export function extractMessage(raw: proto.IMessage | null | undefined): Extracte
       mimeType: m.documentMessage.mimetype ?? "application/octet-stream",
       isMedia: true,
       ukuranBytes: bacaUkuran(m.documentMessage.fileLength),
+      durasiDetik: null,
     };
   }
 
@@ -116,6 +139,7 @@ export function extractMessage(raw: proto.IMessage | null | undefined): Extracte
       isMedia: true,
       // Stiker tidak pernah diunduh, jadi ukurannya tidak dipakai siapa pun.
       ukuranBytes: null,
+      durasiDetik: null,
     };
   }
 
