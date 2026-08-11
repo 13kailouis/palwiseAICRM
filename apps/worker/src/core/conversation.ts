@@ -2,6 +2,7 @@ import {
   HANYA_PELANGGAN_ASLI,
   bolehPakai,
   parseJsonArray,
+  pesanTerkunci,
   prisma,
   stringifyJson,
   type Agent,
@@ -1219,6 +1220,44 @@ export async function runAgentOnConversation(params: {
   // jauh lebih mahal daripada satu balasan pendek yang tidak perlu, dan "ok"
   // kadang memang berarti "iya, lanjut". Jadi dia tetap dijawab, cuma dilarang
   // menambah barang dagangan baru.
+  // Lampiran yang tidak boleh dibaca paketnya HARUS diberitahukan ke model.
+  //
+  // Tanpa ini modelnya tidak diberi tahu apa-apa: lampirannya tidak dikirim,
+  // teksnya kosong karena foto biasanya tanpa keterangan, jadi yang sampai ke
+  // dia cuma "(customer mengirim pesan kosong)". Lalu dia menjawab persis
+  // seperti yang disuruh: pesanmu kosong.
+  //
+  // Kejadian nyata di akun gratis 10 Agustus 2026, pesan PERTAMA seorang
+  // pelanggan berupa foto, dan dia dibalas "maaf sepertinya pesan sebelumnya
+  // kosong ya". Padahal fotonya sampai dengan selamat, tersimpan rapi, dan
+  // terlihat jelas oleh pemilik tokonya di kotak masuk. Yang bohong bukan
+  // pelanggannya, tapi kita.
+  //
+  // Alasannya SENGAJA tidak disebut ke pelanggan. Dia pelanggannya toko itu,
+  // bukan pelanggan kita, dan mengumumkan bahwa tokonya belum berlangganan
+  // bikin pemilik usahanya malu di depan pembelinya sendiri.
+  const hintMediaTerkunci =
+    params.media && !bolehBacaMedia
+      ? "Customer barusan mengirim lampiran, dan kamu TIDAK bisa membukanya. JANGAN bilang pesannya kosong, karena dia benar-benar mengirim sesuatu. Jangan pula menebak isinya. Akui bahwa kamu belum bisa melihat lampiran, lalu minta dia menuliskan intinya lewat teks. Jangan sebut alasan teknis apa pun dan jangan singgung soal paket atau langganan."
+      : undefined;
+
+  // Dan pemiliknya diberi tahu, sekali per giliran, di kotak masuknya sendiri.
+  //
+  // Batas yang tidak diumumkan lebih menjengkelkan daripada batas yang kecil.
+  // Tanpa catatan ini pemilik toko melihat fotonya di layar, melihat asistennya
+  // menjawab ngawur, dan menyimpulkan asistennya rusak. Yang sebenarnya terjadi
+  // dia memang belum berhak membacanya, dan itu bisa dia ubah kapan saja.
+  //
+  // `catatanMasihBerlaku` menahan pengulangan: selama belum ada balasan baru
+  // sesudah catatan terakhir, catatannya tidak ditulis dua kali.
+  if (hintMediaTerkunci && !catatanMasihBerlaku(mentah)) {
+    await catatSistem(
+      conversation.id,
+      conversation.workspaceId,
+      `Pelanggan mengirim lampiran, tapi asisten belum bisa membacanya. ${pesanTerkunci("bacaMedia", paketSekarang)} Lampirannya tetap tersimpan dan bisa kamu buka sendiri di sini.`,
+    );
+  }
+
   const hintTandaTerima =
     !params.media && tanpaIsi(incomingText)
       ? "Pesan terakhir customer cuma tanda terima, tidak membawa pertanyaan atau maksud baru. JANGAN membuka topik baru, jangan menyebut harga, promo, atau layanan yang belum dia tanyakan, dan JANGAN mengulang pertanyaan yang sudah kamu ajukan tapi belum dia jawab. Kalau kamu sedang menunggu jawabannya, tunggu saja. Balas paling banyak satu kalimat pendek, atau kalau memang tidak ada yang perlu dikatakan, cukup satu kata singkat."
@@ -1239,7 +1278,7 @@ export async function runAgentOnConversation(params: {
         : null,
       // Instruksi sekali pakai. Milik pemanggil didahulukan, karena sapaan
       // otomatis memang punya maksudnya sendiri.
-      systemHint: params.systemHint ?? hintTandaTerima,
+      systemHint: params.systemHint ?? hintMediaTerkunci ?? hintTandaTerima,
       jadwalTerisi: await jadwalTerisi(conversation.workspaceId, conversation.contactId),
       assets: semuaAsset.map((a) => ({
         code: a.code,

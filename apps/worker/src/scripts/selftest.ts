@@ -870,6 +870,68 @@ async function main() {
     pesanFoto?.mediaSummary ?? "(kosong)",
   );
 
+  // Paket yang belum berhak membaca lampiran TIDAK BOLEH bilang pesannya kosong.
+  //
+  // Lampirannya tidak dikirim ke model, dan foto biasanya tanpa keterangan,
+  // jadi yang sampai ke model cuma "(customer mengirim pesan kosong)". Lalu dia
+  // menjawab persis seperti yang disuruh. Kejadian nyata di akun gratis
+  // 10 Agustus 2026: pesan PERTAMA seorang pelanggan berupa foto, dibalas
+  // "maaf sepertinya pesan sebelumnya kosong ya", padahal fotonya sampai
+  // dengan selamat dan terlihat jelas oleh pemilik tokonya di kotak masuk.
+  {
+    await prisma.workspace.update({
+      where: { id: workspace.id },
+      data: { plan: "free" },
+    });
+    scriptedReply = {
+      reply: ["Maaf kak, fotonya belum bisa saya buka. Boleh dituliskan intinya?"],
+      handoff: false,
+      contact: {},
+      stage: "",
+      tags: [],
+    };
+    await appendMessage({
+      conversationId: conversation.id,
+      workspaceId: workspace.id,
+      role: "customer",
+      content: "",
+      mediaType: "image",
+      mediaPath: "terkunci.jpg",
+    });
+    await runAgentOnConversation({
+      conversationId: conversation.id,
+      media: { mimeType: "image/jpeg", data: "CCCC" },
+    });
+
+    check(
+      "paket tanpa baca lampiran tetap tahu ada lampiran masuk",
+      capturedSemua.includes("TIDAK bisa membukanya") &&
+        capturedSemua.includes("JANGAN bilang pesannya kosong"),
+    );
+    // Alasannya tidak boleh sampai ke pelanggan. Dia pelanggannya toko itu,
+    // dan mengumumkan tokonya belum berlangganan bikin pemiliknya malu di
+    // depan pembelinya sendiri.
+    check(
+      "alasan paket tidak diceritakan ke pelanggan",
+      capturedSemua.includes("jangan singgung soal paket atau langganan"),
+    );
+    // Tapi pemiliknya WAJIB tahu, kalau tidak dia menyimpulkan asistennya rusak.
+    const catatan = await prisma.message.findFirst({
+      where: { conversationId: conversation.id, role: "system" },
+      orderBy: { createdAt: "desc" },
+    });
+    check(
+      "pemilik usaha diberi tahu lampirannya belum bisa dibaca",
+      (catatan?.content ?? "").includes("belum bisa membacanya") &&
+        (catatan?.content ?? "").includes("Starter"),
+      catatan?.content ?? "(tidak ada catatan)",
+    );
+    await prisma.workspace.update({
+      where: { id: workspace.id },
+      data: { plan: "growth" },
+    });
+  }
+
   // Foto lalu keterangannya, dua pesan terpisah yang terkumpul jadi satu
   // giliran. Ringkasannya harus mendarat di baris FOTONYA, bukan di baris teks
   // yang kebetulan datang terakhir. Baris teks tidak pernah dibacakan
