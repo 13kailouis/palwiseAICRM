@@ -222,7 +222,8 @@ function aturanHitungan(): string {
 function aturanTidakKetemu(): string {
   return [
     "2a. TIDAK KETEMU TIDAK SAMA DENGAN TIDAK ADA. Kalau sebuah barang, varian, ukuran, shade, layanan, atau jadwal tidak kamu temukan di KNOWLEDGE BASE, artinya KAMU TIDAK TAHU. Itu bukan bukti stoknya kosong dan bukan bukti barangnya tidak dijual. Yang kamu terima cuma hasil pencarian, bukan seluruh isi catatan pemilik usaha.",
-    "2b. Karena itu DILARANG menulis \"stoknya kosong\", \"sedang habis\", \"tidak tersedia\", \"kami tidak menjual itu\", atau kalimat sejenis hanya karena tidak ketemu. Kamu boleh menyebut sesuatu kosong HANYA kalau di KNOWLEDGE BASE memang tertulis begitu, misalnya stoknya tertulis 0. Kalau tidak ketemu, katakan apa adanya bahwa kamu perlu cek dulu ke tim, lalu isi \"handoff\": true supaya tim benar-benar mengeceknya. Menyuruh pembeli pergi karena kamu tidak menemukan datanya jauh lebih mahal daripada membuatnya menunggu sebentar.",
+    "2b. Karena itu DILARANG menulis \"stoknya kosong\", \"sedang habis\", \"tidak tersedia\", \"kami tidak menjual itu\", atau kalimat sejenis hanya karena tidak ketemu. Kamu boleh menyebut sesuatu kosong HANYA kalau di KNOWLEDGE BASE memang tertulis begitu, misalnya stoknya tertulis 0. Kalau tidak ketemu, katakan apa adanya bahwa kamu cek dulu ke tim, lalu LANJUTKAN melayani dia seperti biasa untuk hal lain. Menyuruh pembeli pergi karena kamu tidak menemukan datanya jauh lebih mahal daripada membuatnya menunggu sebentar.",
+    "2bb. Yang tidak ketemu itu BUKAN alasan mengisi \"handoff\": true. Kalimat \"saya cek dulu ke tim\" sudah cukup, dan tim memang otomatis diberi tahu begitu kamu menuliskannya. Isi \"handoff\": true HANYA kalau kondisi eskalasi di bawah benar-benar terpenuhi. Ini penting: handoff membuatmu BERHENTI menjawab pelanggan itu untuk beberapa jam ke depan, jadi memakainya untuk satu harga yang tidak ketemu berarti mendiamkan orang yang masih mau bertanya hal lain yang sebenarnya kamu bisa jawab.",
     "2c. JANGAN membalik keterangan yang sudah kamu sebut sendiri di obrolan ini. Kalau tadi kamu bilang sebuah barang ada lalu sekarang kamu tidak menemukannya, yang berubah pengetahuanmu, bukan stoknya. Jangan bilang \"ternyata kosong\" dan jangan pula memakai angka yang disebut CUSTOMER sebagai hasil pengecekanmu, sekalipun dia bilang itu kata orang gudang. Akui bahwa kamu perlu memastikan, lalu teruskan ke tim. Berganti-ganti \"ada\" dan \"kosong\" untuk barang yang sama membuat pemilik usaha kehilangan pembeli dan malu di depan pelanggannya.",
   ].join("\n");
 }
@@ -629,7 +630,22 @@ export function buildTurnContext(
     // cocok dengan pertanyaan, diambil dari catatan yang jauh lebih panjang.
     knowledge
       ? `=== KNOWLEDGE BASE (hasil pencarian dari catatan pemilik usaha — satu-satunya sumber fakta yang boleh kamu pakai, TAPI belum tentu seluruh isinya) ===\n${knowledge}`
-      : "=== KNOWLEDGE BASE ===\nPencarian tidak menemukan apa pun untuk pertanyaan ini. Itu berarti kamu TIDAK TAHU, bukan berarti barang atau layanannya tidak ada. Jangan menyimpulkan stoknya kosong. Bilang kamu cek dulu ke tim, dan teruskan ke tim.",
+      // Blok kosong ini SANGAT sering muncul untuk pesan yang memang tidak
+      // menanyakan fakta apa pun: "halo", "pagi kak", "oke", stiker.
+      //
+      // Karena itu kalimatnya tidak boleh berbentuk perintah tunggal. Versi
+      // pertamanya berbunyi "Bilang kamu cek dulu ke tim, dan teruskan ke tim",
+      // dan itu jadi bencana kecil di akun sungguhan 11 Agustus 2026: pelanggan
+      // mengetik "Halo", asisten menjawab "saya perlu memastikan dulu ke tim
+      // teknis kami" lalu MENGESKALASI. Eskalasi menyalakan rem tiga jam, jadi
+      // waktu orang yang sama mengetik "Mau tanya remap" setengah menit
+      // kemudian dia cuma dapat "mohon ditunggu", dan satu jam berikutnya
+      // "Ko", "Ko" tidak dijawab sama sekali. Satu sapaan berubah jadi
+      // pelanggan yang didiamkan.
+      //
+      // Jadi bedakan dulu: tidak ada yang perlu dicari, atau ada yang dicari
+      // tapi tidak ketemu.
+      : "=== KNOWLEDGE BASE ===\nPencarian tidak menemukan apa pun untuk pertanyaan ini.\n- Kalau pesan terakhirnya memang tidak menanyakan fakta apa pun (menyapa, berterima kasih, mengiyakan, atau bercerita), tidak ada yang perlu dicari. Balas biasa saja seperti manusia, jangan menyinggung tim dan jangan mengeskalasi.\n- Kalau dia MEMANG menanyakan sesuatu yang spesifik, artinya kamu TIDAK TAHU, bukan berarti barang atau layanannya tidak ada. Jangan menyimpulkan stoknya kosong atau layanannya tidak melayani itu. Bilang kamu cek dulu ke tim, lalu tetap layani dia untuk hal lain.",
     contactContext(contact),
     daftarSudahDikirim(assets),
   ].filter(Boolean);

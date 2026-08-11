@@ -14,6 +14,20 @@ export interface KnowledgeState {
 const MAX_CONTENT = 200_000; // karakter
 
 /**
+ * Rapikan jadi satu baris, untuk judul yang diambil dari isinya.
+ *
+ * Judul dibuat dari 60 huruf pertama isi catatan, dan isi catatan hampir selalu
+ * ditempel dari tempat lain, jadi 60 huruf itu sering memuat pindah baris di
+ * tengahnya. Yang tersimpan lalu berbunyi
+ * "Harga remap mobil bensin 1.500.000\r\nHarga remap mobil diesel", dan di
+ * layar terbaca sebagai satu kalimat sambung yang membingungkan. Terlihat di
+ * akun sungguhan 11 Agustus 2026.
+ */
+function satuBaris(teks: string): string {
+  return teks.replace(/\s+/g, " ").trim();
+}
+
+/**
  * Info bisnis menempel ke satu asisten. Kalau formnya menyebut asisten mana,
  * pakai itu (setelah dipastikan miliknya); kalau tidak, pakai yang pertama.
  */
@@ -103,7 +117,7 @@ export async function addKnowledgeAction(
       if (!question || !answer) {
         return { error: "Pertanyaan dan jawabannya diisi dulu ya." };
       }
-      title = title || question.slice(0, 80);
+      title = title || satuBaris(question).slice(0, 80);
       content = `Pertanyaan: ${question}\nJawaban: ${answer}`;
     } else if (type === "ai") {
       content = buangBlokKode(String(formData.get("content") ?? ""));
@@ -119,11 +133,32 @@ export async function addKnowledgeAction(
       if (content.length < 20) {
         return { error: "Isinya terlalu pendek." };
       }
-      title = title || content.slice(0, 60);
+      title = title || satuBaris(content).slice(0, 60);
     }
 
     if (content.length > MAX_CONTENT) {
       content = content.slice(0, MAX_CONTENT);
+    }
+
+    // Catatan yang isinya sama persis TIDAK ditambah dua kali.
+    //
+    // Terlihat di akun sungguhan 11 Agustus 2026: satu pemilik usaha punya
+    // enam catatan berjudul sama, dan dua pasang di antaranya tersimpan
+    // berjarak EMPAT DETIK dengan isi yang identik huruf per huruf. Itu bukan
+    // orang yang mengetik dua kali, itu satu tombol yang tertekan dua kali.
+    //
+    // Ruginya bukan cuma daftar yang berantakan. Pencarian mengambil sejumlah
+    // potongan per pertanyaan, jadi salinan yang sama saling berebut tempat di
+    // situ dan mendorong keluar catatan lain yang justru dibutuhkan.
+    const kembar = await prisma.knowledgeSource.findFirst({
+      where: { agentId, content },
+      select: { title: true },
+    });
+    if (kembar) {
+      return {
+        ok: true,
+        message: `Isinya sama persis dengan catatan "${kembar.title}" yang sudah ada, jadi tidak ditambah lagi. Kalau mau mengubah isinya, buka catatan itu dan sunting di sana.`,
+      };
     }
 
     const source = await prisma.knowledgeSource.create({

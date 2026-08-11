@@ -693,6 +693,35 @@ async function main() {
     capturedPrompt.includes("WAJIB tulis rinciannya dulu"),
   );
 
+  // Tidak ketemu TIDAK BOLEH jadi alasan mengeskalasi.
+  //
+  // Versi pertama aturan di atas menyuruh model meneruskan ke tim setiap kali
+  // pencariannya kosong, dan itu jadi bencana kecil di akun sungguhan 11
+  // Agustus 2026: pelanggan mengetik "Halo", pencarian tentu saja tidak
+  // menemukan apa-apa, asisten menjawab "saya perlu memastikan dulu ke tim"
+  // lalu mengeskalasi. Eskalasi menyalakan rem tiga jam, jadi pertanyaan
+  // sungguhannya setengah menit kemudian cuma dibalas "mohon ditunggu", dan
+  // "Ko", "Ko" satu jam berikutnya tidak dijawab sama sekali.
+  check(
+    "tidak ketemu bukan alasan mengeskalasi",
+    capturedPrompt.includes("BUKAN alasan mengisi"),
+  );
+  {
+    const kosong = buildTurnContext("", null, []);
+    check(
+      "sapaan yang tidak perlu dicari dijawab biasa, bukan dieskalasi",
+      kosong.includes("Balas biasa saja") &&
+        !/teruskan ke tim/.test(kosong),
+      kosong.slice(kosong.indexOf("KNOWLEDGE BASE"), kosong.indexOf("KNOWLEDGE BASE") + 160),
+    );
+    // Yang benar-benar ditanya tetap harus dibawa ke tim, kalau tidak
+    // perbaikan ini malah membatalkan perbaikan kemarin.
+    check(
+      "pertanyaan spesifik yang tidak ketemu tetap dibawa ke tim",
+      kosong.includes("cek dulu ke tim"),
+    );
+  }
+
   // Janji "saya cek dulu ke tim" harus sampai ke dashboard.
   //
   // Kalimat-kalimat ini diambil APA ADANYA dari balasan yang benar-benar
@@ -7694,6 +7723,27 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     check(
       "panduan terdaftar di sitemap",
       /jalur: "\/panduan"/.test(baca("apps/web/src/app/sitemap.ts")),
+    );
+
+    // ─── Catatan kembar dan judul yang memuat pindah baris ──────────────────
+    //
+    // Dua-duanya terlihat di akun sungguhan 11 Agustus 2026. Satu pemilik usaha
+    // punya enam catatan berjudul sama, dua pasang di antaranya tersimpan
+    // berjarak EMPAT DETIK dengan isi identik huruf per huruf: itu satu tombol
+    // yang tertekan dua kali, bukan orang yang mengetik dua kali. Ruginya bukan
+    // cuma daftar yang berantakan, tapi salinan yang sama berebut tempat di
+    // hasil pencarian dan mendorong keluar catatan lain.
+    const aksiKnowledge = baca("apps/web/src/app/actions/knowledge.ts");
+    check(
+      "catatan dengan isi sama persis tidak ditambah dua kali",
+      /findFirst\(\{\s*where: \{ agentId, content \}/.test(aksiKnowledge),
+    );
+    // Judul diambil dari 60 huruf pertama isinya, dan isi catatan hampir selalu
+    // ditempel dari tempat lain, jadi 60 huruf itu sering memuat pindah baris.
+    check(
+      "judul yang diambil dari isi dirapikan jadi satu baris",
+      /title \|\| satuBaris\(content\)/.test(aksiKnowledge) &&
+        /title \|\| satuBaris\(question\)/.test(aksiKnowledge),
     );
 
     // ─── Preset tidak boleh lebih miskin daripada prompt bawaan ─────────────
