@@ -706,6 +706,22 @@ async function main() {
     "tidak ketemu bukan alasan mengeskalasi",
     capturedPrompt.includes("BUKAN alasan mengisi"),
   );
+  // Angka harus datang dari baris yang menyebut layanannya persis.
+  //
+  // Kejadian nyata 11 Agustus 2026: catatan bengkel menulis "Service Berkala
+  // ... Rp 250. Durasi 1,5 jam" dan "Engine Tune Up ... Rp 250.000. Durasi 1
+  // jam". Asisten menjawab "service berkala mulai Rp 250.000, durasi 1,5 jam":
+  // lamanya dari satu baris, harganya dari baris lain. Angka Rp 250 di situ
+  // memang salah ketik di website pemiliknya, dan justru itu bahayanya — model
+  // membetulkannya diam-diam, jadi tidak ada yang pernah tahu.
+  check(
+    "angka harus dari baris yang menyebut layanannya persis",
+    capturedPrompt.includes("jangan menggabungkan dua baris jadi satu jawaban"),
+  );
+  check(
+    "angka yang kelihatan salah tidak boleh dibetulkan sendiri",
+    capturedPrompt.includes("JANGAN kamu betulkan sendiri"),
+  );
   {
     const kosong = buildTurnContext("", null, []);
     check(
@@ -7810,7 +7826,17 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "sapaan pembuka cuma dikirim kalau pesannya memang pembuka",
       /const pembukaSungguhan = extracted\.isMedia \|\| !tanpaIsi\(extracted\.text\)/.test(
         managerFile,
-      ) && /isFirstMessage && pembukaSungguhan/.test(managerFile),
+      ) && /isFirstMessage &&\s*pembukaSungguhan/.test(managerFile),
+    );
+    // Asisten yang dimatikan tidak boleh tetap menyapa.
+    //
+    // Yang menyusun balasan sudah menghormati `isActive`, jalur sapaan tidak.
+    // Jadi pemilik usaha yang mematikan asistennya tetap mengirim sapaan
+    // otomatis ke setiap orang baru lalu tidak menjawab apa pun sesudahnya.
+    // Dari sisi pelanggan itu bukan sunyi, itu disapa robot lalu ditinggal.
+    check(
+      "sapaan pembuka ikut mati waktu asistennya dimatikan",
+      /pembukaSungguhan &&\s*agent\?\.isActive/.test(managerFile),
     );
 
     // ─── Catatan kembar dan judul yang memuat pindah baris ──────────────────

@@ -1223,7 +1223,25 @@ async function handleIncoming(
   // maksudnya, dan `tanpaIsi` cuma bisa membaca teks.
   const pembukaSungguhan = extracted.isMedia || !tanpaIsi(extracted.text);
 
-  if (isFirstMessage && pembukaSungguhan && agent?.welcomeMessage && conversation.aiEnabled) {
+  // `isActive` DIPERIKSA DI SINI JUGA, bukan cuma di yang menyusun balasan.
+  //
+  // Dulu tidak, dan akibatnya justru lebih buruk daripada bug yang diam-diam.
+  // Pemilik usaha yang mematikan asistennya tetap mengirim sapaan otomatis ke
+  // setiap orang baru, lalu tidak ada satu pun jawaban sesudahnya, karena yang
+  // menyusun balasan memang menghormati tombol matinya. Dari sisi pelanggan itu
+  // bukan sunyi, itu disapa robot lalu ditinggal.
+  //
+  // Kejadian nyata 11 Agustus 2026: pemiliknya mematikan asisten di tengah
+  // hari, lalu pelanggan berikutnya menulis "Baleno next g 2004 pak", dibalas
+  // "Halo kak! Ada yang bisa saya bantu?", dan sesudah itu tidak pernah dijawab
+  // siapa pun.
+  if (
+    isFirstMessage &&
+    pembukaSungguhan &&
+    agent?.isActive &&
+    agent.welcomeMessage &&
+    conversation.aiEnabled
+  ) {
     await sendBubbles(
       sock,
       jidKirim,
