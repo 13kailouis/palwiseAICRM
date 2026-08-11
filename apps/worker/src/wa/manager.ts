@@ -23,6 +23,7 @@ import {
   jidToPhone,
   kabariEskalasiSekali,
   runAgentOnConversation,
+  tanpaIsi,
   type IncomingMedia,
 } from "../core/conversation.js";
 import { berurutan } from "../lib/antrian.js";
@@ -1206,7 +1207,23 @@ async function handleIncoming(
   // yang benar-benar baru.
   const jidKirim = alamatKirim(jid, contact.phone ?? nomor) ?? jid;
 
-  if (isFirstMessage && agent?.welcomeMessage && conversation.aiEnabled) {
+  // "Pertama" di sini artinya pertama BAGI PALWISE, bukan pertama bagi mereka
+  // berdua.
+  //
+  // Nomor yang baru disambungkan mewarisi seluruh isi WhatsApp yang sudah
+  // berjalan bertahun-tahun. Orang yang sudah kenal pemiliknya menulis "ok om"
+  // sebagai penutup obrolan kemarin, lalu dibalas "Halo kak! Ini Klastuning.
+  // Ada yang perlu dikerjakan?" seperti belum pernah ketemu. Kejadian nyata 11
+  // Agustus 2026, dan dari sisi penerima itu bukan ramah, itu tanda nomornya
+  // rusak.
+  //
+  // Jadi sapaan pembuka cuma dikirim kalau pesannya memang terbaca seperti
+  // pembuka. Tanda terima dan salam penutup jelas bukan.
+  // Lampiran selalu dihitung pembuka: foto tanpa keterangan itu jelas ada
+  // maksudnya, dan `tanpaIsi` cuma bisa membaca teks.
+  const pembukaSungguhan = extracted.isMedia || !tanpaIsi(extracted.text);
+
+  if (isFirstMessage && pembukaSungguhan && agent?.welcomeMessage && conversation.aiEnabled) {
     await sendBubbles(
       sock,
       jidKirim,

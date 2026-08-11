@@ -3849,6 +3849,78 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
   );
   check("pesan kosong bukan tanda terima", !sekadarMengiyakan("   "));
 
+  // Panggilan yang menempel di belakang tanda terima.
+  //
+  // "ok om" lolos dari SEMUA rem pada 11 Agustus 2026, cuma karena satu kata
+  // panggilan di belakangnya, dan itu cukup membuat sapaan pembuka terkirim ke
+  // orang yang jelas-jelas sedang menutup obrolan.
+  for (const s of ["ok om", "siap bang", "oke pak", "iya mas", "sip bos"]) {
+    check(`"${s}" dikenali cuma mengiyakan`, sekadarMengiyakan(s), s);
+  }
+  // Tapi panggilan SENDIRIAN itu orang yang memanggil, dan dia menunggu
+  // dijawab. Kalau ini ikut terjaring, orang yang menulis "Pak" didiamkan.
+  for (const s of ["om", "pak", "bang", "mas"]) {
+    check(`"${s}" sendirian tetap membawa isi`, !sekadarMengiyakan(s), s);
+  }
+  // Yang lama tidak boleh ikut berubah artinya.
+  check('"kak" sendirian tetap tanda terima seperti dulu', sekadarMengiyakan("kak"));
+
+  // Dan kesimpulan itu harus SAMPAI ke yang menyusun jawaban, bukan berhenti di
+  // penyaring kalimat berulang.
+  //
+  // Kejadian nyata 11 Agustus 2026: asisten bertanya "jenis mobilnya apa ya?",
+  // pelanggan menjawab "ok", sebelas detik kemudian dia menerima tiga bubble
+  // berisi daftar tarif, lokasi layanan, dan pertanyaan yang sama persis
+  // maksudnya dengan yang barusan ditanyakan.
+  {
+    const kanalOk = await prisma.channel.create({
+      data: { workspaceId: workspace.id, name: "Nomor tanda terima", agentId: agent.id },
+    });
+    const kontakOk = await getOrCreateContact({
+      workspaceId: workspace.id,
+      waJid: "628777111222@s.whatsapp.net",
+    });
+    const obrolanOk = await getOrCreateConversation({
+      workspaceId: workspace.id,
+      contactId: kontakOk.id,
+      channelId: kanalOk.id,
+      agentId: agent.id,
+    });
+    // Giliran asisten sebelumnya sengaja BERISI, supaya obrolannya tidak
+    // terhitung sudah habis dan jalur balasannya benar-benar dijalankan.
+    await appendMessage({
+      conversationId: obrolanOk.id,
+      workspaceId: workspace.id,
+      role: "ai",
+      content: "Boleh infokan jenis mobilnya apa ya kak?",
+    });
+    await appendMessage({
+      conversationId: obrolanOk.id,
+      workspaceId: workspace.id,
+      role: "customer",
+      content: "ok",
+    });
+
+    scriptedReply = {
+      reply: ["Baik kak, saya tunggu ya."],
+      handoff: false,
+      contact: {},
+      stage: "",
+      tags: [],
+    };
+    const rOk = await runAgentOnConversation({ conversationId: obrolanOk.id });
+    check("balasan atas tanda terima tetap dikirim", rOk.status === "replied", rOk.status);
+    check(
+      "model diberi tahu pesan terakhir cuma tanda terima",
+      capturedSemua.includes("cuma tanda terima"),
+    );
+    check(
+      "model dilarang mengulang pertanyaan yang belum dijawab",
+      capturedSemua.includes("JANGAN mengulang pertanyaan yang sudah kamu ajukan"),
+    );
+  }
+
+
   // Bentuk pernyataan dari tawaran penutup, tanpa tanda tanya. Ini yang bikin
   // giliran asisten tidak pernah dinilai basa-basi di percobaan itu.
   check(
@@ -7723,6 +7795,22 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     check(
       "panduan terdaftar di sitemap",
       /jalur: "\/panduan"/.test(baca("apps/web/src/app/sitemap.ts")),
+    );
+
+    // ─── Sapaan pembuka tidak nyala di tengah obrolan orang ─────────────────
+    //
+    // "Pertama" yang dipakai itu pertama BAGI PALWISE, bukan pertama bagi
+    // mereka berdua. Nomor yang baru disambungkan mewarisi obrolan WhatsApp
+    // yang sudah berjalan bertahun-tahun, jadi "ok om" sebagai penutup obrolan
+    // kemarin dibalas "Halo kak! Ini Klastuning. Ada yang perlu dikerjakan?"
+    // seperti belum pernah ketemu. Dari sisi penerima itu bukan ramah, itu
+    // tanda nomornya rusak.
+    const managerFile = baca("apps/worker/src/wa/manager.ts");
+    check(
+      "sapaan pembuka cuma dikirim kalau pesannya memang pembuka",
+      /const pembukaSungguhan = extracted\.isMedia \|\| !tanpaIsi\(extracted\.text\)/.test(
+        managerFile,
+      ) && /isFirstMessage && pembukaSungguhan/.test(managerFile),
     );
 
     // ─── Catatan kembar dan judul yang memuat pindah baris ──────────────────

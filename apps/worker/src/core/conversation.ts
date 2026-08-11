@@ -377,6 +377,21 @@ const KATA_MENGIYAKAN = new Set([
 ]);
 
 /**
+ * Panggilan yang menempel di belakang tanda terima: "ok om", "siap bang".
+ *
+ * Dipisah dari daftar di atas dan TIDAK cukup berdiri sendiri. Orang yang cuma
+ * mengetik "Om" atau "Pak" sedang memanggil, dan itu jelas menunggu jawaban;
+ * yang tidak menunggu jawaban cuma panggilan yang menempel pada kata setuju.
+ *
+ * Ada karena "ok om" lolos dari semua rem pada 11 Agustus 2026, dan satu kata
+ * panggilan itu cukup untuk membuat asisten mengira ada maksud di dalamnya.
+ */
+const KATA_SAPAAN = new Set([
+  "bang", "bos", "bro", "bu", "gan", "kang", "kk", "mas", "mbak", "om", "pak",
+  "sis", "sist", "min",
+]);
+
+/**
  * Pesan yang cuma mengiyakan, tanpa maksud apa pun.
  *
  * Dipisah dari [cumaBasaBasi] karena syaratnya berbeda dan syarat di sana
@@ -409,7 +424,11 @@ export function sekadarMengiyakan(teks: string): boolean {
   // Lebih dari tiga kata hampir pasti sudah membawa maksud.
   if (kata.length > 3) return false;
 
-  return kata.every((k) => KATA_MENGIYAKAN.has(k));
+  // Panggilan boleh ikut, tapi harus menempel pada kata setuju. "ok om" tanda
+  // terima; "om" sendirian orang yang memanggil dan menunggu dijawab.
+  if (!kata.some((k) => KATA_MENGIYAKAN.has(k))) return false;
+
+  return kata.every((k) => KATA_MENGIYAKAN.has(k) || KATA_SAPAAN.has(k));
 }
 
 /**
@@ -1184,6 +1203,27 @@ export async function runAgentOnConversation(params: {
       .map((m) => m.mediaPath as string),
   );
 
+  // Pesan yang cuma mengiyakan tidak boleh memancing topik baru.
+  //
+  // Kejadian nyata 11 Agustus 2026: asisten bertanya "Boleh infokan jenis
+  // mobilnya apa ya?", pelanggan menjawab "ok", dan sebelas detik kemudian dia
+  // menerima tiga bubble berisi daftar tarif, lokasi layanan, DAN pertanyaan
+  // yang sama persis maksudnya dengan yang barusan ditanyakan.
+  //
+  // Yang bikin ini pantas diperbaiki di kode: sistemnya SUDAH TAHU "ok" itu
+  // kosong, `sekadarMengiyakan` mengembalikan true untuknya, tapi kesimpulan
+  // itu cuma dipakai penyaring kalimat berulang dan tidak pernah sampai ke
+  // yang menyusun jawaban. Datanya ada, kesimpulannya tidak diambil.
+  //
+  // Bukan didiamkan, dan itu disengaja. Salah mendiamkan pelanggan sungguhan
+  // jauh lebih mahal daripada satu balasan pendek yang tidak perlu, dan "ok"
+  // kadang memang berarti "iya, lanjut". Jadi dia tetap dijawab, cuma dilarang
+  // menambah barang dagangan baru.
+  const hintTandaTerima =
+    !params.media && tanpaIsi(incomingText)
+      ? "Pesan terakhir customer cuma tanda terima, tidak membawa pertanyaan atau maksud baru. JANGAN membuka topik baru, jangan menyebut harga, promo, atau layanan yang belum dia tanyakan, dan JANGAN mengulang pertanyaan yang sudah kamu ajukan tapi belum dia jawab. Kalau kamu sedang menunggu jawabannya, tunggu saja. Balas paling banyak satu kalimat pendek, atau kalau memang tidak ada yang perlu dikatakan, cukup satu kata singkat."
+      : undefined;
+
   let reply: AgentReply;
   try {
     reply = await generateReply({
@@ -1197,7 +1237,9 @@ export async function runAgentOnConversation(params: {
       incomingMedia: bolehBacaMedia && params.media
         ? { mimeType: params.media.mimeType, data: params.media.data }
         : null,
-      systemHint: params.systemHint,
+      // Instruksi sekali pakai. Milik pemanggil didahulukan, karena sapaan
+      // otomatis memang punya maksudnya sendiri.
+      systemHint: params.systemHint ?? hintTandaTerima,
       jadwalTerisi: await jadwalTerisi(conversation.workspaceId, conversation.contactId),
       assets: semuaAsset.map((a) => ({
         code: a.code,
