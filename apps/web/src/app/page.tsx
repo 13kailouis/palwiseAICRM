@@ -18,6 +18,7 @@ import {
   MockupDashboard,
   MockupInfoBisnis,
   MockupJanji,
+  MockupRasa,
   MockupSapaLagi,
 } from "@/components/Mockup";
 import { KakiHalaman } from "@/components/HalamanTeks";
@@ -131,6 +132,22 @@ const FEATURES: {
     title: "Kamu masih yang pegang kendali",
     body: "Semua chat di satu layar. Begitu kamu ikut ngetik, dia langsung diam dan minggir.",
   },
+  // Dua baris di bawah ini yang membawa lapisan rasa ke halaman jualan.
+  //
+  // Dua-duanya menyebut HASILNYA buat pemilik toko, bukan mekaniknya. "Membaca
+  // emosi pelanggan" itu keterangan teknis yang tidak menjanjikan apa-apa;
+  // "kamu tahu duluan siapa yang lagi kesel" itu hal yang dia rasakan besok
+  // pagi waktu buka kotak masuknya.
+  {
+    ikon: "chat" as NamaIkon,
+    title: "Kamu tahu duluan siapa yang lagi kesel",
+    body: "Yang nadanya mulai berubah ditandain, lengkap sama alasannya. Chat masuk urut dari yang paling perlu kamu pegang, bukan dari yang paling baru.",
+  },
+  {
+    ikon: "catat" as NamaIkon,
+    title: "Yang udah mau beli nggak diajak muter-muter",
+    body: "Pas orangnya udah bilang mau ambil, dia berhenti nawarin dan langsung ke cara bayarnya. Pas orangnya lagi kesel, jawabannya jadi pendek dan nggak sok akrab.",
+  },
   {
     ikon: "catat" as NamaIkon,
     title: "Calon pembeli tercatat sendiri",
@@ -214,6 +231,21 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
   {
     t: "Pelanggan saya tahu ini dibalas mesin?",
     j: "Kamu yang nentuin. Dia bisa ngaku asisten, bisa juga ngomong sebagai tim usahamu. Saran kami yang pertama: orang jarang keberatan dibalas mesin kalau jawabannya bener.",
+  },
+  {
+    // Pertanyaan ini WAJIB ada, dan letaknya sengaja sebelum "kalau dia salah
+    // jawab gimana".
+    //
+    // Begitu halaman ini menyebut perasaan, kekhawatiran yang muncul otomatis
+    // di kepala pemilik toko bukan "wah canggih" tapi "jangan-jangan AI saya
+    // ngambek ke pelanggan waktu saya tidur". Kalau tidak dijawab, dia
+    // menjawabnya sendiri ke arah yang paling buruk.
+    //
+    // Jawabannya JUJUR, dan kejujurannya yang menjual: menyangkal bahwa
+    // AI-nya punya perasaan justru menghilangkan satu-satunya alasan orang
+    // takut. Jangan pernah diubah jadi "iya, dia punya perasaan".
+    t: "AI-nya beneran punya perasaan?",
+    j: "Nggak. Yang dia lakuin itu baca nada pesan pelanggan kamu: kata-katanya, berapa lama dia nunggu, berapa pesan yang belum kamu bales. Terus cara jawabnya disesuaiin. Dia sendiri nggak pernah moody, nggak pernah ngambek, dan nggak pernah bawa suasana dari chat sebelah. Faktanya juga tetep dari info yang kamu isi, yang berubah cuma caranya nyampein.",
   },
   {
     t: "Kalau dia salah jawab gimana?",
@@ -507,8 +539,22 @@ export default async function LandingPage() {
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-5 pt-9 sm:pt-20">
         <div className="mx-auto max-w-3xl text-center">
+          {/* LENCANA MENYEBUT PEMBEDA KEDUA, HARGANYA TETAP IKUT.
+              Diubah 16 Agustus 2026 waktu lapisan rasa jadi.
+
+              Harga itu pembeda kami yang paling kuat DAN yang paling gampang
+              disamakan lawan kapan saja. Membaca perasaan pelanggan pembeda
+              pertama yang bukan angka, jadi dia disebut duluan. Tapi harganya
+              tidak dibuang: di situ kami menang hari ini, dan orang yang datang
+              dari pencarian harga tetap harus menemukannya di layar pertama.
+
+              Yang SENGAJA TIDAK ditulis: "AI yang punya perasaan". Itu janji
+              yang tidak bisa dibuktikan ke siapa pun, dan lebih buruk lagi, dia
+              menakuti pembeli kami sendiri — pemilik toko yang mendengarnya
+              membayangkan asistennya ngambek ke pelanggan waktu dia tidur. Yang
+              benar-benar dikerjakan produknya juga bukan itu. */}
           <span className="badge bg-brand-50 text-brand-700">
-            Sepertujuh harga platform sebelah
+            Ngerti kapan pelanggan lagi kesel · sepertujuh harga sebelah
           </span>
           {/* JUDULNYA MENJUAL SALES, BUKAN ADMIN.
 
@@ -984,6 +1030,21 @@ export default async function LandingPage() {
         bodyHp="Begitu jamnya disepakati di chat, jadwalnya tercatat sendiri. Semua yang mau datang berderet di satu daftar, dari yang paling deket harinya."
         catatan="Dia nggak bisa lihat kalender kamu, jadi yang dia catat cuma permintaan. Kamu yang mastiin, sekali klik, dan pelanggannya dikabarin sekalian."
         gambar={<MockupJanji />}
+      />
+
+      {/* Sorotan 5 — lapisan rasa.
+          Judulnya menyebut KEJADIAN yang orang kenali, bukan kemampuan produk.
+          "Membaca emosi pelanggan" itu istilah kami; "orang yang udah nunggu 20
+          menit" itu kejadian yang tiap pemilik toko pernah alami dari dua sisi.
+
+          Gambarnya sengaja yang paling menjual di halaman ini: satu pertanyaan
+          yang sama, dijawab dua cara. Bedanya kelihatan tanpa dijelaskan. */}
+      <Sorotan
+        judul="Orang yang udah nunggu 20 menit nggak dibalas kayak yang baru nyapa"
+        body="Dia baca nadanya dari kata-katanya, dari berapa lama orangnya nunggu, dan dari berapa pesan yang belum kamu bales. Yang lagi kesel dijawab pendek dan langsung, tanpa basa-basi. Yang udah mau bayar nggak diajak muter-muter lagi. Yang kelihatan nggak sanggup nggak ditanyain budgetnya."
+        bodyHp="Dia baca nadanya dari kata-katanya dan dari berapa lama orangnya nunggu. Yang lagi kesel dijawab pendek dan langsung. Yang udah mau bayar nggak diajak muter-muter."
+        catatan="Yang berubah cuma cara jawabnya. Harga, stok, dan jadwal tetep dari info yang kamu isi sendiri, dan dia nggak pernah bawa suasana dari chat sebelah."
+        gambar={<MockupRasa />}
       />
 
       {/* Tombol di TENGAH halaman, bukan cuma di ujung atas dan bawah.

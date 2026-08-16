@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RingkasanAI } from "@/components/RingkasanAI";
 import { formatJanji } from "@/components/ui";
+import { tampilanRasa } from "@/lib/rasa";
 
 interface ConvSummary {
   id: string;
@@ -16,6 +17,8 @@ interface ConvSummary {
   lastMessageAt: string;
   preview: string;
   lastRole: string | null;
+  rasaLabel: string | null;
+  rasaAlasan: string | null;
 }
 
 interface Msg {
@@ -60,6 +63,10 @@ interface Detail {
 
 const FILTERS = [
   { id: "open", label: "Masih jalan" },
+  // Bukan saringan, tapi URUTAN: isinya sama dengan "Masih jalan", disusun
+  // menurut siapa yang paling mahal kalau ditinggalkan. Lihat catatannya di
+  // api/inbox/conversations/route.ts.
+  { id: "duluin", label: "Duluin ini" },
   { id: "human", label: "Nunggu kamu" },
   { id: "all", label: "Semua" },
 ];
@@ -114,6 +121,10 @@ function relatif(iso: string) {
 export function Inbox({ initialId }: { initialId: string | null }) {
   const [filter, setFilter] = useState("open");
   const [list, setList] = useState<ConvSummary[]>([]);
+  const [ringkas, setRingkas] = useState<{
+    siapBeli: number;
+    perluDitenangkan: number;
+  } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(initialId);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [draft, setDraft] = useState("");
@@ -140,6 +151,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
       if (!res.ok) return;
       const data = await res.json();
       setList(data.conversations);
+      setRingkas(data.ringkas ?? null);
       setSelectedId((cur) => cur ?? data.conversations[0]?.id ?? null);
     } catch {
       /* biarkan, coba lagi nanti */
@@ -272,6 +284,25 @@ export function Inbox({ initialId }: { initialId: string | null }) {
           ))}
         </div>
 
+        {/* Hitungan singkat, yang BAIK disebut duluan.
+            Alasannya ditulis lengkap di api/inbox/conversations/route.ts:
+            lencana merah menarik mata jauh lebih kuat daripada lencana hitam,
+            jadi tanpa baris ini hal pertama yang dibaca pemilik toko tiap pagi
+            selalu kemarahan. */}
+        {ringkas && (ringkas.siapBeli > 0 || ringkas.perluDitenangkan > 0) && (
+          <p className="border-b border-ink-100 px-4 py-2 text-xs text-ink-500">
+            {ringkas.siapBeli > 0 && (
+              <span className="font-medium text-ink-900">
+                {ringkas.siapBeli} siap beli
+              </span>
+            )}
+            {ringkas.siapBeli > 0 && ringkas.perluDitenangkan > 0 && " · "}
+            {ringkas.perluDitenangkan > 0 && (
+              <span>{ringkas.perluDitenangkan} perlu ditenangkan</span>
+            )}
+          </p>
+        )}
+
         <div className="thin-scroll min-h-0 flex-1 overflow-y-auto">
           {list.length === 0 ? (
             <p className="p-5 text-sm leading-relaxed text-ink-500">
@@ -299,6 +330,14 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                   {c.preview || "belum ada pesan"}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {/* Lencana rasa duluan, karena inilah yang menentukan urutan
+                      kerja. "Nunggu kamu" menerangkan STATUS obrolannya;
+                      lencana ini menerangkan KEADAAN orangnya, dan yang kedua
+                      itu yang menjawab "mulai dari mana". */}
+                  {(() => {
+                    const r = tampilanRasa(c.rasaLabel);
+                    return r ? <span className={`badge ${r.kelas}`}>{r.teks}</span> : null;
+                  })()}
                   {c.needsHuman && (
                     <span className="badge bg-amber-100 text-amber-800">
                       nunggu kamu
@@ -313,6 +352,16 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                     </span>
                   )}
                 </div>
+                {/* Alasannya, apa adanya.
+                    Tanpa ini lencananya cuma tebakan yang tidak bisa dibantah,
+                    dan tebakan yang tidak bisa dijelaskan akan dimatikan orang
+                    di minggu kedua. Cuma ditampilkan kalau lencananya memang
+                    muncul, supaya baris ini tidak jadi kebisingan tetap. */}
+                {c.rasaAlasan && tampilanRasa(c.rasaLabel) && (
+                  <p className="mt-1 truncate text-[11px] text-ink-400">
+                    {c.rasaAlasan}
+                  </p>
+                )}
               </button>
             ))
           )}

@@ -302,6 +302,18 @@ model Agent {
   temperature   Float @default(0.4)
   model         String @default("")   // kosong = pakai default dari env
 
+  /// Nada bicara tetap asisten ini: hangat | tenang | santai | tegas.
+  ///
+  /// Ini keputusan REKRUTMEN, bukan suasana hati. Dipilih pemilik usaha sekali
+  /// dan tidak pernah berubah sendiri, ke customer mana pun, dalam keadaan
+  /// apa pun. Yang berubah menurut keadaan customer cuma sikap per giliran,
+  /// dan itu tidak disimpan di sini.
+  watak     String  @default("hangat")
+  /// Matikan untuk kembali ke perilaku sebelum lapisan rasa: bacaan tetap
+  /// dicatat dan lencana kotak masuk tetap jalan, tapi tidak ada satu pun
+  /// petunjuk sikap yang ditempel ke prompt.
+  rasaAktif Boolean @default(true)
+
   // Jam kerja: di luar jam ini AI ambil alih penuh. Format "HH:mm".
   officeHoursEnabled Boolean @default(false)
   officeHoursStart   String  @default("09:00")
@@ -605,6 +617,47 @@ model Conversation {
   /// supaya dia tidak merasa diabaikan tapi juga tidak dibanjiri.
   quotaNoticeSentAt DateTime?
 
+  /// Keadaan lapisan rasa, hasil IntiRasa.simpan(). Dipulihkan tiap giliran
+  /// lalu dimajukan sesuai waktu nyata yang berlalu, jadi pelanggan yang marah
+  /// kemarin memang sudah mereda hari ini tanpa perlu penjadwal apa pun.
+  rasaState  String?
+  /// Bacaan terakhir, didatarkan.
+  ///
+  /// Sengaja TIDAK dibaca dari `rasaState`. Kotak masuk mengurutkan dan
+  /// menyaring ratusan baris sekaligus, dan membongkar JSON di tiap baris untuk
+  /// itu berarti seluruh daftar harus dimuat ke memori sebelum bisa diurutkan.
+  /// panas | hangat | ragu | kesal | marah | mundur | dingin | netral
+  rasaLabel  String?
+  rasaKesal  Float     @default(0)
+  rasaMinat  Float     @default(0)
+  /// Satu angka untuk mengurutkan kotak masuk menurut siapa yang paling perlu
+  /// dipegang duluan. Aturannya di packages/rasa/src/rasa.ts → prioritas().
+  rasaPrioritas Float  @default(0)
+  /// Kenapa, dipisah koma. Ikut didatarkan karena inilah yang membuat lencana
+  /// bisa dipercaya: "Kesal" saja terbaca sebagai tebakan, "Kesal — 3 pesan
+  /// belum dibalas, 12 menit" terbaca sebagai asisten yang menyimak. Fitur
+  /// tebakan yang tidak bisa dijelaskan akan dimatikan orang di minggu kedua.
+  rasaAlasan String?
+  /// Keyakinan bacaan terakhir. Di bawah AMBANG_MENAMBAH, sikap cuma boleh
+  /// MENGURANGI (jangan upsell, jangan tanya, jangan panjang) dan tidak boleh
+  /// menambahkan kalimat apa pun. Salah mengurangi bikin jawaban datar; salah
+  /// menambah bikin jawaban yang bohong.
+  rasaYakin  Float     @default(0)
+  rasaSaat   DateTime?
+  /// Lapisan rasa memutuskan obrolan ini harus dipegang manusia, TAPI remnya
+  /// belum dinyalakan karena asisten masih berhutang satu balasan.
+  ///
+  /// Ada karena bug yang terukur waktu Fase 1 dipasang: eskalasi dicatat waktu
+  /// pesan MASUK, dan rem tiga jam dibaca sebelum balasan disusun, jadi
+  /// pelanggan yang menulis "penipu ya kalian" tidak dijawab sama sekali.
+  /// Didiamkan tepat sesudah menuduh adalah tanggapan paling buruk yang bisa
+  /// diberikan; satu kalimat tenang yang menyebut tim sudah tahu jauh lebih
+  /// baik, dan itu memang perilaku lama sebelum lapisan ini ada.
+  ///
+  /// Jadi urutannya: bendera naik sekarang, remnya menyala sesudah asisten
+  /// menjawab sekali. Dikosongkan lagi di applySideEffects.
+  rasaSerahkan Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -635,6 +688,15 @@ model Message {
   mediaSummary String?
   waMessageId  String?
   createdAt    DateTime @default(now())
+
+  /// Bacaan rasa pesan ini, HANYA untuk pesan customer. Sekitar 60 byte.
+  /// Bentuknya {"l":"kesal","k":0.72,"m":0.1,"a":["3 pesan belum dibalas"]}.
+  ///
+  /// Disimpan di baris pesannya, bukan di tabel sendiri, karena satu-satunya
+  /// pembacanya adalah grafik mood di halaman pelanggan dan grafik itu memang
+  /// selalu mengambil pesan percakapan yang sama. Tabel terpisah cuma menambah
+  /// satu join untuk data yang tidak pernah ditanya sendirian.
+  rasa String?
 
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

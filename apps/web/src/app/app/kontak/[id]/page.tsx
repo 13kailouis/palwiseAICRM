@@ -12,6 +12,7 @@ import {
 import { deleteContactAction, updateContactAction } from "@/app/actions/contact";
 import { TombolHapus } from "@/components/TombolHapus";
 import { RingkasanKontak } from "@/components/RingkasanKontak";
+import { JejakRasa } from "@/components/JejakRasa";
 import { PastikanJanji } from "@/components/PastikanJanji";
 import { draftKabarJanji } from "@/lib/janji";
 
@@ -59,7 +60,7 @@ export default async function KontakDetailPage({
   });
   if (!contact) notFound();
 
-  const [lampiran, totalLampiran, jumlahPesan, pertama] = await Promise.all([
+  const [lampiran, totalLampiran, jumlahPesan, pertama, bacaanRasa] = await Promise.all([
     prisma.message.findMany({
       where: { conversation: { contactId: contact.id }, mediaPath: { not: null } },
       orderBy: { createdAt: "desc" },
@@ -89,10 +90,55 @@ export default async function KontakDetailPage({
       orderBy: { createdAt: "asc" },
       select: { createdAt: true },
     }),
+    // Bacaan rasa sepanjang obrolan, untuk jejak titik balik di bawah.
+    //
+    // Dipotong 200 pesan terakhir: yang mau ditunjukkan perjalanan perasaan di
+    // obrolan ini, dan obrolan yang lebih panjang dari itu perjalanannya sudah
+    // lama berakhir.
+    prisma.message.findMany({
+      where: { conversation: { contactId: contact.id }, rasa: { not: null } },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: { rasa: true, createdAt: true },
+    }),
   ]);
 
   const tags = parseJsonArray(contact.tags);
   const obrolan = contact.conversations[0];
+
+  /**
+   * Titik balik: momen bacaannya BERUBAH, bukan setiap pesan.
+   *
+   * Pelanggan yang menulis lima kali dan kesal terus menghasilkan satu baris,
+   * bukan lima. Yang menceritakan sesuatu itu perubahannya — masuk hangat,
+   * jatuh waktu dengar harga, naik lagi sesudah dikasih pilihan lain.
+   *
+   * "netral" dan "dingin" tidak memulai baris baru sendiri, tapi tetap
+   * memutus rangkaian, jadi kembali kesal sesudah sempat tenang tetap terlihat
+   * sebagai kejadian baru.
+   */
+  const titikRasa: { label: string; alasan: string[]; pada: Date }[] = [];
+  let labelSebelumnya: string | null = null;
+  for (const m of [...bacaanRasa].reverse()) {
+    let isi: { l?: string; a?: string[] } | null = null;
+    try {
+      isi = JSON.parse(m.rasa ?? "");
+    } catch {
+      isi = null;
+    }
+    const label = isi?.l;
+    if (!label) continue;
+    if (label !== labelSebelumnya) {
+      if (label !== "netral" && label !== "dingin") {
+        titikRasa.push({
+          label,
+          alasan: Array.isArray(isi?.a) ? isi.a.slice(0, 2) : [],
+          pada: m.createdAt,
+        });
+      }
+      labelSebelumnya = label;
+    }
+  }
 
   return (
     <>
@@ -224,6 +270,16 @@ export default async function KontakDetailPage({
                   </p>
                 </>
               )}
+            </div>
+
+            <div className="card-pad">
+              <h2 className="text-sm font-semibold text-ink-900">
+                Perjalanan perasaannya
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-ink-500">
+                Yang dicatat cuma waktu bacaannya berubah, bukan tiap pesan.
+              </p>
+              <JejakRasa titik={titikRasa} />
             </div>
 
             <div className="card-pad">

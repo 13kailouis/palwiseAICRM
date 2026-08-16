@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { bolehPakai, getPlan, pesanTerkunci, prisma } from "@palwise/db";
+import { watakSah } from "@palwise/rasa";
 import { requireUser } from "@/lib/auth";
 import { penandaTersisa } from "@/lib/preset";
 
@@ -202,6 +203,11 @@ export async function saveAgentAction(
         welcomeMessage: String(formData.get("welcomeMessage") ?? "").trim(),
         handoffCondition: String(formData.get("handoffCondition") ?? "").trim(),
         splitBubbles: formData.get("splitBubbles") === "on",
+        // Nilai di luar daftar dibuang, bukan disimpan apa adanya. `watak` ikut
+        // ke system prompt yang kena cache, jadi nilai karangan berarti prompt
+        // yang tidak pernah diuji dan diskon awal-prompt yang batal.
+        watak: watakSah(String(formData.get("watak") ?? "")),
+        rasaAktif: formData.get("rasaAktif") === "on",
         temperature: num(formData, "temperature", 0.4, 0, 1),
         typingSpeedMs: num(formData, "typingSpeedMs", 25, 0, 120),
         isActive: formData.get("isActive") === "on",

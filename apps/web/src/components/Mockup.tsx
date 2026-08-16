@@ -38,11 +38,42 @@ function Jendela({
   );
 }
 
-const OBROLAN = [
-  { nama: "Bu Ratna", cuplikan: "Kalau kirim ke Bandung ongkirnya…", jam: "23.42", aktif: true },
-  { nama: "Pak Deni", cuplikan: "Sudah saya transfer ya kak", jam: "22.10", tandai: true },
+/**
+ * Lencana rasa ikut digambar, dan urutannya urutan "Duluin ini".
+ *
+ * Sengaja TIDAK semua baris berlencana. Kotak masuk yang tiap barisnya
+ * berlencana sama saja dengan yang tidak berlencana sama sekali, dan gambar
+ * yang menjanjikan itu akan membuat orang kecewa waktu melihat layar aslinya.
+ */
+const OBROLAN: {
+  nama: string;
+  cuplikan: string;
+  jam: string;
+  aktif?: boolean;
+  tandai?: boolean;
+  rasa?: { teks: string; kelas: string };
+}[] = [
+  {
+    nama: "Pak Deni",
+    cuplikan: "Sudah saya transfer ya kak",
+    jam: "22.10",
+    tandai: true,
+    rasa: { teks: "mau beli", kelas: "bg-ink-900 text-white" },
+  },
+  {
+    nama: "Bu Ratna",
+    cuplikan: "Kalau kirim ke Bandung ongkirnya…",
+    jam: "23.42",
+    aktif: true,
+  },
+  {
+    nama: "Toko Bu Yuni",
+    cuplikan: "Kok lama banget ya balesnya",
+    jam: "19.30",
+    tandai: true,
+    rasa: { teks: "kesal", kelas: "bg-amber-50 text-amber-800" },
+  },
   { nama: "Sinta", cuplikan: "Yang sampler isinya apa aja?", jam: "20.55" },
-  { nama: "Toko Bu Yuni", cuplikan: "Bisa harga reseller?", jam: "19.30", tandai: true },
 ];
 
 /** Kotak masuk: daftar obrolan di kiri, percakapan di kanan. */
@@ -60,12 +91,17 @@ export function MockupDashboard() {
         <div className="hidden border-r border-ink-200 sm:block">
           <div className="flex items-center gap-2 border-b border-ink-200 px-3 py-2.5">
             <span className="rounded-md bg-ink-900 px-2 py-1 text-[10px] font-medium text-white">
-              Semua
+              Duluin ini
             </span>
             <span className="rounded-md px-2 py-1 text-[10px] text-ink-500">
-              Perlu dibalas
+              Semua
             </span>
           </div>
+          {/* Yang baik disebut duluan, sama seperti di layar aslinya. */}
+          <p className="border-b border-ink-100 px-3 py-1.5 text-[10px] text-ink-500">
+            <span className="font-medium text-ink-900">1 siap beli</span> · 1 perlu
+            ditenangkan
+          </p>
           {OBROLAN.map((o) => (
             <div
               key={o.nama}
@@ -84,6 +120,13 @@ export function MockupDashboard() {
                   <span className="shrink-0 text-[9.5px] text-ink-400">{o.jam}</span>
                 </div>
                 <p className="truncate text-[10.5px] text-ink-500">{o.cuplikan}</p>
+                {o.rasa && (
+                  <span
+                    className={`mt-1 inline-block rounded-full px-1.5 py-0.5 text-[9px] font-medium ${o.rasa.kelas}`}
+                  >
+                    {o.rasa.teks}
+                  </span>
+                )}
               </div>
               {o.tandai && (
                 <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
@@ -134,6 +177,69 @@ export function MockupDashboard() {
         </div>
       </div>
     </Jendela>
+  );
+}
+
+/**
+ * Satu pertanyaan yang sama, dijawab dua cara.
+ *
+ * Ini gambar yang paling menjual di seluruh halaman, dan alasannya: bedanya
+ * kelihatan tanpa perlu dijelaskan sama sekali. Menerangkan "asisten kami
+ * menyesuaikan nada" butuh satu paragraf dan tetap tidak dipercaya; dua
+ * gelembung yang disandingkan selesai dalam dua detik.
+ *
+ * Kalimat kanannya sengaja LEBIH PENDEK, tanpa sapaan, tanpa emoji, dan langsung
+ * mengakui waktu tunggunya. Itu persis yang dilakukan sikap "kesal" di
+ * packages/rasa, jadi gambar ini tidak menjanjikan apa pun yang tidak
+ * benar-benar dikerjakan.
+ */
+export function MockupRasa() {
+  const kolom = [
+    {
+      keadaan: "Pas dia santai",
+      tanda: null as string | null,
+      pesan: "Halo kak, kopi arabika gayo masih ada?",
+      jawab:
+        "Halo kak! 👋 Masih ada ya, yang 200gr Rp 85.000. Mau sekalian saya bantu hitung ongkirnya?",
+    },
+    {
+      keadaan: "Pas dia udah nunggu",
+      tanda: "3 pesan belum dibalas, 22 menit",
+      pesan: "Halo kak, kopi arabika gayo masih ada?",
+      jawab:
+        "Maaf ya kak, 22 menit tanpa kabar itu kelamaan. Arabika Gayo 200gr masih ada, Rp 85.000.",
+    },
+  ];
+
+  return (
+    <div className="grid w-full gap-3 sm:grid-cols-2">
+      {kolom.map((k) => (
+        <Jendela key={k.keadaan} judul={k.keadaan}>
+          <div className="space-y-2 bg-ink-50 px-3.5 py-3">
+            {/* Lencananya cuma di kolom kanan. Kalau dua-duanya berlencana,
+                yang mau ditunjukkan justru hilang: bahwa sebagian besar
+                obrolan memang tidak perlu diapa-apakan. */}
+            <div className="flex min-h-[18px] items-center">
+              {k.tanda && (
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9.5px] font-medium text-amber-800">
+                  kesal · {k.tanda}
+                </span>
+              )}
+            </div>
+            <div className="flex justify-start">
+              <div className="max-w-[88%] rounded-xl rounded-bl-sm border border-ink-200 bg-white px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-800">
+                {k.pesan}
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <div className="max-w-[88%] rounded-xl rounded-br-sm bg-[#d9fdd3] px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-900">
+                {k.jawab}
+              </div>
+            </div>
+          </div>
+        </Jendela>
+      ))}
+    </div>
   );
 }
 

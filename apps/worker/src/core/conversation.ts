@@ -16,6 +16,8 @@ import {
   type AgentReply,
 } from "../ai/agent.js";
 import { aiMayReplyNow } from "./officeHours.js";
+import { catatRasa } from "./rasa.js";
+import { pilihSikap, SIKAP_DIAM, type LabelRasa } from "@palwise/rasa";
 import {
   ambilJatahRuangCoba,
   kembalikanJatahRuangCoba,
@@ -773,6 +775,25 @@ export async function appendMessage(params: {
     },
   });
 
+  // Bacaan rasa, dan tempatnya memang DI SINI.
+  //
+  // Ini satu-satunya pintu yang dilewati semua pesan pelanggan, apa pun yang
+  // terjadi sesudahnya. Kalau bacaannya ditaruh di jalur balasan, dia mati
+  // persis di keadaan yang paling butuh terbaca: obrolan yang sedang dipegang
+  // manusia, obrolan yang sudah dieskalasi, jatah habis, dan di luar jam kerja.
+  // Justru di situ pelanggan menunggu paling lama.
+  //
+  // Ditunggu, tidak dilepas jalan sendiri: keputusan eskalasinya harus sudah
+  // tercatat sebelum runAgentOnConversation membaca `needsHuman`, dan
+  // penerbitan di bawah harus membawa lencana yang sudah baru.
+  if (params.role === "customer") {
+    await catatRasa({
+      conversationId: params.conversationId,
+      messageId: message.id,
+      teks: params.content,
+    });
+  }
+
   bus.publish({
     type: "message",
     workspaceId: params.workspaceId,
@@ -1284,6 +1305,32 @@ export async function runAgentOnConversation(params: {
       ? "Pesan terakhir customer cuma tanda terima, tidak membawa pertanyaan atau maksud baru. JANGAN membuka topik baru, jangan menyebut harga, promo, atau layanan yang belum dia tanyakan, dan JANGAN mengulang pertanyaan yang sudah kamu ajukan tapi belum dia jawab. Kalau kamu sedang menunggu jawabannya, tunggu saja. Balas paling banyak satu kalimat pendek, atau kalau memang tidak ada yang perlu dikatakan, cukup satu kata singkat."
       : undefined;
 
+  // Sikap untuk giliran ini.
+  //
+  // Cuma dipakai kalau yang terakhir bicara memang CUSTOMER. Sapaan otomatis,
+  // tanya kabar, dan pengingat janji juga lewat sini, dan di situ bacaan
+  // terakhir bisa berumur berhari-hari — memakainya berarti menyapa orang
+  // dengan sikap untuk perasaan yang sudah lama lewat.
+  //
+  // Bacaannya sendiri tetap dicatat untuk semua pesan customer, apa pun yang
+  // terjadi sesudahnya. Lihat core/rasa.ts.
+  const sikap =
+    agent.rasaAktif && last?.role === "customer" && conversation.rasaLabel
+      ? pilihSikap(
+          {
+            label: conversation.rasaLabel as LabelRasa,
+            keyakinan: conversation.rasaYakin,
+            alasan: conversation.rasaAlasan ? conversation.rasaAlasan.split(", ") : [],
+          },
+          // Obrolan ini baru saja diserahkan ke tim oleh lapisan rasa, dan
+          // balasan inilah yang menyampaikannya. Keluhan yang ditangani dengan
+          // baik menghasilkan pelanggan yang lebih setia daripada kalau tidak
+          // pernah ada masalah — tapi cuma kalau ada yang benar-benar terjadi,
+          // dan disampaikan sebagai sesuatu yang sudah terjadi.
+          conversation.rasaSerahkan,
+        )
+      : SIKAP_DIAM;
+
   let reply: AgentReply;
   try {
     reply = await generateReply({
@@ -1291,6 +1338,7 @@ export async function runAgentOnConversation(params: {
       contact: conversation.contact,
       history: priorHistory,
       incomingText,
+      sikap,
       // Lampiran cuma dikirim ke model kalau paketnya berhak membacanya.
       // Ini juga menghemat biaya: token gambar dan suara jauh lebih mahal
       // daripada teks, dan paket gratis tidak membayarnya.
@@ -1757,6 +1805,17 @@ async function applySideEffects(
   // kosong, dan itulah yang membuat rem tiga jam di [runAgentOnConversation]
   // tidak ikut menyala.
   const dijanjikanKeTim = !reply.handoff && janjiKeTim(reply.bubbles);
+
+  // Rem yang ditunda oleh lapisan rasa. Benderanya sudah naik waktu pesannya
+  // masuk; yang ditunggu cuma satu balasan tenang keluar dulu, dan sekarang
+  // sudah. Lihat `rasaSerahkan` di schema.prisma.
+  if (conversation.rasaSerahkan) {
+    await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: { handoffAt: new Date(), rasaSerahkan: false },
+    });
+    log.info(`rem eskalasi rasa dinyalakan pada percakapan ${conversation.id}`);
+  }
 
   if ((reply.handoff || dijanjikanKeTim) && !conversation.needsHuman) {
     await prisma.conversation.update({

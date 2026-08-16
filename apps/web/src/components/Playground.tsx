@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { tampilanRasa } from "@/lib/rasa";
 
 interface Bubble {
   from: "customer" | "ai" | "error" | "berkas";
@@ -9,12 +10,30 @@ interface Bubble {
   kind?: string;
 }
 
+interface Rasa {
+  label: string;
+  alasan: string[];
+  efek: string[];
+  mati?: boolean;
+}
+
+/**
+ * Contoh pertanyaan.
+ *
+ * Empat yang pertama pertanyaan biasa. Tiga terakhir ditambahkan supaya
+ * lapisan rasa bisa DILIHAT, bukan cuma dibaca di halaman jualan — dan tiga
+ * itu yang paling menentukan apakah orang percaya fitur ini: pelanggan yang
+ * kesal, pelanggan yang sudah mau bayar, dan pelanggan yang tidak sanggup tapi
+ * tidak mengatakannya.
+ */
 const CONTOH = [
   "Halo, ini jual apa aja ya?",
   "Harganya berapa?",
   "Kirim ke Surabaya ongkirnya berapa?",
   "Saya mau pesan 2, caranya gimana?",
-  "Saya mau ngomong sama orangnya langsung dong",
+  "Kok lama banget sih balesnya, dari tadi saya nunggu",
+  "Transfer kemana ya kak? saya ambil sekarang",
+  "Wah belum ada rejeki kalau segitu",
 ];
 
 export function Playground({
@@ -28,6 +47,7 @@ export function Playground({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [meta, setMeta] = useState<{ handoff?: boolean; knowledgeUsed?: number }>({});
+  const [rasa, setRasa] = useState<Rasa | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,6 +87,7 @@ export function Playground({
           })),
         ]);
         setMeta({ handoff: data.handoff, knowledgeUsed: data.knowledgeUsed });
+        setRasa(data.rasa ?? null);
       }
     } catch {
       setChat((c) => [...c, { from: "error", text: "Tidak bisa menghubungi server." }]);
@@ -84,6 +105,7 @@ export function Playground({
     });
     setChat([]);
     setMeta({});
+    setRasa(null);
     setBusy(false);
   }
 
@@ -191,6 +213,65 @@ export function Playground({
             ))}
           </div>
         </div>
+
+        {/* Bacaan hidup.
+            Ditaruh di ATAS kotak "Jawaban barusan" dengan sengaja: ini yang
+            baru, dan ini satu-satunya tempat orang bisa melihat sendiri
+            lapisannya bekerja sebelum membiarkannya menyentuh pelanggan
+            sungguhan. */}
+        {rasa && (
+          <div className="card-pad">
+            <h3 className="text-sm font-semibold text-ink-900">Dia baca apa</h3>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {(() => {
+                const t = tampilanRasa(rasa.label);
+                return t ? (
+                  <span className={`badge ${t.kelas}`}>{t.teks}</span>
+                ) : (
+                  <span className="badge bg-ink-100 text-ink-600">biasa saja</span>
+                );
+              })()}
+              {rasa.alasan.map((a) => (
+                <span key={a} className="text-xs text-ink-500">
+                  {a}
+                </span>
+              ))}
+            </div>
+
+            {rasa.mati ? (
+              <p className="mt-3 text-xs leading-relaxed text-ink-500">
+                Cara jawabnya tidak diubah karena{" "}
+                <span className="font-medium text-ink-700">Baca perasaan pelanggan</span>{" "}
+                sedang mati di halaman Asisten.
+              </p>
+            ) : rasa.efek.length > 0 ? (
+              <>
+                <p className="mt-4 text-xs font-medium text-ink-700">
+                  Yang berubah di jawaban barusan
+                </p>
+                <ul className="mt-1.5 space-y-1">
+                  {rasa.efek.map((e) => (
+                    <li key={e} className="text-xs leading-relaxed text-ink-600">
+                      {e}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="mt-3 text-xs leading-relaxed text-ink-500">
+                Tidak ada yang perlu diubah, jadi dia menjawab seperti biasa.
+              </p>
+            )}
+
+            {/* Kekhawatiran yang muncul otomatis begitu orang melihat kata
+                "perasaan", dijawab di tempat dia melihatnya. */}
+            <p className="mt-4 border-t border-ink-100 pt-3 text-xs leading-relaxed text-ink-400">
+              Yang berubah cuma caranya menjawab. Harga, stok, dan jadwal tetap
+              dari Info bisnis.
+            </p>
+          </div>
+        )}
 
         {(meta.knowledgeUsed !== undefined || meta.handoff) && (
           <div className="card-pad">

@@ -139,10 +139,44 @@ dan halaman Asisten mengurus cara bicara.
 - Batas jumlah nomor dan agent ditegakkan sesuai paket saat menambah
 
 **Inbox & handoff**
-- Live chat multi-percakapan, filter Aktif / Perlu dibalas / Semua
+- Live chat multi-percakapan, filter Masih jalan / Duluin ini / Nunggu kamu / Semua
 - AI menandai sendiri kapan butuh manusia, dengan alasannya
 - Tim membalas → AI otomatis mundur di percakapan itu
 - Lampiran gambar & audio tampil langsung di thread
+
+**Baca perasaan pelanggan**
+
+Asisten membaca nada tiap pesan pelanggan, lalu menyesuaikan **cara** menjawab —
+bukan faktanya. Yang kesal dijawab pendek dan langsung, tanpa basa-basi. Yang
+sudah mau bayar tidak diajak berputar. Yang kelihatan tidak sanggup tidak
+ditanyai budgetnya dan angkanya tidak diulang.
+
+Bacanya dari dua jalur: kata-katanya (leksikon dagang Indonesia, termasuk ejaan
+gaul dan emoji) DAN perilakunya — berapa pesan belum dibalas, berapa lama dia
+menunggu, keluhan yang menggantung, uang yang sudah dikirim tapi belum dilayani.
+Jalur kedua lebih dipercaya: kata bisa dikelabui bahasa daerah dan kesopanan,
+tiga pesan beruntun tanpa dibalas artinya sama di seluruh Indonesia.
+
+Yang dilihat pemilik usaha: lencana di kotak masuk lengkap dengan alasannya,
+urutan "Duluin ini" menurut siapa yang paling perlu dipegang, perjalanan
+perasaan tiap pelanggan di halaman profilnya, dan bacaan hidup di Coba dulu.
+
+**Asistennya sendiri TIDAK punya suasana hati**, dan itu keputusan rancangan.
+Yang tetap padanya cuma watak yang kamu pilih sekali di halaman Asisten
+(hangat / tenang / santai / tegas). Dia tidak pernah membawa suasana dari obrolan
+lain, dan tidak pernah membalas nada kasar dengan nada kasar.
+
+Nol panggilan AI tambahan — semuanya matematika, jadi tidak menambah biaya per
+balasan. Bisa dimatikan lewat sakelar di halaman Asisten. Rancangan lengkap dan
+alasan tiap keputusan: [bisnis/08-lapisan-rasa.md](bisnis/08-lapisan-rasa.md).
+
+```bash
+npm run uji:rasa
+```
+
+Korpus 73 pesan berlabel tangan plus 38 uji perilaku, tanpa API dan tanpa
+database. `npm run contoh:rasa` mengisi kotak masuk dengan obrolan contoh, dan
+`npm run ukur:rasa` mengukur apakah lapisan ini benar-benar bekerja.
 
 **Masalah pelanggan (refund, komplain)**
 

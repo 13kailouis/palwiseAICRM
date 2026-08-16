@@ -150,6 +150,36 @@ function Toggle({
   );
 }
 
+/**
+ * Empat watak, ditulis dengan CONTOH BIDANG USAHA-nya.
+ *
+ * "Tenang" dan "tegas" tidak berarti apa-apa sendirian — orang tidak tahu mana
+ * yang cocok untuk dia sampai dia melihat usaha yang mirip usahanya disebut.
+ * Isinya harus sejalan dengan aturanWatak() di packages/rasa/src/sikap.ts.
+ */
+const WATAK_PILIHAN = [
+  {
+    id: "hangat",
+    nama: "Hangat",
+    hint: "Ramah, sesekali pakai emoji. Cocok untuk toko online dan makanan.",
+  },
+  {
+    id: "tenang",
+    nama: "Tenang",
+    hint: "Sabar dan lugas, tanpa emoji. Cocok untuk klinik, salon, dan jasa.",
+  },
+  {
+    id: "santai",
+    nama: "Santai",
+    hint: "Akrab seperti ngobrol sama teman. Cocok untuk toko anak muda.",
+  },
+  {
+    id: "tegas",
+    nama: "Tegas",
+    hint: "Pendek dan langsung ke pokoknya. Cocok untuk grosir dan B2B.",
+  },
+];
+
 export function AgentForm({
   agent,
   namaBisnis,
@@ -262,6 +292,57 @@ export function AgentForm({
           label="Asisten sedang bekerja"
           hint="Matikan kalau mau semua chat dipegang tim kamu dulu."
           defaultChecked={agent.isActive}
+        />
+      </Section>
+
+      <Section
+        title="Nada bicara dan perasaan"
+        description="Nada bicaranya kamu yang tentukan sekali, dan itu tetap ke semua pelanggan. Yang berubah cuma cara dia menjawab kalau pelanggannya kelihatan kesal, ragu, atau sudah mau beli."
+      >
+        <div>
+          <span className="label">Nada bicara</span>
+          {/* Radio, bukan dropdown.
+              Empat pilihan yang saling meniadakan dan keterangannya penting
+              untuk memilih — di dropdown keterangannya tidak muat, dan orang
+              memilih tanpa tahu bedanya apa. */}
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {WATAK_PILIHAN.map((w) => (
+              <label
+                key={w.id}
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 px-3 py-2.5 hover:bg-ink-50"
+              >
+                <input
+                  type="radio"
+                  name="watak"
+                  value={w.id}
+                  defaultChecked={(agent.watak || "hangat") === w.id}
+                  className="mt-0.5 h-4 w-4 border-ink-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span>
+                  <span className="text-sm font-medium text-ink-800">{w.nama}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-ink-500">
+                    {w.hint}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className="hint max-w-prose">
+            Ini pilihan sekali, bukan suasana hati. Dia tidak pernah berubah
+            sendiri, dan tidak pernah membawa suasana dari obrolan sebelah.
+          </p>
+        </div>
+
+        <Toggle
+          name="rasaAktif"
+          label="Baca perasaan pelanggan"
+          // Kalimat kedua ini WAJIB ada.
+          //
+          // Kekhawatiran pertama pemilik usaha begitu mendengar kata "perasaan"
+          // adalah asistennya jadi mengarang. Kalau tidak dijawab di tempat
+          // sakelarnya, dia akan dimatikan sebelum sempat dicoba.
+          hint="Kalau pelanggan kelihatan kesal, ragu, atau sudah mau beli, cara jawabnya menyesuaikan. Faktanya tetap dari Info bisnis, ini cuma soal caranya."
+          defaultChecked={agent.rasaAktif}
         />
       </Section>
 

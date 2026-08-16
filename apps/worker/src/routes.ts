@@ -14,6 +14,7 @@ import {
   getOrCreateConversation,
   runAgentOnConversation,
 } from "./core/conversation.js";
+import { pilihSikap, ringkasSikap, type LabelRasa } from "@palwise/rasa";
 import { getQuota } from "./core/quota.js";
 import { ringkasPelanggan } from "./core/ringkasan.js";
 import {
@@ -569,7 +570,25 @@ router.post("/playground", async (req, res) => {
       await prisma.message.deleteMany({ where: { conversationId: conversation.id } });
       await prisma.conversation.update({
         where: { id: conversation.id },
-        data: { needsHuman: false, handoffReason: null, followUpCount: 0 },
+        data: {
+          needsHuman: false,
+          handoffReason: null,
+          followUpCount: 0,
+          // Bacaan rasa ikut dikosongkan. Tanpa ini "Mulai dari awal" bohong:
+          // pesan pertama percobaan berikutnya dibaca dengan sisa kekesalan
+          // dari percobaan sebelumnya, dan pemilik usahanya melihat lencana
+          // yang bukan dia sebabkan.
+          rasaState: null,
+          rasaLabel: null,
+          rasaAlasan: null,
+          rasaKesal: 0,
+          rasaMinat: 0,
+          rasaPrioritas: 0,
+          rasaYakin: 0,
+          rasaSaat: null,
+          rasaSerahkan: false,
+          handoffAt: null,
+        },
       });
       await prisma.contact.update({
         where: { id: contact.id },
@@ -627,12 +646,41 @@ router.post("/playground", async (req, res) => {
       return;
     }
 
+    // Bacaan rasa untuk ditampilkan hidup di ruang coba.
+    //
+    // Ini satu-satunya tempat pemilik usaha bisa melihat sendiri lapisan ini
+    // bekerja SEBELUM dia membiarkannya menyentuh pelanggan sungguhan, dan itu
+    // jauh lebih meyakinkan daripada kalimat apa pun di halaman jualan.
+    // Dibaca ulang dari database, bukan dari ingatan, supaya yang tampil persis
+    // yang dipakai menyusun jawaban barusan.
+    const setelah = await prisma.conversation.findUnique({
+      where: { id: conversation.id },
+      select: { rasaLabel: true, rasaAlasan: true, rasaYakin: true },
+    });
+    const rasa =
+      setelah?.rasaLabel && agent.rasaAktif
+        ? {
+            label: setelah.rasaLabel,
+            alasan: setelah.rasaAlasan ? setelah.rasaAlasan.split(", ") : [],
+            efek: ringkasSikap(
+              pilihSikap({
+                label: setelah.rasaLabel as LabelRasa,
+                keyakinan: setelah.rasaYakin,
+                alasan: [],
+              }),
+            ),
+          }
+        : setelah?.rasaLabel
+          ? { label: setelah.rasaLabel, alasan: [], efek: [], mati: true }
+          : null;
+
     res.json({
       ok: true,
       conversationId: conversation.id,
       bubbles: [...bubbles, ...result.bubbles],
       handoff: result.handoff,
       knowledgeUsed: result.knowledgeUsed,
+      rasa,
       // Di ruang coba berkasnya tidak benar-benar dikirim, cuma ditampilkan
       // supaya pemilik toko tahu apa yang akan diterima pelanggan.
       berkas: result.berkas.map((b) => ({

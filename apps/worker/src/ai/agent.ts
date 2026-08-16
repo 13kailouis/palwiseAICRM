@@ -9,6 +9,14 @@ import {
   kepalaInstruksi,
   kepalaKonteks,
 } from "./suntikan.js";
+import {
+  aturanKetenangan,
+  aturanWatak,
+  suhuAkhir,
+  watakSah,
+  SIKAP_DIAM,
+  type Sikap,
+} from "@palwise/rasa";
 import { log } from "../lib/log.js";
 
 /**
@@ -168,6 +176,11 @@ function guardrails(): string {
     batasKemampuan(),
     aturanHitungan(),
     aturanAntiSuntikan(),
+    // Aturan 23–26. Statik, jadi ikut kena diskon awal-prompt dan praktis
+    // gratis. Ditempel untuk SEMUA agent, termasuk yang `rasaAktif`-nya mati:
+    // isinya "jangan ikut emosi" dan "jangan mengumumkan bacaan perasaan", dan
+    // dua-duanya tetap benar walau tidak ada blok sikap yang ditempel.
+    aturanKetenangan(),
   ].join("\n");
 }
 
@@ -572,6 +585,9 @@ export function buildSystemPrompt(
   const sections = [
     agent.behaviorPrompt?.trim() ||
       "Kamu adalah customer service yang ramah dan membantu.",
+    // Watak boleh di sini justru KARENA dia tidak pernah berubah antar pesan.
+    // Sikap per giliran tidak boleh — tempatnya di buildTurnContext.
+    aturanWatak(watakSah(agent.watak)),
     daftarAsset(assets),
     guardrails(),
     outputContract(agent, assets),
@@ -601,6 +617,13 @@ export function buildTurnContext(
    * DAN blok instruksi di giliran itu.
    */
   penanda: string = buatPenanda(),
+  /**
+   * Sikap untuk giliran ini. [SIKAP_DIAM] berarti tidak ada yang ditempel.
+   *
+   * Sengaja parameter terakhir dan punya bawaan, supaya berkas ini tetap
+   * gampang dipanggil dari skrip pengukur prompt dan dari uji.
+   */
+  sikap: Sikap = SIKAP_DIAM,
 ): string {
   const sections = [
     // Tanggal hari ini. Tempatnya memang di sini, bukan di system prompt, karena
@@ -650,6 +673,20 @@ export function buildTurnContext(
       : "=== KNOWLEDGE BASE ===\nPencarian tidak menemukan apa pun untuk pertanyaan ini.\n- Kalau pesan terakhirnya memang tidak menanyakan fakta apa pun (menyapa, berterima kasih, mengiyakan, atau bercerita), tidak ada yang perlu dicari. Balas biasa saja seperti manusia, jangan menyinggung tim dan jangan mengeskalasi.\n- Kalau dia MEMANG menanyakan sesuatu yang spesifik, artinya kamu TIDAK TAHU, bukan berarti barang atau layanannya tidak ada. Jangan menyimpulkan stoknya kosong atau layanannya tidak melayani itu. Bilang kamu cek dulu ke tim, lalu tetap layani dia untuk hal lain.",
     contactContext(contact),
     daftarSudahDikirim(assets),
+    // Sikap ditaruh PALING BELAKANG di dalam blok konteks, tepat sebelum
+    // ucapan customer.
+    //
+    // Isinya soal cara menjawab, dan cara menjawab paling mudah dilupakan
+    // model kalau dia terkubur di atas daftar harga yang panjang. Yang di atas
+    // menjawab "apa isinya"; yang di sini menjawab "bagaimana menyampaikannya",
+    // dan itu keputusan terakhir sebelum dia mulai menulis.
+    //
+    // Isinya SELALU tetapan dari packages/rasa. Tidak ada satu potong pun teks
+    // pelanggan yang boleh masuk ke sini — lihat catatan panjang di sikap.ts.
+    sikap.petunjuk,
+    sikap.maksBubble < MAX_BUBBLES
+      ? `Untuk giliran ini, "reply" paling banyak ${sikap.maksBubble} bubble.`
+      : "",
   ].filter(Boolean);
 
   return `${kepalaKonteks(penanda)}\n\n${sections.join("\n\n")}`;
@@ -923,6 +960,11 @@ export interface GenerateReplyInput {
    * Dipakai supaya asisten tidak menawarkan jam yang bentrok.
    */
   jadwalTerisi?: Date[];
+  /**
+   * Sikap untuk giliran ini, hasil pilihSikap(). Kosongkan untuk perilaku
+   * seperti sebelum ada lapisan rasa.
+   */
+  sikap?: Sikap;
 }
 
 export async function generateReply(
@@ -930,6 +972,7 @@ export async function generateReply(
 ): Promise<AgentReply> {
   const { agent, contact, history, incomingText, incomingMedia } = input;
   const assets = input.assets ?? [];
+  const sikap = input.sikap ?? SIKAP_DIAM;
   const llm = getLlm();
 
   // 1. Ambil konteks dari knowledge base berdasarkan pertanyaan terbaru.
@@ -1006,6 +1049,7 @@ export async function generateReply(
       assets,
       input.jadwalTerisi ?? [],
       penanda,
+      sikap,
     ),
   });
 
@@ -1024,19 +1068,38 @@ export async function generateReply(
       messages: [...messages, { role: "user", parts } as LlmMessage].slice(
         -HISTORY_LIMIT,
       ),
-      temperature: agent.temperature,
+      // Dijepit ke 0,25–0,55 di suhuAkhir(), dan pitanya sengaja sempit.
+      // Keluarannya JSON: menaikkan suhu demi "lebih ekspresif" langsung
+      // menaikkan angka JSON gagal-parse, dan JSON gagal di sini berarti
+      // permintaan maaf ke pelanggan PLUS eskalasi tiga jam. Ekspresinya
+      // diambil dari pilihan kata di blok sikap, bukan dari suhu.
+      temperature: suhuAkhir(agent.temperature, sikap),
       model: agent.model || undefined,
       json: true,
       // Dilebihkan karena token berpikir Gemini 3.x ikut memakan jatah ini.
       maxTokens: 3000,
     });
 
-    return bacaKeluaran(raw, {
+    const hasil = bacaKeluaran(raw, {
       splitBubbles: agent.splitBubbles,
       assets,
       adaLampiran: !!incomingMedia,
       knowledgeUsed,
     });
+
+    // Batas bubble ditegakkan di kode, bukan cuma diminta di prompt.
+    //
+    // Yang diminta di konteks giliran itu supaya model MENYUSUN jawabannya
+    // sependek itu sejak awal; ini pagar terakhir kalau dia tetap mengirim
+    // lima. Memotong memang bisa membuang kalimat, dan itu tetap lebih baik
+    // daripada mengirim lima bubble ceria ke orang yang sedang marah.
+    if (hasil && hasil.bubbles.length > sikap.maksBubble) {
+      log.info(
+        `balasan dipotong dari ${hasil.bubbles.length} jadi ${sikap.maksBubble} bubble`,
+      );
+      hasil.bubbles = hasil.bubbles.slice(0, sikap.maksBubble);
+    }
+    return hasil;
   };
 
   // Keluaran yang tidak terpakai DICOBA SEKALI LAGI sebelum menyerah.
