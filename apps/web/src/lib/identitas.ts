@@ -59,8 +59,24 @@ export const IDENTITAS = {
    */
   email: "halo@palwise.id",
 
-  /** Nomor WhatsApp untuk bantuan, format internasional tanpa tanda plus. */
-  waBantuan: "6281543299968",
+  /**
+   * Nomor WhatsApp untuk bantuan, format internasional tanpa tanda plus.
+   *
+   * DIKOSONGKAN 21 Agustus 2026 karena nomornya kena ban. Selama isinya masih
+   * "BELUM DIISI", semua jalur WhatsApp hilang sendiri tanpa satu pun galat:
+   * tombol kedua di hero berganti jadi "Lihat cara kerjanya", tautan "Chat
+   * langsung" di catatan pendiri tidak digambar, kartu WhatsApp di halaman
+   * Kontak hilang, dan ajakan dibantu pasang di Panduan berganti ke email.
+   *
+   * Tombol chat yang tidak ada yang membalas jauh lebih merusak daripada tidak
+   * ada tombolnya sama sekali. Orang yang mengirim pesan lalu tidak dijawab
+   * tidak menyimpulkan "nomornya lagi bermasalah", dia menyimpulkan produknya
+   * ditinggalkan, dan itu kesimpulan yang tidak bisa ditarik kembali.
+   *
+   * Nomor lamanya 6281543299968, disimpan di sini biar tidak hilang. Isi nomor
+   * BARU begitu ada, angkanya saja tanpa tanda plus, spasi, atau strip.
+   */
+  waBantuan: "BELUM DIISI",
 
   /**
    * Nama orang yang membuat Palwise, dipakai menandatangani catatan di halaman

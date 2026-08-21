@@ -881,17 +881,23 @@ export default async function LandingPage() {
                 halaman lain, dan hampir tidak ada yang melakukannya. */}
             {!IDENTITAS.namaPendiri.startsWith("BELUM DIISI") && (
               <div className="mt-6 border-t border-ink-800 pt-6">
+                {/* Kalimat penutupnya ikut jalur yang benar-benar ada.
+                    "Tinggal chat" waktu tombol chatnya tidak digambar itu
+                    janji yang jalannya sudah ditutup, dan orang yang mencari
+                    jalan itu lalu tidak menemukannya menyimpulkan hal yang
+                    lebih buruk daripada kalau dari awal cuma ditawari email. */}
                 <p className="text-sm leading-relaxed text-ink-500">
                   Yang bales pertanyaan kamu orang yang bikin Palwise-nya
                   langsung, bukan nomor antrean tiket. Ada yang error, aneh, atau
-                  kamu butuh dibantuin pasang, tinggal chat.
+                  kamu butuh dibantuin pasang,{" "}
+                  {tautanBantuanWa() ? "tinggal chat." : "tinggal email."}
                 </p>
                 <p className="mt-2 text-sm font-medium text-ink-300">
                   {IDENTITAS.namaPendiri}
                 </p>
                 {tautanBantuanWa(
                   "Halo, saya mau tanya soal Palwise untuk usaha saya.",
-                ) && (
+                ) ? (
                   <a
                     href={
                       tautanBantuanWa(
@@ -904,6 +910,14 @@ export default async function LandingPage() {
                   >
                     <Ikon nama="whatsapp" size={16} />
                     Chat langsung
+                  </a>
+                ) : (
+                  <a
+                    href={`mailto:${IDENTITAS.email}`}
+                    className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-white underline underline-offset-4"
+                  >
+                    <Ikon nama="info" size={16} />
+                    {IDENTITAS.email}
                   </a>
                 )}
               </div>

@@ -5,10 +5,15 @@ import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { IDENTITAS, tautanBantuanWa } from "@/lib/identitas";
 import { keApp } from "@/lib/situs";
 
+// Deskripsinya menyebut jalur yang benar-benar ada, bukan jalur yang pernah
+// ada. Cuplikan di hasil pencarian yang menjanjikan chat WhatsApp lalu
+// halamannya cuma punya email itu kekecewaan yang terjadi sebelum orangnya
+// sempat membaca satu kalimat pun.
 export const metadata: Metadata = {
   title: "Hubungi Palwise",
-  description:
-    "Chat WhatsApp atau email kami. Dibalas manusia, bukan asisten otomatis.",
+  description: tautanBantuanWa()
+    ? "Chat WhatsApp atau email kami. Dibalas manusia, bukan asisten otomatis."
+    : "Email kami. Dibalas manusia, bukan asisten otomatis.",
 };
 
 /**

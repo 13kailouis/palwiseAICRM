@@ -5663,13 +5663,22 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /namaPendiri: "[^"]+"/.test(identitasTeks) &&
         !/namaPendiri: "(BELUM DIISI|.*mis\.|.*\()/.test(identitasTeks),
     );
-    // Nomor bantuan disimpan tanpa tanda plus, spasi, dan strip, karena
-    // tautan wa.me cuma menerima angka. tautanBantuanWa memang membersihkannya
-    // sendiri, tapi nomor yang ditulis rapi di sini juga yang ditempel orang ke
-    // tempat lain.
+    // Dua keadaan yang sah, dan dua-duanya dijaga di sini.
+    //
+    // Kalau nomornya DIISI, dia harus angka saja tanpa tanda plus, spasi, dan
+    // strip, karena tautan wa.me cuma menerima angka. tautanBantuanWa memang
+    // membersihkannya sendiri, tapi nomor yang ditulis rapi di sini juga yang
+    // ditempel orang ke tempat lain.
+    //
+    // Kalau DIKOSONGKAN (nomornya kena ban 21 Agustus 2026), penandanya harus
+    // diawali persis "BELUM DIISI", karena kata itulah yang dibaca
+    // tautanBantuanWa dan identitasBelumLengkap. Ditulis dengan cara lain,
+    // misalnya tanda strip atau spasi kosong, tombolnya tetap digambar dan
+    // mengarah ke nomor yang tidak ada. Tidak ada galat sama sekali, cuma
+    // orang yang chatnya tidak pernah dibalas.
     check(
-      "nomor bantuan WhatsApp berupa angka saja, siap dipakai wa.me",
-      /waBantuan: "62\d{8,13}"/.test(identitasTeks),
+      "nomor bantuan WhatsApp angka saja, atau dikosongkan dengan penanda yang dikenali",
+      /waBantuan: "(62\d{8,13}|BELUM DIISI[^"]*)"/.test(identitasTeks),
     );
     // "Tambah admin" punya bacaan kedua yang salah di produk berlangganan:
     // terdengar seperti menambah akun pengguna untuk tim, bukan menggantikan
@@ -5819,6 +5828,15 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     check(
       "tombol tanya lewat WhatsApp menunggu nomornya benar-benar ada",
       /tautanBantuanWa\(/.test(depan),
+    );
+    // Menunggu nomornya saja tidak cukup: catatan pendirinya berbunyi "tinggal
+    // chat", dan kalimat itu dulu tetap terpasang waktu tombol chatnya tidak
+    // digambar. Janji yang jalannya sudah ditutup lebih merusak daripada tidak
+    // menjanjikan apa-apa, karena orang mencarinya dulu baru menyerah. Jadi
+    // waktu nomornya kosong, kalimat DAN tautannya sama-sama pindah ke email.
+    check(
+      "catatan pendiri tetap punya jalan keluar waktu nomornya kosong",
+      /tinggal email/.test(depan) && /mailto:\$\{IDENTITAS.email}/.test(depan),
     );
     // <br /> yang dipaksakan di layar 375px bertabrakan dengan pemenggalan
     // alami browser, dan judulnya terlihat berantakan justru di perangkat
@@ -6158,6 +6176,15 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     check(
       "bagian WhatsApp hilang seluruhnya kalau nomornya belum ada",
       /\{wa && \(/.test(halamanHubungi),
+    );
+    // Cuplikan di hasil pencarian ikut jalur yang benar-benar ada. Deskripsi
+    // yang menjanjikan chat WhatsApp lalu halamannya cuma punya email itu
+    // kekecewaan yang terjadi sebelum orangnya sempat membaca satu kalimat
+    // pun, dan cuplikan itu yang paling lama tertinggal waktu nomornya
+    // berganti atau kena ban.
+    check(
+      "deskripsi halaman kontak menyebut jalur yang benar-benar ada",
+      /description: tautanBantuanWa\(\)/.test(halamanHubungi),
     );
     // Halaman kontak bukan dokumen yang dibaca berurutan. Orang membukanya
     // untuk MENCARI satu cara menghubungi, sering kali sambil kesal, jadi
