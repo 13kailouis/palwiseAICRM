@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RingkasanAI } from "@/components/RingkasanAI";
 import { formatJanji } from "@/components/ui";
+import { InfoTip } from "@/components/InfoTip";
 import { tampilanRasa } from "@/lib/rasa";
 
 interface ConvSummary {
@@ -461,29 +462,33 @@ export function Inbox({ initialId }: { initialId: string | null }) {
             </div>
 
             {detail.conversation.needsHuman && (
-              <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-sm text-amber-900">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <strong>Asisten minta bantuan:</strong>{" "}
-                    {detail.conversation.handoffReason ??
-                      "sebaiknya kamu yang lanjutkan"}
-                    <span className="block text-amber-800">
-                      Dia berhenti sebentar supaya kamu sempat masuk. Kalau
-                      dibiarkan, dia lanjut sendiri daripada pelanggannya
-                      didiamkan.
-                    </span>
-                  </div>
-                  {/* Menurunkan bendera langsung, tanpa harus mematikan lalu
-                      menghidupkan lagi asistennya. Dulu tombolnya memang tidak
-                      ada: satu-satunya jalan adalah menekan "Saya yang balas"
-                      lalu "Balik ke asisten", dua klik untuk satu maksud. */}
-                  <button
-                    onClick={() => updateSettings({ needsHuman: false })}
-                    className="btn-ghost shrink-0"
-                  >
-                    Sudah saya tangani
-                  </button>
-                </div>
+              // Diringkas buat HP: alasannya tetap kelihatan, penjelasan
+              // "kenapa asisten berhenti" pindah ke lambang info. Dulu
+              // penjelasan dua baris itu selalu terpampang dan bikin bilah ini
+              // makan tinggi layar yang seharusnya jadi isi obrolan.
+              <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900 sm:px-5">
+                <p className="min-w-0 flex-1">
+                  <strong>Asisten minta bantuan:</strong>{" "}
+                  {detail.conversation.handoffReason ??
+                    "sebaiknya kamu yang lanjutkan"}
+                </p>
+                <InfoTip
+                  label="Kenapa asisten berhenti"
+                  judul="Kenapa asisten berhenti"
+                >
+                  Dia berhenti sebentar supaya kamu sempat masuk. Kalau
+                  dibiarkan, dia lanjut sendiri daripada pelanggannya didiamkan.
+                </InfoTip>
+                {/* Menurunkan bendera langsung, tanpa harus mematikan lalu
+                    menghidupkan lagi asistennya. Dulu tombolnya memang tidak
+                    ada: satu-satunya jalan adalah menekan "Saya yang balas"
+                    lalu "Balik ke asisten", dua klik untuk satu maksud. */}
+                <button
+                  onClick={() => updateSettings({ needsHuman: false })}
+                  className="shrink-0 rounded-lg border border-amber-300 bg-white/70 px-3 py-1 text-xs font-medium text-amber-900 hover:bg-white"
+                >
+                  Sudah saya tangani
+                </button>
               </div>
             )}
 
