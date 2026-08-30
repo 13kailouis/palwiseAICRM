@@ -14,6 +14,7 @@ import {
   getPlan,
   hitungBalasan,
   periodeBerikutnya,
+  pricePerReply,
   prisma,
   sisaJamUpaya,
   statusLangganan,
@@ -27,6 +28,7 @@ import { requireUser } from "@/lib/auth";
 import { midtransModeUji, midtransSiap, salahLingkunganKunci } from "@/lib/midtrans";
 import { keSitus } from "@/lib/situs";
 import { PageHeader } from "@/components/ui";
+import { Ikon } from "@/components/Ikon";
 import { TombolGantiPaket } from "@/components/TombolGantiPaket";
 import { batalkanJadwalTurunAction, changePlanAction } from "@/app/actions/plan";
 
@@ -347,13 +349,26 @@ export default async function TagihanPage({
               return (
                 <div
                   key={p.id}
-                  className={`card flex flex-col p-5 ${current ? "border-brand-500 ring-1 ring-brand-500" : ""}`}
+                  className={`card flex flex-col p-5 ${
+                    current
+                      ? "border-brand-500 ring-1 ring-brand-500"
+                      : p.highlight
+                        ? "border-ink-950 ring-1 ring-ink-950"
+                        : ""
+                  }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex h-6 items-center justify-between gap-2">
                     <h3 className="font-semibold text-ink-900">{p.name}</h3>
-                    {current && (
+                    {/* Aktif (biru) menang atas Paling laris (hitam), jadi tidak
+                        pernah ada dua lencana di satu kartu. Paling laris dipakai
+                        untuk MENGARAHKAN pilihan ke Growth, dan sengaja hitam,
+                        bukan biru: satu bidang biru per layar sudah dipakai
+                        cincin paket aktif. */}
+                    {current ? (
                       <span className="badge bg-brand-600 text-white">Aktif</span>
-                    )}
+                    ) : p.highlight ? (
+                      <span className="badge bg-ink-950 text-white">Paling laris</span>
+                    ) : null}
                   </div>
                   <p className="mt-3 text-2xl font-bold tracking-tight">
                     {p.pricePerMonth === 0 ? "Gratis" : formatIDR(p.pricePerMonth)}
@@ -361,8 +376,15 @@ export default async function TagihanPage({
                       <span className="text-sm font-normal text-ink-500"> /bln</span>
                     )}
                   </p>
+                  {/* Harga per balasan, dan ini yang membuat Growth terlihat
+                      pilihan waktu disandingkan dengan Starter: Rp 33 lawan
+                      Rp 66, separuhnya. Angkanya DITURUNKAN dari harga dan jatah,
+                      bukan diketik, jadi tidak bisa berbeda dari yang ditagih. */}
                   <p className="mt-1 text-sm text-ink-500">
-                    {p.aiCredits.toLocaleString("id-ID")} balasan per bulan
+                    {p.aiCredits.toLocaleString("id-ID")} balasan
+                    {berbayar
+                      ? ` · ${formatIDR(pricePerReply(p))}/balasan`
+                      : " per bulan"}
                   </p>
                   {/* SEMUA isinya, tanpa dipotong.
 
@@ -381,10 +403,16 @@ export default async function TagihanPage({
 
                       Tingginya dibiarkan tidak sama. Tombolnya didorong ke bawah pakai
                       mt-auto supaya tetap sebaris walau isinya beda panjang. */}
+                  {/* Centangnya HITAM, bukan biru, dan digambar, bukan karakter
+                      "✓". Ini keterangan isi paket, bukan sesuatu yang bisa
+                      diklik atau yang sedang dipilih — sama aturannya dengan
+                      kartu harga di halaman jualan. */}
                   <ul className="mt-4 space-y-2 text-sm text-ink-700">
                     {p.features.map((f) => (
-                      <li key={f} className="flex gap-2">
-                        <span className="shrink-0 text-brand-600">✓</span>
+                      <li key={f} className="flex gap-2.5">
+                        <span className="mt-0.5 shrink-0 text-ink-900">
+                          <Ikon nama="centang" size={15} />
+                        </span>
                         <span>{f}</span>
                       </li>
                     ))}
