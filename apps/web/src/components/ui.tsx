@@ -1,21 +1,40 @@
 import Link from "next/link";
+import { Ikon, type NamaIkon } from "@/components/Ikon";
 
 /** Lebar kolom untuk halaman berbentuk formulir. Dipakai bersama supaya
  *  kepala halaman, baris tab, dan isinya berdiri di garis kiri yang sama. */
 export const KOLOM_SEMPIT = "mx-auto w-full max-w-3xl px-5 sm:px-6";
+
+/**
+ * Lebar kolom untuk halaman form yang punya panel bantuan di sampingnya.
+ *
+ * Lebih lebar dari KOLOM_SEMPIT karena isinya dua kolom: formulir di kiri dan
+ * panel bantuan yang nempel di kanan. Di layar lebar, ruang samping yang dulu
+ * kosong sekarang dipakai untuk penjelasan panjang, jadi kotak isiannya sendiri
+ * tidak lagi penuh teks. Kepala halaman dan baris tab ikut lebar ini supaya
+ * garis kirinya sama dengan formulirnya.
+ */
+export const KOLOM_FORM = "mx-auto w-full max-w-5xl px-5 sm:px-6";
 
 export function PageHeader({
   title,
   description,
   action,
   sempit = false,
+  kolom,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
-  /** Halaman berbentuk formulir: isinya ikut satu kolom di tengah. */
+  /** Halaman berbentuk formulir satu kolom: isinya ikut satu kolom di tengah. */
   sempit?: boolean;
+  /** Lebar kolom yang dipakai isinya. Menang atas `sempit` kalau diisi.
+   *  Dipakai halaman form dua kolom supaya kepala halaman selebar formulirnya. */
+  kolom?: string;
 }) {
+  // Kolom eksplisit menang. Kalau tidak ada, jatuh ke perilaku lama: sempit
+  // memakai KOLOM_SEMPIT, selain itu selebar layar dengan padding sendiri.
+  const dalam = kolom ?? (sempit ? KOLOM_SEMPIT : "");
   return (
     /* anim-muncul, BUKAN anim-naik.
      *
@@ -30,16 +49,14 @@ export function PageHeader({
      * tidak ada apa pun tepat di bawahnya yang bisa tertimpa. */
     <div
       className={`anim-muncul border-b border-ink-200 bg-white py-4 sm:py-5 ${
-        sempit ? "" : "px-5 sm:px-6"
+        dalam ? "" : "px-5 sm:px-6"
       }`}
     >
       {/* Pita putihnya tetap selebar layar, cuma isinya yang masuk ke kolom.
           Pita yang ikut menyempit membuat garis bawahnya menggantung di
           tengah-tengah dan halaman jadi terlihat patah. */}
       <div
-        className={`flex flex-wrap items-start justify-between gap-4 ${
-          sempit ? KOLOM_SEMPIT : ""
-        }`}
+        className={`flex flex-wrap items-start justify-between gap-4 ${dalam}`}
       >
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-ink-950">{title}</h1>
@@ -51,6 +68,83 @@ export function PageHeader({
         </div>
         {action}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Tata letak halaman form: isi di kiri, panel bantuan yang nempel di kanan.
+ *
+ * Di layar lebar, ruang samping yang dulu kosong dipakai untuk penjelasan
+ * panjang, jadi kotak isian di kiri tidak lagi penuh teks. Di HP dan tablet,
+ * dua kolomnya menumpuk: isi dulu, bantuan di bawahnya, karena di layar sempit
+ * yang orang butuh duluan kotak isiannya, bukan penjelasannya.
+ *
+ * Padding horizontalnya ditaruh di kolom KIRI, bukan di pembungkus luar, supaya
+ * bilah Simpan yang menempel di dasar formulir (SaveBar, pakai margin negatif
+ * -mx untuk membleed ke tepi) tetap pas selebar kolomnya. Panel kanan
+ * paddingnya sendiri.
+ */
+export function FormDuaKolom({
+  children,
+  bantuan,
+}: {
+  children: React.ReactNode;
+  bantuan: React.ReactNode;
+}) {
+  return (
+    <div className="mx-auto w-full max-w-5xl">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
+        <div className="min-w-0 px-5 py-6 sm:px-6">{children}</div>
+        <aside className="px-5 pb-8 sm:px-6 lg:sticky lg:top-6 lg:pb-6 lg:pl-0 lg:pt-6">
+          {bantuan}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Isi panel bantuan: judul kecil, beberapa poin pendek, tautan opsional.
+ *
+ * Sengaja poin PENDEK. Panel ini tempat memindahkan penjelasan yang tadinya
+ * numpuk di dalam formulir, bukan tempat menaruh paragraf baru. Kalau satu poin
+ * butuh lebih dari dua baris, dia lebih cocok jadi detail yang bisa dibuka di
+ * dekat kotak isiannya, bukan di sini.
+ */
+export function PanelBantuan({
+  judul,
+  poin,
+  tautan,
+}: {
+  judul: string;
+  poin: { ikon: NamaIkon; teks: React.ReactNode }[];
+  tautan?: { href: string; label: string };
+}) {
+  return (
+    <div className="rounded-xl border border-ink-200 bg-ink-50 p-5">
+      <p className="text-sm font-semibold text-ink-900">{judul}</p>
+      <ul className="mt-3 space-y-3">
+        {poin.map((p, i) => (
+          <li key={i} className="flex gap-2.5">
+            <span className="mt-0.5 shrink-0 text-ink-400">
+              <Ikon nama={p.ikon} size={16} />
+            </span>
+            <span className="text-[13px] leading-relaxed text-ink-600">
+              {p.teks}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {tautan && (
+        <Link
+          href={tautan.href}
+          className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-700 hover:text-brand-800"
+        >
+          {tautan.label}
+          <span aria-hidden>→</span>
+        </Link>
+      )}
     </div>
   );
 }

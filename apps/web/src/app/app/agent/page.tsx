@@ -3,7 +3,7 @@ import { fiturPaket, getPlan, paketMinimalTiapFitur, prisma } from "@palwise/db"
 import { requireUser } from "@/lib/auth";
 import { AgentForm } from "@/components/AgentForm";
 import { AgentPicker } from "@/components/AgentPicker";
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, KOLOM_FORM, PageHeader } from "@/components/ui";
 import { TombolHapus } from "@/components/TombolHapus";
 import { deleteAgentAction } from "@/app/actions/agent";
 
@@ -53,7 +53,7 @@ export default async function AgentPage({
   return (
     <>
       <PageHeader
-        sempit
+        kolom={KOLOM_FORM}
         title="Asisten"
         description="Atur siapa dia, cara bicaranya, dan kapan dia harus memanggil kamu."
         action={

@@ -6,15 +6,67 @@ import { type Agent, type Fitur } from "@palwise/db";
 import { saveAgentAction, type FormState } from "@/app/actions/agent";
 import { SaveBar } from "@/components/SaveBar";
 import { PresetUsaha } from "@/components/PresetUsaha";
+import { FormDuaKolom, PanelBantuan } from "@/components/ui";
+
+/**
+ * Penjelasan panjang yang dilipat, dibuka dengan KLIK.
+ *
+ * Sengaja `<details>` bawaan, bukan hover: hover tidak ada di HP (separuh
+ * pemakai), dan menyembunyikan penjelasan di balik sesuatu yang cuma muncul
+ * saat kursor lewat berarti menyembunyikannya dari orang yang paling butuh,
+ * yaitu pemakai baru yang lagi pertama kali mengisi. Klik jalan di HP, di
+ * tetikus, dan di papan ketik sekaligus, tanpa satu baris JavaScript.
+ *
+ * Yang selalu kelihatan tetap satu baris ringkas; ini cuma "kenapa" dan
+ * contohnya.
+ */
+function Detil({
+  judul = "Selengkapnya",
+  children,
+}: {
+  judul?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="group mt-2">
+      <summary className="tap-aman inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800">
+        <span className="group-open:hidden">{judul}</span>
+        <span className="hidden group-open:inline">Tutup</span>
+        <svg
+          viewBox="0 0 24 24"
+          width="13"
+          height="13"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-transform group-open:rotate-180"
+          style={{ transitionDuration: "var(--gerak-cepat)" }}
+          aria-hidden="true"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </summary>
+      <div className="mt-2 max-w-prose text-sm leading-relaxed text-ink-500">
+        {children}
+      </div>
+    </details>
+  );
+}
 
 function Section({
   title,
-  description,
+  ringkas,
+  detail,
   terkunci,
   children,
 }: {
   title: string;
-  description?: string;
+  /** Satu baris yang selalu kelihatan. Sisanya taruh di `detail`. */
+  ringkas?: string;
+  /** Penjelasan panjang yang dilipat di balik "Selengkapnya". */
+  detail?: React.ReactNode;
   /** Nama paket yang dibutuhkan. Kosong berarti bagian ini tidak terkunci. */
   terkunci?: string;
   children: React.ReactNode;
@@ -22,14 +74,12 @@ function Section({
   return (
     <section className="card-pad">
       <h2 className="font-semibold text-ink-900">{title}</h2>
-      {description && (
-        /* max-w-prose = 65 karakter. Kolom isian boleh lebih lebar karena
-           isinya sering daftar pendek, tapi paragraf keterangan ini prosa
-           sungguhan dan pantas dibatasi seketat bacaan. */
-        <p className="mb-5 mt-1 max-w-prose text-sm leading-relaxed text-ink-500">
-          {description}
+      {ringkas && (
+        <p className="mt-1 max-w-prose text-sm leading-relaxed text-ink-500">
+          {ringkas}
         </p>
       )}
+      {detail && <Detil>{detail}</Detil>}
 
       {/* Pemberitahuannya di DALAM kartu, tepat di bawah judul.
 
@@ -39,7 +89,7 @@ function Section({
           padahal milik yang di atas. Penanda harus menempel pada yang
           ditandainya, bukan menggantung di antara dua hal. */}
       {terkunci && (
-        <div className="mb-5 flex flex-wrap items-center gap-3 rounded-lg border border-ink-200 bg-ink-50 px-4 py-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-ink-200 bg-ink-50 px-4 py-3">
           <p className="flex-1 text-sm leading-relaxed text-ink-700">
             Bagian ini belum termasuk paket kamu. Ada mulai paket{" "}
             <span className="font-medium text-ink-900">{terkunci}</span>.
@@ -57,10 +107,7 @@ function Section({
           tampilan tidak pernah boleh jadi satu-satunya kunci. */}
       <fieldset
         disabled={!!terkunci}
-        className={[
-          terkunci ? "select-none opacity-45" : "",
-          description ? "space-y-5" : "mt-5 space-y-5",
-        ].join(" ")}
+        className={`mt-5 space-y-5 ${terkunci ? "select-none opacity-45" : ""}`}
       >
         {children}
       </fieldset>
@@ -205,22 +252,61 @@ export function AgentForm({
   const [pengingat, setPengingat] = useState(agent.pengingatEnabled);
 
   return (
-    /* Lebar baca dibatasi.
+    /* Dua kolom: formulir di kiri, panel bantuan yang nempel di kanan.
      *
-     * Di layar 1440px, satu baris di sini memuat 154 karakter. Batas nyaman
-     * baca 45 sampai 75. Yang bikin lelah bukan panjangnya kalimat, tapi
-     * perjalanan mata waktu pindah baris: dari ujung kanan dia harus balik
-     * lebih dari seribu piksel ke kiri, dan sering mendarat di baris yang
-     * salah.
+     * Dulu formulir ini satu kolom sempit di tengah, dan di layar lebar ruang
+     * sampingnya kosong. Sekarang ruang itu dipakai untuk penjelasan panjang,
+     * jadi kotak isian di kiri tidak lagi penuh teks: tiap bagian cukup satu
+     * baris ringkas, sisanya di balik "Selengkapnya" atau di panel kanan.
      *
-     * Halaman jadi punya ruang kosong di kanan, dan itu bukan kekurangan.
-     * Tepi kiri yang tetap di satu tempat justru yang bikin matanya tidak
-     * perlu mencari. */
-    <form
-      action={formAction}
-      className="mx-auto w-full max-w-3xl space-y-6 px-5 py-6 sm:px-6"
+     * Lebar baca kolom kirinya tetap dijaga (sekitar 700px, di bawah batas
+     * lelah 75 karakter per baris) oleh FormDuaKolom, jadi keuntungan kolom
+     * sempit yang lama tidak hilang. Di HP dua kolomnya menumpuk. */
+    <FormDuaKolom
+      bantuan={
+        <PanelBantuan
+          judul="Cara kerjanya"
+          poin={[
+            {
+              ikon: "asisten",
+              teks: (
+                <>
+                  Halaman ini otak asistenmu: siapa dia, gaya bicaranya, dan
+                  kapan dia harus manggil kamu.
+                </>
+              ),
+            },
+            {
+              ikon: "info",
+              teks: (
+                <>
+                  Yang dia jawab tetap dari{" "}
+                  <Link
+                    href="/app/knowledge"
+                    className="font-medium text-brand-700 hover:text-brand-800"
+                  >
+                    Info bisnis
+                  </Link>
+                  . Di sini cuma gaya dan aturannya.
+                </>
+              ),
+            },
+            {
+              ikon: "coba",
+              teks: (
+                <>
+                  Habis ngatur, tes dulu di Coba dulu sebelum nomor aslimu
+                  disambung. Jangan lupa Simpan.
+                </>
+              ),
+            },
+          ]}
+          tautan={{ href: "/app/coba", label: "Buka Coba dulu" }}
+        />
+      }
     >
-      <input type="hidden" name="agentId" value={agent.id} />
+      <form action={formAction} className="space-y-6">
+        <input type="hidden" name="agentId" value={agent.id} />
 
       {/* Paling atas, sebelum kotak mana pun.
 
@@ -233,7 +319,8 @@ export function AgentForm({
 
       <Section
         title="Cara dia bicara"
-        description="Ini bagian paling penting. Tulis seperti kamu sedang melatih karyawan baru: siapa dia, gaya bicaranya bagaimana, dan apa yang harus ditanyakan ke pelanggan. Makin jelas, makin bagus hasilnya."
+        ringkas="Ini yang paling ngaruh. Tulis kayak lagi ngelatih karyawan baru."
+        detail="Siapa dia, gaya bicaranya gimana, dan apa yang harus ditanyain ke pelanggan. Makin jelas kamu nulisnya, makin bagus jawabannya."
       >
         <div>
           <label className="label" htmlFor="name">
@@ -254,20 +341,55 @@ export function AgentForm({
             className="textarea-prosa"
             defaultValue={agent.behaviorPrompt}
           />
-          {/* Dua contoh, sengaja dari dua jenis usaha yang berbeda.
+          <p className="hint max-w-prose">
+            Tulis pakai bahasa sehari-hari, siapa dia dan mau bersikap seperti
+            apa.
+          </p>
+          {/* Dua contoh, sengaja dari dua jenis usaha yang berbeda, dan
+              sekarang dilipat.
 
               Dengan satu contoh toko kopi saja, orang klinik dan penjual jasa
               menyalin bentuknya mentah-mentah atau malah ragu produk ini untuk
-              mereka. Contoh kedua lebih murah daripada halaman bantuan. */}
-          <p className="hint max-w-prose">
-            Tulis pakai bahasa sehari-hari, siapa dia dan mau bersikap seperti
-            apa. Contoh toko: &ldquo;Kamu pegawai toko Kopi Nusantara, namanya
-            Nara. Ramah dan santai, panggil pelanggan pakai &lsquo;kak&rsquo;.
-            Kalau ada yang baru chat, tanyakan dulu namanya dan mau cari kopi
-            seperti apa.&rdquo; Contoh jasa: &ldquo;Kamu resepsionis Klinik Sehat
-            Bunda, namanya Dina. Sopan dan menenangkan. Bantu pasien tahu jadwal
-            dokter dan cara daftar, jangan pernah memberi saran medis.&rdquo;
-          </p>
+              mereka. Contoh kedua lebih murah daripada halaman bantuan. Tapi
+              dua contoh panjang yang selalu terpampang bikin kotak isian ini
+              kelihatan penuh sebelum diisi, jadi ditaruh di balik klik: yang
+              butuh contoh membukanya, yang sudah tahu tidak dihalangi. */}
+          <details className="group mt-2">
+            <summary className="tap-aman inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800">
+              <span className="group-open:hidden">Lihat contoh</span>
+              <span className="hidden group-open:inline">Tutup contoh</span>
+              <svg
+                viewBox="0 0 24 24"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-transform group-open:rotate-180"
+                style={{ transitionDuration: "var(--gerak-cepat)" }}
+                aria-hidden="true"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </summary>
+            <div className="mt-2 space-y-2 max-w-prose text-sm leading-relaxed text-ink-500">
+              <p>
+                <span className="font-medium text-ink-700">Contoh toko:</span>{" "}
+                &ldquo;Kamu pegawai toko Kopi Nusantara, namanya Nara. Ramah dan
+                santai, panggil pelanggan pakai &lsquo;kak&rsquo;. Kalau ada yang
+                baru chat, tanyakan dulu namanya dan mau cari kopi seperti
+                apa.&rdquo;
+              </p>
+              <p>
+                <span className="font-medium text-ink-700">Contoh jasa:</span>{" "}
+                &ldquo;Kamu resepsionis Klinik Sehat Bunda, namanya Dina. Sopan
+                dan menenangkan. Bantu pasien tahu jadwal dokter dan cara daftar,
+                jangan pernah memberi saran medis.&rdquo;
+              </p>
+            </div>
+          </details>
         </div>
 
         <div>
@@ -297,7 +419,8 @@ export function AgentForm({
 
       <Section
         title="Nada bicara dan perasaan"
-        description="Nada bicaranya kamu yang tentukan sekali, dan itu tetap ke semua pelanggan. Yang berubah cuma cara dia menjawab kalau pelanggannya kelihatan kesal, ragu, atau sudah mau beli."
+        ringkas="Nada bicaranya kamu tentuin sekali, tetap ke semua pelanggan."
+        detail="Yang berubah cuma cara dia menjawab kalau pelanggannya kelihatan kesal, ragu, atau sudah mau beli. Faktanya tetap dari Info bisnis, ini soal caranya."
       >
         <div>
           <span className="label">Nada bicara</span>
@@ -348,7 +471,8 @@ export function AgentForm({
 
       <Section
         title="Kapan harus panggil kamu"
-        description="Ada hal yang lebih baik ditangani orang. Tulis di sini kapan dia harus berhenti dan menandai obrolan supaya kamu yang lanjutkan."
+        ringkas="Tulis kapan dia harus berhenti dan nandain obrolan buat kamu lanjutkan."
+        detail="Ada hal yang lebih baik ditangani orang: komplain berat, nego harga besar, atau apa pun yang kamu mau pegang sendiri."
       >
         <div>
           <label className="label" htmlFor="handoffCondition">
@@ -371,7 +495,7 @@ export function AgentForm({
       <Section
         terkunci={boleh("jamKerja") ? undefined : paketUntuk("jamKerja")}
         title="Jam kerja tim"
-        description="Kalau dinyalakan, selama jam kerja chat dibiarkan buat tim kamu. Lewat jam itu baru asisten yang balas."
+        ringkas="Selama jam kerja, chat dibiarkan buat tim kamu. Lewat jam itu baru asisten yang balas."
       >
         <Toggle
           name="officeHoursEnabled"
@@ -413,7 +537,8 @@ export function AgentForm({
       <Section
         terkunci={boleh("sapaOtomatis") ? undefined : paketUntuk("sapaOtomatis")}
         title="Sapa lagi yang menghilang sebelum beli"
-        description="Banyak calon pembeli nanya-nanya lalu diam. Kalau dinyalakan, mereka disapa lagi otomatis. Yang sudah beli tidak kena ini, ada bagiannya sendiri di bawah."
+        ringkas="Calon pembeli yang nanya-nanya lalu diam, disapa lagi otomatis."
+        detail="Ini yang paling sering nambah closing. Yang sudah beli tidak kena ini, ada bagiannya sendiri di bawah."
       >
         <Toggle
           name="followUpEnabled"
@@ -473,7 +598,8 @@ export function AgentForm({
       <Section
         terkunci={boleh("sapaOtomatis") ? undefined : paketUntuk("sapaOtomatis")}
         title="Jaga hubungan setelah pembeli"
-        description="Yang di atas mengejar orang yang belum jadi beli. Yang di sini menjaga orang yang sudah beli, dan biasanya mereka yang paling gampang diajak beli lagi. Berjalan otomatis begitu pelanggan masuk tahap selesai."
+        ringkas="Jaga orang yang sudah beli. Biasanya mereka yang paling gampang diajak beli lagi."
+        detail="Yang di atas mengejar yang belum jadi beli. Yang di sini berjalan otomatis begitu pelanggan masuk tahap selesai."
       >
         {/* Label di sini sengaja tidak menyebut barang kiriman.
 
@@ -568,7 +694,8 @@ export function AgentForm({
       <Section
         terkunci={boleh("sapaOtomatis") ? undefined : paketUntuk("sapaOtomatis")}
         title="Ingatkan sebelum janji temu"
-        description="Buat yang pelanggannya datang atau ketemu online: klinik, salon, bengkel, properti, kursus. Jadwal yang dicatat asisten diingatkan sendiri sebelum harinya tiba."
+        ringkas="Jadwal yang dicatat asisten diingatkan sendiri sebelum harinya tiba."
+        detail="Buat yang pelanggannya datang atau ketemu online: klinik, salon, bengkel, properti, kursus."
       >
         <Toggle
           name="pengingatEnabled"
@@ -662,7 +789,8 @@ export function AgentForm({
         </div>
       </Section>
 
-      <SaveBar state={state} />
-    </form>
+        <SaveBar state={state} />
+      </form>
+    </FormDuaKolom>
   );
 }

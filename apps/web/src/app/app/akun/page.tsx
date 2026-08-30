@@ -1,6 +1,6 @@
 import { prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
-import { KOLOM_SEMPIT, PageHeader } from "@/components/ui";
+import { FormDuaKolom, KOLOM_FORM, PageHeader, PanelBantuan } from "@/components/ui";
 import {
   GantiEmailForm,
   GantiSandiForm,
@@ -22,12 +22,29 @@ export default async function AkunPage() {
   return (
     <>
       <PageHeader
-        sempit
+        kolom={KOLOM_FORM}
         title="Akun"
         description="Email dan password untuk masuk ke Palwise. Ini terpisah dari data bisnismu."
       />
 
-      <div className={`space-y-6 py-6 ${KOLOM_SEMPIT}`}>
+      <FormDuaKolom
+        bantuan={
+          <PanelBantuan
+            judul="Kenapa ini penting"
+            poin={[
+              {
+                ikon: "akun",
+                teks: "Email dan password ini cuma buat kamu masuk, bukan yang dilihat pelanggan.",
+              },
+              {
+                ikon: "info",
+                teks: "Kalau lupa password, email inilah satu-satunya jalan kami balikin akunmu. Pastikan sudah dikonfirmasi.",
+              },
+            ]}
+          />
+        }
+      >
+        <div className="space-y-6">
         <div className="card-pad">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
@@ -86,7 +103,8 @@ export default async function AkunPage() {
           </p>
           <GantiSandiForm action={gantiSandiAction} />
         </div>
-      </div>
+        </div>
+      </FormDuaKolom>
     </>
   );
 }

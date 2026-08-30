@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createAgentAction, type FormState } from "@/app/actions/agent";
-import { KOLOM_SEMPIT } from "@/components/ui";
+import { KOLOM_FORM } from "@/components/ui";
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -39,7 +39,7 @@ export function AgentPicker({
        terlihat berdiri sendiri, bukan menggantung di bawah sesuatu.
        Pinggirannya juga ikut lebar layar, seperti halaman lain. */
     <div className="border-b border-ink-200 bg-white pb-4 pt-4">
-      <div className={`flex flex-wrap items-center gap-2 ${KOLOM_SEMPIT}`}>
+      <div className={`flex flex-wrap items-center gap-2 ${KOLOM_FORM}`}>
         {agents.map((a) => (
           <Link
             key={a.id}

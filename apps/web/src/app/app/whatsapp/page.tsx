@@ -1,6 +1,6 @@
 import { getPlan, prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
-import { KOLOM_SEMPIT, PageHeader } from "@/components/ui";
+import { FormDuaKolom, KOLOM_FORM, PageHeader, PanelBantuan } from "@/components/ui";
 import { WhatsAppConnect } from "@/components/WhatsAppConnect";
 import { AddChannel } from "@/components/AddChannel";
 import { TombolHapus } from "@/components/TombolHapus";
@@ -29,12 +29,44 @@ export default async function WhatsAppPage() {
   return (
     <>
       <PageHeader
-        sempit
+        kolom={KOLOM_FORM}
         title="Nomor WhatsApp"
         description="Sambungkan nomor WhatsApp usaha kamu. Cukup scan QR dari HP, tidak perlu daftar ke Meta."
       />
 
-      <div className={`space-y-6 py-6 ${KOLOM_SEMPIT}`}>
+      <FormDuaKolom
+        bantuan={
+          <PanelBantuan
+            judul="Biar nomor aman"
+            poin={[
+              {
+                ikon: "whatsapp",
+                teks: "Nomornya tetap bisa kamu pakai di HP. Palwise cuma nebeng kayak WhatsApp Web, chat lama nggak ke mana-mana.",
+              },
+              {
+                ikon: "silang",
+                teks: "Jangan kirim promo massal ke yang belum pernah chat kamu. Itu cara paling cepat bikin nomor diblokir.",
+              },
+              {
+                ikon: "coba",
+                teks: (
+                  <>
+                    Mau tes asistennya? Pakai <strong>Coba dulu</strong>, jangan
+                    chat ke nomor sungguhan. Nyuruh dua nomor saling balas itu
+                    kebaca WhatsApp sebagai spam.
+                  </>
+                ),
+              },
+              {
+                ikon: "info",
+                teks: "Nomor baru lebih gampang kena batasan. Pakai dulu beberapa hari dari HP sebelum disambung ke sini, dan pakai nomor khusus usaha.",
+              },
+            ]}
+            tautan={{ href: "/app/coba", label: "Buka Coba dulu" }}
+          />
+        }
+      >
+        <div className="space-y-6">
         {channels.length === 0 && (
           <div className="card">
             <Kosong
@@ -100,41 +132,43 @@ export default async function WhatsAppPage() {
           planName={plan.name}
         />
 
-        <div className="card-pad">
-          <h2 className="font-semibold text-ink-900">Yang perlu kamu tahu</h2>
-          <ul className="mt-3 space-y-2 text-sm leading-relaxed text-ink-600">
+        {/* Catatan yang tidak muat di poin panel kanan, tapi tetap perlu ada:
+            dilipat supaya tidak jadi tembok buat yang cuma mau scan QR. */}
+        <details className="card group">
+          <summary className="tap-aman flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-medium text-ink-800 sm:px-5">
+            Hal lain yang perlu kamu tahu
+            <span
+              className="shrink-0 text-ink-400 transition-transform group-open:rotate-180"
+              style={{ transitionDuration: "var(--gerak-cepat)" }}
+              aria-hidden="true"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </span>
+          </summary>
+          <ul className="space-y-2 border-t border-ink-100 px-4 py-4 text-sm leading-relaxed text-ink-600 sm:px-5">
             <li>
-              Nomornya tetap bisa kamu pakai di HP seperti biasa. Palwise cuma
-              nebeng seperti WhatsApp Web.
+              Chat grup, status, dan pesan siaran tidak disentuh. Yang dibalas
+              cuma chat pribadi.
             </li>
             <li>
-              Chat grup, status, dan pesan siaran tidak disentuh. Yang dibalas cuma
-              chat pribadi.
+              Kalau HP mati atau internet putus, koneksinya nyambung lagi
+              otomatis begitu jaringan balik.
             </li>
-            <li>
-              Jangan dipakai kirim promo massal ke orang yang belum pernah chat
-              kamu. Itu cara paling cepat bikin nomor diblokir WhatsApp.
-            </li>
-            <li>
-              Nomor yang baru dibeli jauh lebih gampang kena batasan sementara
-              daripada nomor lama. WhatsApp belum kenal nomor itu, jadi kegiatan
-              yang wajar pun bisa terbaca mencurigakan. Pakai dulu beberapa hari
-              seperti biasa dari HP sebelum disambungkan ke sini.
-            </li>
-            <li>
-              Mau menguji asistennya? Pakai <strong>Coba dulu</strong>, bukan
-              chat ke nomor sungguhan. Menguji dengan menyuruh dua nomor saling
-              balas itu persis pola yang dibaca WhatsApp sebagai spam otomatis,
-              dan nomornya bisa kena batasan beberapa jam.
-            </li>
-            <li>
-              Kalau HP mati atau internet putus, koneksinya nyambung lagi otomatis begitu
-              jaringan balik.
-            </li>
-            <li>Pakai nomor khusus usaha, jangan nomor pribadi.</li>
           </ul>
+        </details>
         </div>
-      </div>
+      </FormDuaKolom>
     </>
   );
 }
