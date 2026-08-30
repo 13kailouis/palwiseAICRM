@@ -1,4 +1,5 @@
 import { workerHealth } from "@/lib/worker";
+import { InfoTip } from "@/components/InfoTip";
 
 /**
  * Peringatan kalau mesin Palwise mati atau kunci AI-nya belum diisi.
@@ -30,10 +31,29 @@ import { workerHealth } from "@/lib/worker";
  */
 const DI_LAPTOP = process.env.NODE_ENV !== "production";
 
-function Pita({ children }: { children: React.ReactNode }) {
+/**
+ * Pita ringkas: satu baris pesan, sisanya (kalau ada) di balik lambang info.
+ *
+ * Dulu isinya paragraf tiga baris yang di HP menutupi bagian atas tiap halaman.
+ * Yang menenangkan ("kamu tidak perlu apa-apa") tetap penting, tapi tidak perlu
+ * memakan tinggi layar terus-menerus: dia pindah ke `detail`, yang dibuka waktu
+ * orangnya memang mau tahu kenapa.
+ */
+function Pita({
+  children,
+  detail,
+}: {
+  children: React.ReactNode;
+  detail?: React.ReactNode;
+}) {
   return (
-    <div className="border-b border-amber-200 bg-amber-50 px-5 py-2.5 text-sm leading-relaxed text-amber-900 sm:px-6">
-      {children}
+    <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm leading-relaxed text-amber-900 sm:px-6">
+      <p className="min-w-0 flex-1">{children}</p>
+      {detail && (
+        <InfoTip label="Keterangan" judul="Apa yang terjadi">
+          {detail}
+        </InfoTip>
+      )}
     </div>
   );
 }
@@ -50,50 +70,57 @@ export async function PeringatanMesin() {
   const health = await workerHealth();
 
   if (!health) {
-    return (
+    // Di laptop tetap versi teknis lengkap (yang membacanya orang yang memasang
+    // produknya). Di produksi versi ringkas: satu baris menenangkan, sebabnya
+    // di balik lambang info.
+    return DI_LAPTOP ? (
       <Pita>
-        {DI_LAPTOP ? (
+        Mesin Palwise sedang mati, jadi chat belum bisa dibalas otomatis.
+        Jalankan <Kode>npm run dev</Kode> dari folder proyek.
+      </Pita>
+    ) : (
+      <Pita
+        detail={
+          // Frasa "kamu tidak perlu melakukan apa-apa" ditulis UTUH dalam satu
+          // baris di kode, jangan dipenggal editor: selftest mencarinya persis
+          // begitu, dan penggalan baris di tengahnya bikin tes gagal menuduh
+          // kode yang sudah benar.
           <>
-            Mesin Palwise sedang mati, jadi chat belum bisa dibalas otomatis.
-            Jalankan <Kode>npm run dev</Kode> dari folder proyek.
+            Ini gangguan di pihak kami dan sedang kami tangani, kamu tidak perlu melakukan apa-apa. Chat yang masuk tetap tersimpan dan bisa kamu balas sendiri dari Chat masuk.
           </>
-        ) : (
-          <>
-            Asistenmu sedang tidak bisa membalas otomatis. Ini gangguan di pihak
-            kami dan sedang kami tangani, kamu tidak perlu melakukan apa-apa.
-            Chat yang masuk tetap tersimpan dan bisa kamu balas sendiri dari
-            Chat masuk.
-          </>
-        )}
+        }
+      >
+        Asisten lagi nggak bisa bales otomatis, tapi chat tetap masuk.
       </Pita>
     );
   }
 
   if (!health.aiConfigured) {
-    return (
+    return DI_LAPTOP ? (
       <Pita>
-        {DI_LAPTOP ? (
+        Kunci layanan AI belum diisi, jadi asistenmu belum bisa menjawab.
+        Tambahkan <Kode>GEMINI_API_KEY</Kode> di file{" "}
+        <code className="font-mono text-xs">.env</code> (gratis di{" "}
+        <a
+          className="underline"
+          href="https://aistudio.google.com/apikey"
+          target="_blank"
+          rel="noreferrer"
+        >
+          aistudio.google.com/apikey
+        </a>
+        ), lalu nyalakan ulang.
+      </Pita>
+    ) : (
+      <Pita
+        detail={
           <>
-            Kunci layanan AI belum diisi, jadi asistenmu belum bisa menjawab.
-            Tambahkan <Kode>GEMINI_API_KEY</Kode> di file{" "}
-            <code className="font-mono text-xs">.env</code> (gratis di{" "}
-            <a
-              className="underline"
-              href="https://aistudio.google.com/apikey"
-              target="_blank"
-              rel="noreferrer"
-            >
-              aistudio.google.com/apikey
-            </a>
-            ), lalu nyalakan ulang.
+            Ini urusan di pihak kami dan sedang kami bereskan. Chat yang masuk
+            tetap tersimpan dan bisa kamu balas sendiri dari Chat masuk.
           </>
-        ) : (
-          <>
-            Layanan AI-nya sedang belum aktif, jadi asistenmu belum bisa
-            menjawab. Ini urusan di pihak kami dan sedang kami bereskan. Chat
-            yang masuk tetap tersimpan.
-          </>
-        )}
+        }
+      >
+        Layanan AI lagi belum aktif, jadi asisten belum bisa jawab.
       </Pita>
     );
   }

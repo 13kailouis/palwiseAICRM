@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InfoTip } from "@/components/InfoTip";
 
 /**
  * Pengingat kuota di atas halaman.
@@ -27,29 +28,33 @@ export function PeringatanKuota({
 
   return (
     <div
-      className={`flex flex-wrap items-center justify-between gap-3 border-b px-6 py-2.5 text-sm ${
+      className={`flex items-center gap-2 border-b px-4 py-2 text-sm sm:px-6 ${
         kritis
           ? "border-red-200 bg-red-50 text-red-900"
           : "border-amber-200 bg-amber-50 text-amber-900"
       }`}
     >
-      <p>
+      <p className="min-w-0 flex-1 truncate">
         {habis ? (
-          <>
-            <strong>Jatah balasan bulan ini habis.</strong> Chat pelanggan tidak
-            dibalas otomatis sampai paketmu dinaikkan atau bulan berikutnya mulai.
-          </>
+          <strong>Jatah balasan bulan ini habis.</strong>
         ) : (
           <>
             Sisa <strong>{sisa.toLocaleString("id-ID")} balasan</strong> di paket{" "}
-            {namaPaket}. Kalau habis, asistenmu berhenti membalas pelanggan.
+            {namaPaket}.
           </>
         )}
       </p>
+      <InfoTip label="Apa artinya" judul="Apa artinya">
+        {habis
+          ? "Chat pelanggan nggak dibalas otomatis sampai paketmu dinaikkan atau bulan berikutnya mulai. Chatnya tetap masuk dan bisa kamu balas sendiri."
+          : "Kalau jatahnya habis, asisten berhenti bales pelanggan otomatis sampai paket dinaikkan atau bulan berikutnya mulai."}
+      </InfoTip>
       <Link
         href="/app/tagihan"
-        className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium ${
-          kritis ? "bg-red-600 text-white hover:bg-red-700" : "btn-ghost"
+        className={`shrink-0 rounded-lg px-3 py-1 text-xs font-medium ${
+          kritis
+            ? "bg-red-600 text-white hover:bg-red-700"
+            : "border border-amber-300 bg-white/70 text-amber-900 hover:bg-white"
         }`}
       >
         {habis ? "Naikkan paket" : "Lihat paket"}

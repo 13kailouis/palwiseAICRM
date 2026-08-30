@@ -7,53 +7,7 @@ import { saveAgentAction, type FormState } from "@/app/actions/agent";
 import { SaveBar } from "@/components/SaveBar";
 import { PresetUsaha } from "@/components/PresetUsaha";
 import { FormDuaKolom, PanelBantuan } from "@/components/ui";
-
-/**
- * Penjelasan panjang yang dilipat, dibuka dengan KLIK.
- *
- * Sengaja `<details>` bawaan, bukan hover: hover tidak ada di HP (separuh
- * pemakai), dan menyembunyikan penjelasan di balik sesuatu yang cuma muncul
- * saat kursor lewat berarti menyembunyikannya dari orang yang paling butuh,
- * yaitu pemakai baru yang lagi pertama kali mengisi. Klik jalan di HP, di
- * tetikus, dan di papan ketik sekaligus, tanpa satu baris JavaScript.
- *
- * Yang selalu kelihatan tetap satu baris ringkas; ini cuma "kenapa" dan
- * contohnya.
- */
-function Detil({
-  judul = "Selengkapnya",
-  children,
-}: {
-  judul?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <details className="group mt-2">
-      <summary className="tap-aman inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800">
-        <span className="group-open:hidden">{judul}</span>
-        <span className="hidden group-open:inline">Tutup</span>
-        <svg
-          viewBox="0 0 24 24"
-          width="13"
-          height="13"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="transition-transform group-open:rotate-180"
-          style={{ transitionDuration: "var(--gerak-cepat)" }}
-          aria-hidden="true"
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </summary>
-      <div className="mt-2 max-w-prose text-sm leading-relaxed text-ink-500">
-        {children}
-      </div>
-    </details>
-  );
-}
+import { InfoTip } from "@/components/InfoTip";
 
 function Section({
   title,
@@ -65,7 +19,10 @@ function Section({
   title: string;
   /** Satu baris yang selalu kelihatan. Sisanya taruh di `detail`. */
   ringkas?: string;
-  /** Penjelasan panjang yang dilipat di balik "Selengkapnya". */
+  /**
+   * Penjelasan panjang. Tidak lagi jadi baris teks "Selengkapnya", tapi
+   * lambang info kecil di sebelah judul: di-hover di laptop, diketuk di HP.
+   */
   detail?: React.ReactNode;
   /** Nama paket yang dibutuhkan. Kosong berarti bagian ini tidak terkunci. */
   terkunci?: string;
@@ -73,13 +30,15 @@ function Section({
 }) {
   return (
     <section className="card-pad">
-      <h2 className="font-semibold text-ink-900">{title}</h2>
+      <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+        {title}
+        {detail && <InfoTip judul={title}>{detail}</InfoTip>}
+      </h2>
       {ringkas && (
         <p className="mt-1 max-w-prose text-sm leading-relaxed text-ink-500">
           {ringkas}
         </p>
       )}
-      {detail && <Detil>{detail}</Detil>}
 
       {/* Pemberitahuannya di DALAM kartu, tepat di bawah judul.
 
@@ -341,55 +300,34 @@ export function AgentForm({
             className="textarea-prosa"
             defaultValue={agent.behaviorPrompt}
           />
-          <p className="hint max-w-prose">
-            Tulis pakai bahasa sehari-hari, siapa dia dan mau bersikap seperti
-            apa.
-          </p>
-          {/* Dua contoh, sengaja dari dua jenis usaha yang berbeda, dan
-              sekarang dilipat.
+          {/* Contohnya di balik lambang info, bukan baris teks yang
+              memampang dua paragraf sebelum kotaknya diisi.
 
-              Dengan satu contoh toko kopi saja, orang klinik dan penjual jasa
-              menyalin bentuknya mentah-mentah atau malah ragu produk ini untuk
-              mereka. Contoh kedua lebih murah daripada halaman bantuan. Tapi
-              dua contoh panjang yang selalu terpampang bikin kotak isian ini
-              kelihatan penuh sebelum diisi, jadi ditaruh di balik klik: yang
-              butuh contoh membukanya, yang sudah tahu tidak dihalangi. */}
-          <details className="group mt-2">
-            <summary className="tap-aman inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800">
-              <span className="group-open:hidden">Lihat contoh</span>
-              <span className="hidden group-open:inline">Tutup contoh</span>
-              <svg
-                viewBox="0 0 24 24"
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="transition-transform group-open:rotate-180"
-                style={{ transitionDuration: "var(--gerak-cepat)" }}
-                aria-hidden="true"
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </summary>
-            <div className="mt-2 space-y-2 max-w-prose text-sm leading-relaxed text-ink-500">
-              <p>
-                <span className="font-medium text-ink-700">Contoh toko:</span>{" "}
-                &ldquo;Kamu pegawai toko Kopi Nusantara, namanya Nara. Ramah dan
-                santai, panggil pelanggan pakai &lsquo;kak&rsquo;. Kalau ada yang
-                baru chat, tanyakan dulu namanya dan mau cari kopi seperti
-                apa.&rdquo;
-              </p>
-              <p>
-                <span className="font-medium text-ink-700">Contoh jasa:</span>{" "}
-                &ldquo;Kamu resepsionis Klinik Sehat Bunda, namanya Dina. Sopan
-                dan menenangkan. Bantu pasien tahu jadwal dokter dan cara daftar,
-                jangan pernah memberi saran medis.&rdquo;
-              </p>
-            </div>
-          </details>
+              Dua contoh, sengaja dari dua jenis usaha yang berbeda: dengan satu
+              contoh toko kopi saja, orang klinik dan penjual jasa menyalin
+              bentuknya mentah-mentah atau malah ragu produk ini untuk mereka.
+              Yang butuh contoh mengetuk ikonnya, yang sudah tahu tidak
+              dihalangi tembok teks. */}
+          <p className="hint max-w-prose flex items-center gap-2">
+            <span>Tulis pakai bahasa sehari-hari, siapa dia dan mau bersikap seperti apa.</span>
+            <InfoTip label="Lihat contoh" judul="Contoh cara nulisnya">
+              <span className="block space-y-2">
+                <span className="block">
+                  <span className="font-medium text-ink-700">Contoh toko:</span>{" "}
+                  &ldquo;Kamu pegawai toko Kopi Nusantara, namanya Nara. Ramah
+                  dan santai, panggil pelanggan pakai &lsquo;kak&rsquo;. Kalau
+                  ada yang baru chat, tanyakan dulu namanya dan mau cari kopi
+                  seperti apa.&rdquo;
+                </span>
+                <span className="block">
+                  <span className="font-medium text-ink-700">Contoh jasa:</span>{" "}
+                  &ldquo;Kamu resepsionis Klinik Sehat Bunda, namanya Dina. Sopan
+                  dan menenangkan. Bantu pasien tahu jadwal dokter dan cara
+                  daftar, jangan pernah memberi saran medis.&rdquo;
+                </span>
+              </span>
+            </InfoTip>
+          </p>
         </div>
 
         <div>
