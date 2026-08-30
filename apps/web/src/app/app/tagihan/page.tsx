@@ -306,6 +306,18 @@ export default async function TagihanPage({
               const current = p.id === plan.id;
               const berbayar = p.pricePerMonth > 0;
 
+              // Hemat per balasan dibanding Starter, DITURUNKAN dari angkanya,
+              // bukan diketik "50%". Kalau harga atau jatah suatu hari diubah,
+              // persennya ikut benar sendiri. Starter jadi patokan karena dia
+              // paket berbayar termurah; Growth dan Pro dua kali lebih murah per
+              // balasan, dan itu alasan paling jujur buat naik dari Starter.
+              const hematPersen = berbayar
+                ? Math.round(
+                    (1 - pricePerReply(p) / pricePerReply(getPlan("starter"))) *
+                      100,
+                  )
+                : 0;
+
               // Perpanjangan paket yang sama tetap boleh, jadi kartu paket yang
               // sedang aktif TIDAK kehilangan tombolnya kalau dia berbayar.
               // Tanpa ini, satu-satunya cara memperpanjang adalah turun paket
@@ -386,6 +398,17 @@ export default async function TagihanPage({
                       ? ` · ${formatIDR(pricePerReply(p))}/balasan`
                       : " per bulan"}
                   </p>
+                  {/* Penanda hemat, cuma di paket yang benar-benar lebih murah
+                      per balasan daripada Starter (Growth dan Pro). Starter
+                      sendiri patokannya, jadi tidak dapat penanda. Warna hijau
+                      dipakai KHUSUS untuk hemat, sama seperti lencana tahap di
+                      tempat lain yang memang boleh berwarna; bukan biru, jadi
+                      cincin paket aktif tetap satu-satunya bidang biru. */}
+                  {hematPersen > 0 && (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-md bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700">
+                      Hemat {hematPersen}% per balasan
+                    </span>
+                  )}
                   {/* SEMUA isinya, tanpa dipotong.
 
                       Dulu di sini ada slice(0, 5), dan itu diam-diam menyembunyikan
