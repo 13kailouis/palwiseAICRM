@@ -317,11 +317,16 @@ export function Inbox({ initialId }: { initialId: string | null }) {
       <div
         className={[
           "flex flex-col border-r border-ink-200 bg-white",
-          "w-full lg:w-80 lg:shrink-0",
+          "w-full lg:w-[21rem] lg:shrink-0",
           selectedId ? "hidden lg:flex" : "flex",
         ].join(" ")}
       >
-        <div className="flex gap-1 border-b border-ink-200 p-3">
+        {/* Saringan: satu baris yang bisa digeser, JANGAN membungkus.
+            Dulu `flex` biasa bikin empat tab membungkus jadi dua baris di layar
+            360px dan tiap tab jadi dua baris tulisan, terbaca berantakan. Pil
+            `whitespace-nowrap shrink-0` + `overflow-x-auto` menjaga satu baris;
+            kalau tidak muat, digeser, bukan dibungkus. */}
+        <div className="thin-scroll flex shrink-0 gap-1 overflow-x-auto border-b border-ink-200 px-2.5 py-2.5">
           {FILTERS.map((f) => (
             <button
               key={f.id}
@@ -329,7 +334,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                 setFilter(f.id);
                 setSelectedId(null);
               }}
-              className={`tap-aman justify-center rounded-md px-3 py-1.5 text-xs transition ${
+              className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs transition ${
                 filter === f.id
                   ? "bg-ink-900 font-medium text-white"
                   : "text-ink-600 hover:bg-ink-100"
@@ -359,75 +364,105 @@ export function Inbox({ initialId }: { initialId: string | null }) {
           </p>
         )}
 
-        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto">
+        {/* anim-urut: baris masuk berurutan sekali waktu daftar dibuka, dan
+            obrolan baru yang datang belakangan ikut muncul lembut. Karena
+            key-nya id percakapan, baris lama tidak dianimasikan ulang tiap
+            putaran polling. */}
+        <div className="thin-scroll anim-urut min-h-0 flex-1 overflow-y-auto">
           {list.length === 0 ? (
-            <p className="p-5 text-sm leading-relaxed text-ink-500">
-              Tidak ada obrolan di sini.
-            </p>
+            <div className="px-6 py-16 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border-2 border-dashed border-ink-200 text-ink-300">
+                <Ikon nama="chat" size={26} />
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-ink-500">
+                Belum ada obrolan di sini.
+              </p>
+            </div>
           ) : (
-            list.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setSelectedId(c.id)}
-                className={`relative flex w-full gap-3 border-b border-ink-100 px-4 py-3 text-left transition ${
-                  selectedId === c.id ? "bg-ink-100" : "hover:bg-ink-50"
-                }`}
-              >
-                {/* Garis penanda di tepi kiri waktu terpilih. Cuma di layar
-                    lebar, tempat daftarnya berdampingan dengan obrolannya. */}
-                {selectedId === c.id && (
-                  <span className="absolute inset-y-0 left-0 hidden w-0.5 bg-ink-900 lg:block" />
-                )}
-                <Avatar nama={c.name} />
-                <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate text-sm font-medium text-ink-900">
-                    {c.name}
-                  </span>
-                  <span className="shrink-0 text-[11px] text-ink-400">
-                    {relatif(c.lastMessageAt)}
-                  </span>
-                </div>
-                <p className="mt-0.5 truncate text-xs text-ink-500">
-                  {c.lastRole === "customer" ? "" : "↩ "}
-                  {c.preview || "belum ada pesan"}
-                </p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  {/* Lencana rasa duluan, karena inilah yang menentukan urutan
-                      kerja. "Nunggu kamu" menerangkan STATUS obrolannya;
-                      lencana ini menerangkan KEADAAN orangnya, dan yang kedua
-                      itu yang menjawab "mulai dari mana". */}
-                  {(() => {
-                    const r = tampilanRasa(c.rasaLabel);
-                    return r ? <span className={`badge ${r.kelas}`}>{r.teks}</span> : null;
-                  })()}
-                  {c.needsHuman && (
-                    <span className="badge bg-amber-100 text-amber-800">
-                      nunggu kamu
-                    </span>
+            list.map((c) => {
+              const rasa = tampilanRasa(c.rasaLabel);
+              const belumDibaca = c.unreadCount > 0;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedId(c.id)}
+                  className={`relative flex w-full items-start gap-3 border-b border-ink-100 px-4 py-3 text-left transition ${
+                    selectedId === c.id ? "bg-ink-100" : "hover:bg-ink-50 active:bg-ink-100"
+                  }`}
+                >
+                  {/* Garis penanda tepi kiri waktu terpilih, cuma di layar lebar
+                      tempat daftar dan obrolan berdampingan. */}
+                  {selectedId === c.id && (
+                    <span className="absolute inset-y-0 left-0 hidden w-0.5 bg-ink-900 lg:block" />
                   )}
-                  {!c.aiEnabled && (
-                    <span className="badge bg-ink-100 text-ink-600">kamu pegang</span>
-                  )}
-                  {c.unreadCount > 0 && (
-                    <span className="badge bg-brand-600 text-white">
-                      {c.unreadCount}
-                    </span>
-                  )}
-                </div>
-                {/* Alasannya, apa adanya.
-                    Tanpa ini lencananya cuma tebakan yang tidak bisa dibantah,
-                    dan tebakan yang tidak bisa dijelaskan akan dimatikan orang
-                    di minggu kedua. Cuma ditampilkan kalau lencananya memang
-                    muncul, supaya baris ini tidak jadi kebisingan tetap. */}
-                {c.rasaAlasan && tampilanRasa(c.rasaLabel) && (
-                  <p className="mt-1 truncate text-[11px] text-ink-400">
-                    {c.rasaAlasan}
-                  </p>
-                )}
-                </div>
-              </button>
-            ))
+                  <Avatar nama={c.name} ukuran={44} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span
+                        className={`truncate text-sm text-ink-900 ${
+                          belumDibaca ? "font-semibold" : "font-medium"
+                        }`}
+                      >
+                        {c.name}
+                      </span>
+                      <span
+                        className={`shrink-0 text-[11px] ${
+                          belumDibaca ? "font-medium text-brand-700" : "text-ink-400"
+                        }`}
+                      >
+                        {relatif(c.lastMessageAt)}
+                      </span>
+                    </div>
+                    {/* Cuplikan + jumlah belum dibaca di kanan, seperti aplikasi
+                        chat pada umumnya. Yang belum dibaca dibuat sedikit lebih
+                        gelap supaya menonjol tanpa warna tambahan. */}
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <p
+                        className={`min-w-0 flex-1 truncate text-xs ${
+                          belumDibaca ? "text-ink-700" : "text-ink-500"
+                        }`}
+                      >
+                        {c.lastRole === "customer" ? "" : "↩ "}
+                        {c.preview || "belum ada pesan"}
+                      </p>
+                      {belumDibaca && (
+                        <span className="grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full bg-brand-600 px-1.5 text-[11px] font-semibold text-white">
+                          {c.unreadCount > 99 ? "99+" : c.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    {/* Lencana keadaan orangnya (rasa) + status. "Nunggu kamu"
+                        menerangkan STATUS obrolan; lencana rasa menerangkan
+                        KEADAAN orangnya, dan yang kedua yang menjawab "mulai dari
+                        mana". Cuma digambar kalau memang ada. */}
+                    {(rasa || c.needsHuman || !c.aiEnabled) && (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        {rasa && (
+                          <span className={`badge ${rasa.kelas}`}>{rasa.teks}</span>
+                        )}
+                        {c.needsHuman && (
+                          <span className="badge bg-amber-100 text-amber-800">
+                            nunggu kamu
+                          </span>
+                        )}
+                        {!c.aiEnabled && (
+                          <span className="badge bg-ink-100 text-ink-600">
+                            kamu pegang
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {/* Alasan lencana rasa, apa adanya. Tebakan yang tidak bisa
+                        dijelaskan akan dimatikan orang di minggu kedua. */}
+                    {c.rasaAlasan && rasa && (
+                      <p className="mt-1 truncate text-[11px] text-ink-400">
+                        {c.rasaAlasan}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
       </div>

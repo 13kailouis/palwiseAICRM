@@ -8488,7 +8488,11 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     );
     check(
       "alasan cuma ditampilkan kalau lencananya memang muncul",
-      /c\.rasaAlasan && tampilanRasa\(c\.rasaLabel\)/.test(layarInbox),
+      // Sejak daftar dirombak, lencana rasa dihitung sekali ke peubah `rasa`
+      // dan alasannya dijaga oleh peubah itu. Yang dijaga tetap sama: baris
+      // alasan tidak pernah muncul tanpa lencananya.
+      /const rasa = tampilanRasa\(c\.rasaLabel\)/.test(layarInbox) &&
+        /c\.rasaAlasan && rasa/.test(layarInbox),
       "kalau tidak, baris keterangan jadi kebisingan tetap di tiap baris",
     );
 
