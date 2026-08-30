@@ -196,7 +196,19 @@ export function Inbox({ initialId }: { initialId: string | null }) {
       const data = await res.json();
       setList(data.conversations);
       setRingkas(data.ringkas ?? null);
-      setSelectedId((cur) => cur ?? data.conversations[0]?.id ?? null);
+      // Auto-pilih obrolan pertama CUMA di layar lebar.
+      //
+      // Di layar lebar daftar dan obrolan berdampingan, jadi memilihkan yang
+      // pertama bikin panel kanan tidak kosong. Di HP obrolan itu layar penuh:
+      // kalau dipilihkan otomatis, menekan tombol kembali membuka lagi obrolan
+      // pertama seketika, dan orang tidak pernah sampai ke daftarnya. Jadi di HP
+      // biarkan kosong (tampilkan daftar) sampai orangnya sendiri yang memilih.
+      const layarLebar =
+        typeof window !== "undefined" &&
+        window.matchMedia("(min-width: 1024px)").matches;
+      setSelectedId((cur) =>
+        cur ?? (layarLebar ? (data.conversations[0]?.id ?? null) : null),
+      );
     } catch {
       /* biarkan, coba lagi nanti */
     }
@@ -574,28 +586,37 @@ export function Inbox({ initialId }: { initialId: string | null }) {
               // "kenapa asisten berhenti" pindah ke lambang info. Dulu
               // penjelasan dua baris itu selalu terpampang dan bikin bilah ini
               // makan tinggi layar yang seharusnya jadi isi obrolan.
-              <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900 sm:px-5">
-                <p className="min-w-0 flex-1">
-                  <strong>Asisten minta bantuan:</strong>{" "}
+              <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-amber-900 sm:px-5">
+                {/* Ikon asisten sebagai penanda, ganti tulisan "Asisten minta
+                    bantuan:". Alasannya dipotong maksimal dua baris; teks penuh
+                    plus penjelasan "kenapa berhenti" di lambang info. */}
+                <span className="shrink-0 text-amber-700">
+                  <Ikon nama="asisten" size={16} />
+                </span>
+                <p className="line-clamp-2 min-w-0 flex-1 text-[13px] leading-snug">
                   {detail.conversation.handoffReason ??
-                    "sebaiknya kamu yang lanjutkan"}
+                    "Sebaiknya kamu yang lanjutkan obrolan ini."}
                 </p>
-                <InfoTip
-                  label="Kenapa asisten berhenti"
-                  judul="Kenapa asisten berhenti"
-                >
-                  Dia berhenti sebentar supaya kamu sempat masuk. Kalau
-                  dibiarkan, dia lanjut sendiri daripada pelanggannya didiamkan.
+                <InfoTip label="Selengkapnya" judul="Asisten minta bantuan">
+                  <span className="block">
+                    {detail.conversation.handoffReason ??
+                      "Sebaiknya kamu yang lanjutkan obrolan ini."}
+                  </span>
+                  <span className="mt-2 block text-ink-500">
+                    Dia berhenti sebentar supaya kamu sempat masuk. Kalau
+                    dibiarkan, dia lanjut sendiri daripada pelanggannya
+                    didiamkan.
+                  </span>
                 </InfoTip>
-                {/* Menurunkan bendera langsung, tanpa harus mematikan lalu
-                    menghidupkan lagi asistennya. Dulu tombolnya memang tidak
-                    ada: satu-satunya jalan adalah menekan "Saya yang balas"
-                    lalu "Balik ke asisten", dua klik untuk satu maksud. */}
+                {/* Menurunkan bendera langsung. Ikon centang saja; "Sudah saya
+                    tangani" jadi label pembaca layar dan tooltip. */}
                 <button
                   onClick={() => updateSettings({ needsHuman: false })}
-                  className="shrink-0 rounded-lg border border-amber-300 bg-white/70 px-3 py-1 text-xs font-medium text-amber-900 hover:bg-white"
+                  aria-label="Sudah saya tangani"
+                  title="Sudah saya tangani"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-amber-300 bg-white/70 text-amber-900 transition hover:bg-white"
                 >
-                  Sudah saya tangani
+                  <Ikon nama="centang" size={16} />
                 </button>
               </div>
             )}
