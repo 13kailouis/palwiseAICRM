@@ -6,6 +6,7 @@ import { addKnowledgeAction, type KnowledgeState } from "@/app/actions/knowledge
 import { ImportFlow } from "@/components/ImportFlow";
 import { DariAiLain } from "@/components/DariAiLain";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
+import { InfoTip } from "@/components/InfoTip";
 
 type Tab = "text" | "qna" | "file" | "website" | "ai";
 
@@ -119,6 +120,10 @@ export function KnowledgeAdd({
   const [isi, setIsi] = useState("");
   const [state, formAction] = useActionState(addKnowledgeAction, {} as KnowledgeState);
 
+  // Lagi mengambil dari sumber luar (website/berkas/AI lain)? Deret "Ketik
+  // sendiri / Tanya jawab" cuma jadi gangguan saat itu, jadi disembunyikan.
+  const ambilAktif = tab === "website" || tab === "file" || tab === "ai";
+
   return (
     <div className="card p-5">
       <h2 className="font-semibold text-ink-900">Tambah info</h2>
@@ -136,9 +141,18 @@ export function KnowledgeAdd({
           Labelnya juga diganti dari "Atau ambil dari" jadi kalimat yang menyebut
           keuntungannya, karena "atau" itu kata yang membuat pilihan terdengar
           seperti pengganti, bukan seperti yang disarankan. */}
-      <p className="mb-2 mt-4 text-xs font-medium text-ink-600">
-        Punya website? Ambil dari situ, sekali tekan langsung banyak
-      </p>
+      <div className="mb-2 mt-4 flex items-center gap-1.5">
+        <p className="text-xs font-medium text-ink-600">
+          Ambil dari website atau berkas
+        </p>
+        {/* Jebakan impornya penting, tapi tidak perlu jadi paragraf yang selalu
+            terpampang. Dipindah ke lambang info: yang butuh tinggal ketuk. */}
+        <InfoTip judul="Sesudah diambil, periksa dulu">
+          Pastikan isinya sudah memuat harga, ongkir, jam buka, dan aturan retur.
+          Kalau websitemu tidak menyebutnya, tambahin sendiri lewat Ketik
+          sendiri. Itu yang paling sering ditanya pelanggan.
+        </InfoTip>
+      </div>
       <div className="flex flex-wrap gap-2">
         {AMBIL.map((t) => (
           <button
@@ -168,59 +182,44 @@ export function KnowledgeAdd({
         ))}
       </div>
 
-      {/* Jebakan yang perlu disebut TEPAT DI SINI, bukan di halaman panduan.
+      {/* Deret "Ketik sendiri / Tanya jawab" disembunyikan waktu lagi mengambil
+          dari sumber luar, karena saat itu dia cuma gangguan. Diganti satu
+          tautan kecil buat balik menulis manual kalau ternyata website tidak
+          menyebut harga atau ongkir.
 
-          Website itu tulisan pemasaran, dan pemasaran jarang memuat hal yang
-          benar-benar ditanyakan pelanggan: harga persis, aturan ongkir, jam
-          buka, aturan retur. Jadi satu impor bisa menghasilkan tiga puluh ribu
-          huruf yang isinya "visi kami" dan tetap tidak bisa menjawab "berapa
-          harganya".
-
-          Dan itu bukan cuma sia-sia, tapi merugikan: pencarian cuma mengambil
-          sebagian isi catatan per pertanyaan, jadi tumpukan tulisan pemasaran
-          justru MENDORONG KELUAR bagian yang berguna. Info bisnis 500 huruf
-          berisi daftar harga mengalahkan 30.000 huruf berisi profil perusahaan.
-
-          Perhatikan bedanya dengan keterangan di bawah kotak "Ketik sendiri",
-          yang justru menyuruh menulis sebanyak-banyaknya. Dua-duanya benar dan
-          tidak bertentangan: yang dilawan di sini BASA-BASI yang panjang, bukan
-          DATA yang panjang. Daftar harga seribu baris tetap terjawab per baris,
-          sedangkan seribu baris "komitmen kami pada kualitas" tidak menjawab
-          apa pun sambil menyulitkan yang lain ditemukan.
-
-          Ditulis di bawah tombolnya, bukan sesudah impornya selesai, supaya
-          orangnya tahu harus memeriksa apa sebelum dia merasa pekerjaannya
-          sudah beres. */}
-      <p className="mt-2 text-xs leading-relaxed text-ink-500">
-        Sesudah diambil, cek isinya sudah memuat harga, ongkir, jam buka, dan
-        aturan retur. Kalau websitemu tidak menyebut itu, tambahin sendiri lewat{" "}
+          Jebakan impornya sendiri (tulisan pemasaran panjang yang tidak
+          menjawab "berapa harganya" dan malah mendorong keluar data yang
+          berguna) tetap dijelaskan, tapi pindah ke lambang info di atas supaya
+          tidak jadi paragraf yang selalu terpampang. */}
+      {ambilAktif ? (
         <button
           type="button"
           onClick={() => setTab("text")}
-          className="font-medium text-brand-700 hover:underline"
+          className="mt-3 text-xs font-medium text-brand-700 hover:underline"
         >
-          Ketik sendiri
+          atau ketik sendiri
         </button>
-        . Itu yang paling sering ditanya pelanggan.
-      </p>
-
-      <p className="mb-2 mt-5 text-xs text-ink-500">Atau tulis sendiri</p>
-      <div className="grid grid-cols-2 gap-1 rounded-lg bg-ink-100 p-1">
-        {TULIS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`tap-aman justify-center rounded-md px-3 py-2 text-sm transition ${
-              tab === t.id
-                ? "bg-white font-medium text-ink-900 shadow-sm"
-                : "text-ink-600 hover:text-ink-900"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      ) : (
+        <>
+          <p className="mb-2 mt-5 text-xs text-ink-500">Atau tulis sendiri</p>
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-ink-100 p-1">
+            {TULIS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={`tap-aman justify-center rounded-md px-3 py-2 text-sm transition ${
+                  tab === t.id
+                    ? "bg-white font-medium text-ink-900 shadow-sm"
+                    : "text-ink-600 hover:text-ink-900"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Tab website dan file punya alurnya sendiri: baca dulu, periksa
           hasilnya, baru simpan. Jadi keduanya tidak ikut form di bawah. */}
