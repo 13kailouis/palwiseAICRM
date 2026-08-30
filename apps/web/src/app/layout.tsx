@@ -1,6 +1,49 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import { ALAMAT_SITUS } from "@/lib/situs";
+
+/**
+ * Huruf Palwise: Plus Jakarta Sans.
+ *
+ * Dipilih bukan karena selera. Sebelum ini seluruh situs memakai huruf bawaan
+ * sistem, jadi tampilannya berganti-ganti tergantung alat yang membukanya:
+ * Segoe UI di Windows, Roboto di Android, San Francisco di iPhone. Tiga wajah
+ * untuk satu merek, dan yang paling sering muncul di HP pemilik toko justru
+ * yang paling terlihat seperti halaman yang belum digarap.
+ *
+ * Plus Jakarta Sans buatan Tokotype dari Jakarta. Bentuknya modern, angkanya
+ * jelas di ukuran kecil (halaman ini penuh harga), dan asalnya kebetulan cocok
+ * dengan siapa yang dilayani produk ini.
+ *
+ * BERKASNYA DISIMPAN DI REPO, bukan diunduh waktu build. `next/font/google`
+ * menarik berkasnya dari internet tiap kali `next build` jalan, dan build
+ * Palwise dijalankan di VPS. Satu build yang gagal cuma karena Google Fonts
+ * sedang tidak bisa dihubungi itu kegagalan yang sama sekali tidak berhubungan
+ * dengan kode yang baru diubah, dan itu jenis kegagalan yang paling lama
+ * dicari.
+ */
+const huruf = localFont({
+  src: "../fonts/PlusJakartaSans-latin.woff2",
+  // Satu berkas, tebalnya bisa berapa saja di antara 400 dan 800, karena ini
+  // huruf variabel. Jadi tidak ada berkas kedua cuma untuk huruf tebal.
+  weight: "400 800",
+  style: "normal",
+  variable: "--font-sans",
+  // "swap": tulisannya langsung terbaca pakai huruf bawaan, lalu berganti
+  // begitu hurufnya sampai. Yang sebaliknya ("block") berarti layar kosong
+  // selama hurufnya belum sampai, dan di jaringan HP itu bisa sedetik penuh.
+  display: "swap",
+  fallback: [
+    "system-ui",
+    "-apple-system",
+    "Segoe UI",
+    "Roboto",
+    "Helvetica Neue",
+    "Arial",
+    "sans-serif",
+  ],
+});
 
 /**
  * "Sales", bukan "asisten".
@@ -63,7 +106,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id">
+    <html lang="id" className={huruf.variable}>
       <body>{children}</body>
     </html>
   );

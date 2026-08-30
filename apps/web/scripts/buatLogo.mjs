@@ -117,9 +117,26 @@ async function kartuBagikan(tanda) {
     .judul { font-family: Segoe UI, Arial, Helvetica, DejaVu Sans, Liberation Sans, sans-serif; font-weight: 700; fill: #0b1220; }
     .anak  { font-family: Segoe UI, Arial, Helvetica, DejaVu Sans, Liberation Sans, sans-serif; font-weight: 400; fill: #4a5568; }
   </style>
-  <text x="96" y="400" class="judul" font-size="62">Yang chat tengah malam,</text>
-  <text x="96" y="472" class="judul" font-size="62">jangan beli di sebelah.</text>
-  <text x="96" y="536" class="anak" font-size="30">Palwise, sales WhatsApp AI. Sepertujuh harga platform sebelah.</text>
+  <!-- KALIMATNYA HARUS SAMA DENGAN JUDUL DI HALAMAN DEPAN.
+
+       Kartu ini yang PERTAMA dilihat orang waktu tautan Palwise dikirim lewat
+       WhatsApp, dan WhatsApp itu jalur sebar utama produk ini. Kalau kartunya
+       menjanjikan kalimat lain, orang membuka halaman yang terasa bukan yang
+       dia klik, dan itu keraguan yang tidak perlu ada.
+
+       Versi lama berbunyi "Yang chat tengah malam, jangan beli di sebelah."
+       Kalimat itu menyuruh PELANGGANNYA jangan beli di sebelah, padahal yang
+       dijual justru kebalikannya: kejadian yang sudah terjadi ke pemilik
+       tokonya. -->
+  <!-- UKURAN HURUFNYA DIHITUNG DARI LEBAR YANG TERSEDIA, bukan dikira-kira.
+       Tulisannya mulai di x=96 pada kanvas 1200, jadi yang bisa dipakai 1104px.
+       Baris terpanjang 41 huruf, dan huruf tebal di sini sekitar 0,54 kali
+       ukurannya, jadi 46px menghasilkan sekitar 1015px. Di 54px dia 1180px dan
+       kalimatnya terpotong di tepi kanan tanpa satu pun galat: SVG tidak pernah
+       mengeluh soal teks yang keluar kanvas, dia cuma memotongnya. -->
+  <text x="96" y="392" class="judul" font-size="46">Ada yang chat WhatsApp kamu jam 11 malam.</text>
+  <text x="96" y="450" class="judul" font-size="46">Besoknya, dia udah beli di sebelah.</text>
+  <text x="96" y="514" class="anak" font-size="29">Palwise, sales WhatsApp AI. Sepertujuh harga platform sebelah.</text>
 </svg>`);
 
   // SATU panggilan composite untuk semuanya.

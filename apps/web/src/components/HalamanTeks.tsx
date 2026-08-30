@@ -26,10 +26,12 @@ export function HalamanTeks({
     <main className="min-h-screen bg-white">
       <Penanda />
 
-      <div className="mx-auto max-w-2xl px-5 pb-20 pt-12">
-        <h1 className="text-3xl font-bold tracking-tight text-ink-950">{judul}</h1>
+      <div className="mx-auto max-w-2xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
+        <h1 className="text-[30px] font-bold leading-[1.15] tracking-[-0.03em] text-ink-950 sm:text-[38px]">
+          {judul}
+        </h1>
         {ringkas && (
-          <p className="mt-3 text-base leading-relaxed text-ink-600">{ringkas}</p>
+          <p className="mt-4 text-[17px] leading-relaxed text-ink-600">{ringkas}</p>
         )}
         <p className="mt-4 text-sm text-ink-500">
           Berlaku sejak {IDENTITAS.berlakuSejak}
@@ -84,16 +86,24 @@ export function Isi({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Kepala halaman sederhana: logo yang membawa pulang. */
+/**
+ * Kepala halaman sederhana: logo yang membawa pulang.
+ *
+ * Bentuknya sengaja SAMA PERSIS dengan kepala halaman jualan: menempel di
+ * atas, tinggi yang sama, tembus pandang sedikit, tombol hitam di kanan.
+ * Halaman ketentuan dan halaman jualan yang kepalanya berbeda bikin orang
+ * merasa berpindah ke situs lain tepat waktu dia sedang memeriksa apakah situs
+ * ini bisa dipercaya, dan itu waktu yang paling buruk untuk membuatnya ragu.
+ */
 export function Penanda() {
   return (
-    <header className="border-b border-ink-200">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+    <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/85 backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-5 sm:h-16 sm:px-8">
         <Link href="/" className="flex items-center gap-2">
           <LogoNama />
         </Link>
-        <Link href={keApp("/daftar")} className="btn-ghost">
-          Coba gratis
+        <Link href={keApp("/daftar")} className="btn-ink">
+          Mulai gratis
         </Link>
       </div>
     </header>
@@ -129,14 +139,14 @@ const TAUTAN: { judul: string; isi: { href: string; label: string }[] }[] = [
 
 export function KakiHalaman() {
   return (
-    <footer className="border-t border-ink-200 bg-ink-50">
+    <footer className="border-t border-ink-200 bg-white">
       {/* Di HP kolom tautannya berdua-dua, bukan bertiga ke bawah.
           Diukur di layar 375px: kaki halaman ini sendirian setinggi 848px,
           satu layar penuh berisi tautan yang hampir tidak pernah ditekan. Dua
           kolom memotongnya hampir separuh tanpa menghilangkan satu tautan pun,
           dan tautan hukum wajib tetap bisa ditemukan. */}
-      <div className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-4">
+      <div className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:gap-10 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
           <div className="col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2">
               <LogoNama />
@@ -145,24 +155,38 @@ export function KakiHalaman() {
                 dia mengisi kolom pertama yang memang kosong; di HP dia jadi
                 tiga baris tambahan di dasar halaman, menjelaskan lagi hal yang
                 baru saja dijelaskan seluruh halaman di atasnya. */}
-            <p className="mt-3 hidden max-w-xs text-sm leading-relaxed text-ink-600 sm:block">
-              Asisten WhatsApp yang membalas chat pelanggan dan mencatat calon
-              pembeli, buat usaha di Indonesia.
+            <p className="mt-4 hidden max-w-xs text-sm leading-relaxed text-ink-600 sm:block">
+              Sales WhatsApp yang membalas chat pelanggan 24 jam dan mencatat
+              calon pembeli, buat usaha di Indonesia.
+            </p>
+            {/* Alamat suratnya ditaruh di kaki halaman, bukan cuma di halaman
+                ketentuan. Orang yang menimbang membayar mencari tanda bahwa di
+                balik situs ini ada tempat yang bisa didatangi, dan dia
+                mencarinya di dasar halaman, bukan di dokumen hukum. */}
+            <p className="mt-4 hidden text-sm leading-relaxed text-ink-500 sm:block">
+              <a
+                href={`mailto:${IDENTITAS.email}`}
+                className="text-ink-600 hover:text-ink-900"
+              >
+                {IDENTITAS.email}
+              </a>
+              <br />
+              {IDENTITAS.jamLayanan}
             </p>
           </div>
 
           {TAUTAN.map((kolom) => (
             <div key={kolom.judul}>
-              <p className="text-sm font-semibold text-ink-900">{kolom.judul}</p>
+              <p className="kicker">{kolom.judul}</p>
               {/* space-y dilepas di HP: luas sentuhnya yang jadi jaraknya.
                   Tautan setinggi 19px itu separuh ujung jari, dan tiga tautan
                   hukum yang salah tekan bikin orang menyerah mencarinya. */}
-              <ul className="mt-1 text-sm sm:mt-3 sm:space-y-2">
+              <ul className="mt-2 text-sm sm:mt-4 sm:space-y-2.5">
                 {kolom.isi.map((t) => (
                   <li key={t.href}>
                     <Link
                       href={t.href}
-                      className="tap-aman py-1.5 text-ink-600 hover:text-ink-900 sm:py-0"
+                      className="tap-aman py-1.5 text-ink-600 transition hover:text-ink-900 sm:py-0"
                     >
                       {t.label}
                     </Link>
@@ -177,13 +201,13 @@ export function KakiHalaman() {
             sekitar 185 huruf per baris di layar 1280. Yang mahal bukan panjang
             kalimatnya, tapi lompatan balik matanya ke awal baris berikutnya,
             dan itu paling sering meleset ke baris yang salah. */}
-        <div className="mt-10 max-w-3xl space-y-2 border-t border-ink-200 pt-6 text-xs leading-relaxed text-ink-500 sm:mt-12">
+        <div className="mt-12 flex flex-col gap-3 border-t border-ink-200 pt-6 text-xs leading-relaxed text-ink-500 sm:mt-16 sm:flex-row sm:items-start sm:justify-between sm:gap-10">
           {/* Nama produk duluan, badan usahanya menyusul.
               Yang dikenali orang "Palwise", bukan nama PT-nya. Tapi badan
               usahanya tetap harus tertulis, karena dialah yang menandatangani
               ketentuan dan menerima pembayaran. */}
-          <p>
-            Palwise. Asisten WhatsApp untuk usaha di Indonesia.
+          <p className="max-w-sm">
+            Palwise. Sales WhatsApp untuk usaha di Indonesia.
             {IDENTITAS.dioperasikanOleh
               ? ` Dioperasikan oleh ${IDENTITAS.dioperasikanOleh}.`
               : ""}
@@ -192,7 +216,7 @@ export function KakiHalaman() {
               perangkat tertaut, bukan lewat kerja sama resmi dengan Meta.
               Menyamarkan itu bikin orang salah mengira ini produk resmi
               WhatsApp. */}
-          <p>
+          <p className="max-w-md sm:text-right">
             Palwise bukan produk resmi WhatsApp dan tidak berafiliasi dengan
             Meta. WhatsApp adalah merek dagang milik Meta Platforms, Inc.
           </p>

@@ -44,7 +44,20 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        // Nilai bawaan ditulis DI DALAM var(), bukan cuma sebagai daftar
+        // cadangan sesudahnya. Kalau --font-sans tidak terpasang, `var(...)`
+        // tanpa bawaan membuat SELURUH baris font-family tidak sah, jadi
+        // "system-ui, sans-serif" di belakangnya pun ikut hangus dan hurufnya
+        // jatuh ke Times bawaan browser. Gagalnya diam, dan yang kelihatan cuma
+        // situs yang tiba-tiba berhuruf kait.
+        sans: [
+          "var(--font-sans, ui-sans-serif)",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
       },
     },
   },

@@ -3,8 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  /* --font-sans SENGAJA TIDAK didefinisikan di sini.
+   *
+   * Dia diisi oleh next/font di layout.tsx, yang memasang peubahnya lewat
+   * class di <html>. Kalau ditulis juga di :root, dua aturan menempel di
+   * elemen yang sama dengan kekuatan yang sama, dan yang menang tinggal
+   * urutan berkas: hurufnya bisa terpasang di satu halaman dan tidak di
+   * halaman lain tanpa satu pun galat. Cadangannya ditulis di
+   * tailwind.config.ts sebagai nilai bawaan var(). */
 
   /* Gerak.
    *
@@ -34,6 +40,40 @@ body {
 
 body {
   @apply bg-ink-50 text-ink-900 antialiased;
+  /* Angka dengan lebar yang sama semua.
+   *
+   * Halaman ini penuh harga, jatah balasan, dan jam. Tanpa ini, "Rp 199.000"
+   * dan "Rp 499.000" punya lebar yang berbeda karena angka 1 lebih sempit
+   * daripada 4, jadi empat kartu harga yang berjajar tidak pernah benar-benar
+   * lurus. Bedanya kecil per angka dan langsung kelihatan waktu bertumpuk. */
+  font-variant-numeric: tabular-nums;
+  /* Huruf sambung bawaan (fi, fl) dimatikan di ukuran kecil supaya tidak ada
+   * pasangan huruf yang menempel jadi bentuk yang tidak dikenali. */
+  font-feature-settings: "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
+}
+
+/* Kotak fokus yang kelihatan, dan cuma waktu memang dibutuhkan.
+ *
+ * Tailwind preflight melepas garis fokus bawaan browser, dan kalau tidak ada
+ * gantinya, orang yang menjelajah pakai papan ketik (termasuk pembaca layar)
+ * kehilangan jejak posisinya sepenuhnya. `:focus-visible` cuma menyala waktu
+ * browser menyimpulkan orangnya memang memakai papan ketik, jadi klik tetikus
+ * tidak meninggalkan cincin yang mengganggu.
+ *
+ * Ini satu dari sedikit tempat biru boleh muncul tanpa diklik: dia menandai
+ * benda yang SEDANG siap diklik, jadi maksudnya sama. */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid theme("colors.brand.600");
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Sorotan teks ikut warnanya sendiri, bukan biru bawaan browser yang berbeda
+ * di tiap sistem. */
+::selection {
+  background: theme("colors.ink.900");
+  color: #fff;
 }
 
 @layer components {
@@ -96,6 +136,112 @@ body {
 
   .badge {
     @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+
+  /* ─── Halaman jualan ──────────────────────────────────────────────────────
+   *
+   * Yang di bawah ini dipakai di halaman depan, halaman panduan, dan halaman
+   * hukum, jadi tempatnya di sini, bukan diketik ulang sebagai kelas panjang
+   * di tiap berkas. Waktu masih diketik ulang, jarak antar bagian di halaman
+   * depan ada empat ukuran berbeda, dan mata membaca itu sebagai halaman yang
+   * disusun sepotong-sepotong. */
+
+  /* Tombol besar untuk ajakan utama. Sasaran yang lebih besar bukan cuma
+     gampang ditekan, dia juga yang memberi tahu mana tombol yang penting. */
+  .btn-besar {
+    @apply px-6 py-3 text-[15px] sm:text-base;
+  }
+
+  /* Label kecil di atas judul bagian.
+   *
+   * Gunanya memberi tahu pembaca dia sedang di bagian apa sebelum dia membaca
+   * judulnya, jadi halaman sepanjang ini bisa dipindai, bukan cuma dibaca
+   * lurus dari atas. Huruf besar semua boleh di sini karena ini penanda, satu
+   * atau dua kata, bukan kalimat. */
+  .kicker {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-500 sm:text-xs;
+  }
+
+  /* Judul bagian. Satu ukuran untuk semua bagian di halaman depan: judul yang
+     ukurannya berbeda-beda bikin bagian yang lebih besar terbaca lebih penting
+     padahal bukan. */
+  .judul-bagian {
+    /* text-balance: browsernya yang membagi rata panjang tiap baris, jadi
+       tidak ada judul yang baris terakhirnya berisi satu kata menggantung.
+       Satu kata sendirian di bawah judul dua baris terbaca seperti salah
+       ketik, dan itu berulang di sebelas bagian di halaman ini. */
+    @apply text-balance text-[24px] font-semibold leading-[1.2] tracking-[-0.02em] text-ink-950 sm:text-[34px] lg:text-[38px];
+  }
+
+  /* Kalimat pendukung di bawah judul bagian. Lebarnya dibatasi supaya barisnya
+     tidak lebih dari sekitar 75 huruf; lebih dari itu mata sering mendarat di
+     baris yang salah waktu kembali ke kiri. */
+  .teks-bagian {
+    @apply mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-600 sm:mt-4 sm:text-[17px];
+  }
+
+  /* Kartu yang bisa diklik atau yang isinya berdiri sendiri. Naik sedikit
+     waktu disentuh tetikus: gerakan sekecil itu tidak mengganggu bacaan, tapi
+     cukup memberi tahu bahwa bendanya hidup. */
+  .kartu-angkat {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:border-ink-300 hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)];
+  }
+}
+
+/* Bayangan gambar produk.
+ *
+ * Dua lapis, dan itu memang cara bayangan sungguhan bekerja: satu lapis rapat
+ * dan gelap tepat di bawah bendanya (kontak dengan alas), satu lapis lebar dan
+ * sangat samar (cahaya ruangan). Satu lapis besar saja selalu terbaca sebagai
+ * stiker yang ditempel, bukan sebagai benda yang berdiri di atas halaman. */
+.bayangan-produk {
+  box-shadow:
+    0 1px 2px rgba(15, 15, 15, 0.06),
+    0 2px 8px -2px rgba(15, 15, 15, 0.06),
+    0 24px 48px -24px rgba(15, 15, 15, 0.22);
+}
+
+/* Kisi tipis di latar hero.
+ *
+ * Hitam putih, tanpa setitik pun biru: birunya disimpan untuk hal yang bisa
+ * diklik. Kisinya dipudarkan ke tepi lewat mask supaya dia tidak pernah
+ * bertabrakan dengan garis batas bagian di bawahnya, dan supaya tidak ada
+ * garis yang berhenti mendadak di tengah layar.
+ *
+ * -webkit-mask ikut ditulis karena Safari lama belum mengenal `mask-image`
+ * tanpa awalan, dan tanpa itu kisinya tampil penuh sampai ke tepi. */
+.latar-kisi {
+  background-image:
+    linear-gradient(to right, theme("colors.ink.200") 1px, transparent 1px),
+    linear-gradient(to bottom, theme("colors.ink.200") 1px, transparent 1px);
+  background-size: 72px 72px;
+  -webkit-mask-image: radial-gradient(
+    60% 55% at 50% 32%,
+    #000 0%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(60% 55% at 50% 32%, #000 0%, transparent 100%);
+}
+
+/* Muncul waktu digulir sampai kelihatan.
+ *
+ * Dipagari @supports dengan sengaja. `animation-timeline` baru ada di Chrome
+ * dan Edge; di browser yang belum punya, aturan di dalam blok ini tidak pernah
+ * dibaca sama sekali, jadi isinya tampil biasa saja tanpa gerak. Kalau
+ * animasinya ditulis di luar pagar, browser tanpa dukungan akan
+ * menjalankannya berdasarkan WAKTU, artinya semua bagian di bawah lipatan
+ * selesai bergerak sebelum orangnya sempat menggulir ke sana, dan yang
+ * tersisa cuma halaman yang berkedip waktu dibuka.
+ *
+ * Yang dihormati lebih dulu tetap prefers-reduced-motion di bawah berkas ini. */
+@supports (animation-timeline: view()) {
+  .saat-terlihat {
+    animation: naik-muncul var(--gerak-pelan) var(--lengkung-masuk) both;
+    animation-timeline: view();
+    /* Mulai waktu bendanya masuk 8% dari bawah layar, selesai waktu dia sudah
+       naik 30%. Kalau selesainya di tengah layar, bagian yang tinggi baru
+       selesai bergerak setelah judulnya sudah lama terbaca. */
+    animation-range: entry 8% cover 30%;
   }
 }
 
