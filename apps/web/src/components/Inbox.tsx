@@ -452,7 +452,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
               lagi. */}
           <div
             key={detail.conversation.id}
-            className="anim-obrolan fixed inset-0 z-50 flex flex-col bg-ink-50 lg:static lg:z-auto lg:min-w-0 lg:flex-1"
+            className="anim-obrolan fixed inset-0 z-50 flex flex-col bg-white lg:static lg:z-auto lg:min-w-0 lg:flex-1"
           >
             <div className="flex items-center gap-2.5 border-b border-ink-200 bg-white px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5 lg:pt-2.5">
               {/* Kembali ke daftar. Cuma di HP; di layar lebar daftarnya tidak
@@ -468,9 +468,17 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                 </svg>
               </button>
 
-              <Avatar nama={detail.contact.name} ukuran={38} />
+              {/* Ketuk avatar/nama = buka profil pelanggannya, seperti aplikasi
+                  chat pada umumnya (di WhatsApp pun kepala obrolan yang diketuk
+                  membuka info kontak). Cuma bagian ini yang jadi tautan; tombol
+                  aksi di kanan tetap di luar. */}
+              <a
+                href={`/app/kontak/${detail.contact.id}`}
+                className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg transition hover:opacity-80"
+              >
+                <Avatar nama={detail.contact.name} ukuran={38} />
 
-              <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1">
                 <p className="truncate font-medium leading-tight text-ink-900">
                   {detail.contact.name}
                 </p>
@@ -501,7 +509,8 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                       )}
                   </div>
                 )}
-              </div>
+                </div>
+              </a>
 
               {/* Ambil alih (yang paling sering) tetap terlihat; sisanya di menu
                   titik-tiga supaya kepala obrolan tidak berdesakan di HP.
@@ -643,22 +652,25 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                     key={m.id}
                     className={`flex ${mine ? "justify-end" : "justify-start"}`}
                   >
-                    {/* Warnanya hitam putih, bukan biru.
-                        - Pelanggan (mereka): putih bertepi, di kiri.
-                        - Kita (kanan): gelap. Balasanmu sendiri paling gelap
-                          (ink-950), balasan asisten sedikit lebih muda (ink-800),
-                          jadi sekilas kelihatan mana yang kamu ketik dan mana
-                          yang asisten, diperkuat labelnya di bawah.
-                        Biru sengaja dilepas dari gelembung: dulu tiap balasan AI
-                        jadi bidang biru, padahal biru disimpan untuk hal yang
-                        bisa diklik. */}
+                    {/* Tiap gelembung harus BEDA dari latarnya, jadi tidak ada
+                        yang lebur.
+                        - Latar obrolan: putih.
+                        - Pelanggan (mereka, kiri): abu muda (ink-100). Dulu putih
+                          di atas latar putih, jadi tidak kelihatan sebagai
+                          gelembung sama sekali.
+                        - Kamu (kanan): BIRU, seperti pesanmu di aplikasi chat
+                          populer.
+                        - Asisten (kanan): gelap (ink-900).
+                        Biru cuma untuk pesanmu dan asisten yang gelap: sekilas
+                        langsung kelihatan mana yang kamu ketik sendiri dan mana
+                        yang dijawab asisten, diperkuat labelnya di bawah. */}
                     <div
                       className={`min-w-0 max-w-[78%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm sm:max-w-[70%] ${
                         m.role === "customer"
-                          ? "rounded-bl-sm border border-ink-200 bg-white text-ink-900"
+                          ? "rounded-bl-sm bg-ink-100 text-ink-900"
                           : m.role === "human"
-                            ? "rounded-br-sm bg-ink-950 text-white"
-                            : "rounded-br-sm bg-ink-800 text-white"
+                            ? "rounded-br-sm bg-brand-600 text-white"
+                            : "rounded-br-sm bg-ink-900 text-white"
                       }`}
                     >
                       {m.mediaUrl && m.mediaType === "image" && (
