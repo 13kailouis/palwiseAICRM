@@ -95,22 +95,31 @@ export function FormDuaKolom({
   return (
     <div className="mx-auto w-full max-w-5xl">
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
-        <div className="min-w-0 px-5 py-6 sm:px-6">{children}</div>
-        <aside className="px-5 pb-8 sm:px-6 lg:sticky lg:top-6 lg:pb-6 lg:pl-0 lg:pt-6">
+        {/* Panel bantuan ditaruh DULUAN di kode, tapi digeser ke kanan di
+            laptop pakai order. Gunanya: di HP dia muncul di ATAS formulir
+            (ringkas, bisa dibuka), bukan terdampar di paling bawah layar di
+            mana tidak ada yang menggulir sampai situ. Di laptop dia jadi kolom
+            kanan yang nempel. */}
+        <aside className="order-first px-5 pt-4 sm:px-6 lg:order-2 lg:sticky lg:top-6 lg:px-0 lg:pt-6">
           {bantuan}
         </aside>
+        <div className="min-w-0 px-5 py-6 sm:px-6 lg:order-1">{children}</div>
       </div>
     </div>
   );
 }
 
 /**
- * Isi panel bantuan: judul kecil, beberapa poin pendek, tautan opsional.
+ * Panel bantuan: judul, beberapa poin pendek, tautan opsional.
  *
- * Sengaja poin PENDEK. Panel ini tempat memindahkan penjelasan yang tadinya
- * numpuk di dalam formulir, bukan tempat menaruh paragraf baru. Kalau satu poin
- * butuh lebih dari dua baris, dia lebih cocok jadi detail yang bisa dibuka di
- * dekat kotak isiannya, bukan di sini.
+ * Dua wajah, sesuai layarnya:
+ * - Di HP jadi satu baris yang bisa dibuka (`<details>`), ditaruh di atas
+ *   formulir. Ringkas dulu, isinya keluar kalau memang mau dibaca. Layar HP
+ *   pendek, dan panel penuh yang selalu terbentang di situ cuma jadi tembok.
+ * - Di laptop jadi panel statis di kolom kanan, mengisi ruang yang dulu kosong.
+ *
+ * Poin sengaja PENDEK. Ini tempat memindahkan penjelasan yang tadinya numpuk di
+ * dalam formulir, bukan tempat menaruh paragraf baru.
  */
 export function PanelBantuan({
   judul,
@@ -121,10 +130,9 @@ export function PanelBantuan({
   poin: { ikon: NamaIkon; teks: React.ReactNode }[];
   tautan?: { href: string; label: string };
 }) {
-  return (
-    <div className="rounded-xl border border-ink-200 bg-ink-50 p-5">
-      <p className="text-sm font-semibold text-ink-900">{judul}</p>
-      <ul className="mt-3 space-y-3">
+  const daftar = (
+    <>
+      <ul className="space-y-3">
         {poin.map((p, i) => (
           <li key={i} className="flex gap-2.5">
             <span className="mt-0.5 shrink-0 text-ink-400">
@@ -145,7 +153,43 @@ export function PanelBantuan({
           <span aria-hidden>→</span>
         </Link>
       )}
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* HP: ringkas, bisa dibuka. */}
+      <details className="card group lg:hidden">
+        <summary className="tap-aman flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-ink-800">
+          {judul}
+          <span
+            className="shrink-0 text-ink-400 transition-transform group-open:rotate-180"
+            style={{ transitionDuration: "var(--gerak-cepat)" }}
+            aria-hidden="true"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </span>
+        </summary>
+        <div className="border-t border-ink-100 px-4 py-4">{daftar}</div>
+      </details>
+
+      {/* Laptop: panel statis di kolom kanan. */}
+      <div className="hidden rounded-xl border border-ink-200 bg-ink-50 p-5 lg:block">
+        <p className="text-sm font-semibold text-ink-900">{judul}</p>
+        <div className="mt-3">{daftar}</div>
+      </div>
+    </>
   );
 }
 

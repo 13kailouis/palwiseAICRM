@@ -62,14 +62,45 @@ export function PresetUsaha({ namaBisnis }: { namaBisnis: string }) {
   }
 
   return (
-    <section className="card-pad">
-      <h2 className="font-semibold text-ink-900">Mulai dari contoh</h2>
-      <p className="mb-5 mt-1 max-w-prose text-sm leading-relaxed text-ink-500">
-        Pilih yang paling dekat dengan usahamu, nanti semua kotak di halaman ini
-        terisi contoh yang masuk akal. Sesudah itu ubah sesukamu, ini cuma titik
-        mulai supaya kamu tidak menghadap kotak kosong.
-      </p>
+    /* Dilipat, dan tertutup dari awal.
+     *
+     * Dulu ini kartu besar terbuka dengan paragraf panjang, dan dia mendorong
+     * "Cara dia bicara" (bagian yang paling menentukan) jauh ke bawah, apalagi
+     * di HP. Isinya tetap penting buat pemakai baru yang menghadap kotak
+     * kosong, jadi tidak dibuang, cuma dilipat: satu baris ajakan yang jelas,
+     * dan begitu dibuka barulah pilihan bidang usahanya muncul. Yang sudah tahu
+     * mau nulis apa langsung lewat ke bawahnya. */
+    <details className="card group">
+      <summary className="tap-aman flex cursor-pointer list-none items-center justify-between gap-3 p-4 sm:p-5">
+        <span className="min-w-0">
+          <span className="block font-semibold text-ink-900">
+            Mulai dari contoh
+          </span>
+          <span className="mt-0.5 block text-sm text-ink-500">
+            Baru pertama? Isi semua kotak otomatis sesuai jenis usahamu.
+          </span>
+        </span>
+        <span
+          className="shrink-0 text-ink-400 transition-transform group-open:rotate-180"
+          style={{ transitionDuration: "var(--gerak-cepat)" }}
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </span>
+      </summary>
 
+      <div className="border-t border-ink-100 p-4 sm:p-5">
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {PRESET.map((p) => (
           <button
@@ -108,7 +139,8 @@ export function PresetUsaha({ namaBisnis }: { namaBisnis: string }) {
             " Bagian yang sekarang mati belum ikut terisi. Nyalakan dulu bagiannya, lalu tekan tombol ini lagi."}
         </p>
       )}
-    </section>
+      </div>
+    </details>
   );
 }
 

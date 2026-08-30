@@ -275,6 +275,25 @@ body {
   select {
     min-height: 44px;
   }
+
+  /* iOS memperbesar layar sendiri waktu jari menyentuh kotak isian yang
+   * hurufnya di bawah 16px. Yang terjadi di iPhone: tiap ketuk kotak apa pun,
+   * halamannya meloncat membesar, dan orangnya harus mengecilkan lagi tiap
+   * kali. Itu bukan pilihan yang bisa dimatikan lewat viewport tanpa juga
+   * melarang orang memperbesar sendiri (buruk untuk yang matanya kurang awas),
+   * jadi jalan yang benar menaikkan hurufnya jadi tepat 16px di layar sentuh.
+   *
+   * Ditulis dengan kelasnya (.input dst.), bukan cuma elemennya, supaya menang
+   * atas ukuran huruf yang dipasang di @layer components. Tampilan di layar
+   * lebar tidak berubah, ini cuma berlaku di layar kecil dan sentuh. */
+  .input,
+  .textarea,
+  .textarea-prosa,
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
 
 /* ─── Gerak ─────────────────────────────────────────────────────────────────
