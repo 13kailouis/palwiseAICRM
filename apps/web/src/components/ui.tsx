@@ -16,6 +16,26 @@ export const KOLOM_SEMPIT = "mx-auto w-full max-w-3xl px-5 sm:px-6";
  */
 export const KOLOM_FORM = "mx-auto w-full max-w-5xl px-5 sm:px-6";
 
+/**
+ * Avatar inisial, digambar sendiri, dipakai bersama (kotak masuk + profil).
+ *
+ * Inisial dalam lingkaran netral, bukan warna acak per orang (warna acak
+ * menarik mata ke hiasan, padahal yang penting namanya) dan bukan foto orang
+ * asing. Sama seperti aplikasi chat yang orang pakai tiap hari.
+ */
+export function Avatar({ nama, ukuran = 40 }: { nama: string; ukuran?: number }) {
+  const inisial = (nama.trim()[0] ?? "?").toUpperCase();
+  return (
+    <span
+      aria-hidden
+      className="grid shrink-0 place-items-center rounded-full bg-ink-100 font-semibold text-ink-600"
+      style={{ height: ukuran, width: ukuran, fontSize: ukuran * 0.42 }}
+    >
+      {inisial}
+    </span>
+  );
+}
+
 export function PageHeader({
   title,
   description,

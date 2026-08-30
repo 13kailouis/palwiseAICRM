@@ -2,38 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RingkasanAI } from "@/components/RingkasanAI";
-import { formatJanji } from "@/components/ui";
+import { Avatar, formatJanji } from "@/components/ui";
 import { InfoTip } from "@/components/InfoTip";
 import { Ikon } from "@/components/Ikon";
 import { tampilanRasa } from "@/lib/rasa";
-
-/**
- * Avatar inisial, digambar sendiri.
- *
- * Foto pelanggan tidak pernah ada di WhatsApp lewat jalur ini, jadi yang paling
- * dikenali orang justru inisial dalam lingkaran, sama seperti aplikasi chat
- * yang mereka pakai tiap hari. Warnanya netral (abu di atas abu muda), bukan
- * warna acak per orang: warna acak menarik mata ke hiasan, padahal yang penting
- * namanya, bukan warnanya.
- */
-function Avatar({
-  nama,
-  ukuran = 40,
-}: {
-  nama: string;
-  ukuran?: number;
-}) {
-  const inisial = (nama.trim()[0] ?? "?").toUpperCase();
-  return (
-    <span
-      aria-hidden
-      className="grid shrink-0 place-items-center rounded-full bg-ink-100 font-semibold text-ink-600"
-      style={{ height: ukuran, width: ukuran, fontSize: ukuran * 0.42 }}
-    >
-      {inisial}
-    </span>
-  );
-}
 
 /** Tiga titik "sedang diketik". Warnanya ikut warna teks induknya. */
 function TitikKetik() {

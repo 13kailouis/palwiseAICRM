@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { displayName, parseJsonArray } from "@palwise/db";
-import { formatJanji, formatWaktu } from "@/components/ui";
+import { Avatar, formatJanji, formatWaktu } from "@/components/ui";
 import { updateContactAction } from "@/app/actions/contact";
 
 /**
@@ -47,14 +47,20 @@ export function KontakKartu({
 
   return (
     <div className="px-4 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href={`/app/kontak/${contact.id}`}
-            className="block truncate font-medium text-ink-900"
-          >
-            {displayName(contact)}
-          </Link>
+      <div className="flex items-start gap-3">
+        <Avatar nama={displayName(contact)} ukuran={44} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <Link
+              href={`/app/kontak/${contact.id}`}
+              className="truncate font-medium text-ink-900"
+            >
+              {displayName(contact)}
+            </Link>
+            <span className="shrink-0 text-[11px] text-ink-400">
+              {formatWaktu(obrolan?.lastMessageAt ?? contact.updatedAt)}
+            </span>
+          </div>
           <p className="mt-0.5 truncate text-xs text-ink-500">
             {contact.phone ??
               (contact.waJid?.endsWith("@lid")
@@ -62,9 +68,6 @@ export function KontakKartu({
                 : "nomor tidak diketahui")}
           </p>
         </div>
-        <span className="shrink-0 text-[11px] text-ink-400">
-          {formatWaktu(obrolan?.lastMessageAt ?? contact.updatedAt)}
-        </span>
       </div>
 
       {contact.janjiPada && contact.janjiPada.getTime() > Date.now() && (

@@ -7,6 +7,7 @@ import {
 } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
 import {
+  Avatar,
   PageHeader,
   formatJanji,
   formatWaktu,
@@ -190,22 +191,38 @@ export default async function KontakPage({
           </Link>
         )}
 
-        {/* Ringkasan pipeline */}
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {STAGES.map((s) => (
-            <Link
-              key={s}
-              href={stage === s ? "/app/kontak" : `/app/kontak?stage=${s}`}
-              className={`card px-4 py-3 transition hover:border-brand-400 ${
-                stage === s ? "border-brand-500 ring-1 ring-brand-500" : ""
-              }`}
-            >
-              <p className="text-xs capitalize text-ink-500">{s}</p>
-              <p className="mt-0.5 text-xl font-semibold text-ink-950">
-                {countFor(s)}
-              </p>
-            </Link>
-          ))}
+        {/* Saringan tahap: satu baris pil yang bisa digeser, bukan enam kartu
+            bertumpuk. Dulu di HP enam kartu penuh ke bawah memakan hampir satu
+            layar sebelum daftar pelanggannya kelihatan. Pil rapat menaruh
+            semuanya dalam satu baris; kalau tidak muat, digeser (bukan
+            dibungkus). Tiap pil sekaligus saringannya, dengan jumlahnya di
+            ujung. */}
+        <div className="thin-scroll -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+          {[{ id: "", label: "Semua", n: total }, ...STAGES.map((s) => ({ id: s, label: s, n: countFor(s) }))].map(
+            (t) => {
+              const aktif = t.id ? stage === t.id : !stage;
+              return (
+                <Link
+                  key={t.id || "semua"}
+                  href={t.id ? `/app/kontak?stage=${t.id}` : "/app/kontak"}
+                  className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2 text-sm capitalize transition ${
+                    aktif
+                      ? "bg-ink-900 font-medium text-white"
+                      : "border border-ink-200 text-ink-700 hover:bg-ink-50"
+                  }`}
+                >
+                  {t.label}
+                  <span
+                    className={`text-xs tabular-nums ${
+                      aktif ? "text-white/60" : "text-ink-400"
+                    }`}
+                  >
+                    {t.n}
+                  </span>
+                </Link>
+              );
+            },
+          )}
         </div>
 
         <form className="flex gap-2">
@@ -213,14 +230,14 @@ export default async function KontakPage({
           <input
             name="q"
             defaultValue={q ?? ""}
-            className="input max-w-xs"
+            className="input flex-1 sm:max-w-sm"
             placeholder="Cari nama, nomor, catatan, atau isi janjinya"
           />
-          <button className="btn-ghost" type="submit">
+          <button className="btn-ink shrink-0" type="submit">
             Cari
           </button>
           {(q || stage) && (
-            <Link href="/app/kontak" className="btn-ghost">
+            <Link href="/app/kontak" className="btn-ghost shrink-0">
               Reset
             </Link>
           )}
@@ -284,6 +301,9 @@ export default async function KontakPage({
                     return (
                       <tr key={c.id} className="hover:bg-ink-50/60">
                         <td className="px-4 py-3">
+                          <div className="flex items-start gap-3">
+                            <Avatar nama={displayName(c)} ukuran={38} />
+                            <div className="min-w-0 flex-1">
                           <Link
                             href={`/app/kontak/${c.id}`}
                             className="font-medium text-ink-900 hover:text-brand-700 hover:underline"
@@ -334,6 +354,8 @@ export default async function KontakPage({
                               </div>
                             </div>
                           )}
+                            </div>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-ink-600">
                           {c.phone ? (

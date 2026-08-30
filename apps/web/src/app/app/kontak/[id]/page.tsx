@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { displayName, parseJsonArray, prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
 import {
-  PageHeader,
+  Avatar,
+  StageBadge,
   formatJanji,
   formatWaktu,
   menggantung,
   untukIsianWaktu,
 } from "@/components/ui";
+import { Ikon } from "@/components/Ikon";
 import { deleteContactAction, updateContactAction } from "@/app/actions/contact";
 import { TombolHapus } from "@/components/TombolHapus";
 import { RingkasanKontak } from "@/components/RingkasanKontak";
@@ -142,30 +144,43 @@ export default async function KontakDetailPage({
 
   return (
     <>
-      <PageHeader
-        title={displayName(contact)}
-        description={
-          contact.phone ??
-          (contact.waJid?.endsWith("@lid")
-            ? "nomor disembunyikan WhatsApp"
-            : "nomor tidak diketahui")
-        }
-        action={
-          <div className="flex flex-wrap items-center gap-3">
+      {/* Kepala profil: identitas orangnya, seperti layar kontak di aplikasi
+          chat. Avatar + nama + nomor + lencana tahap. Dulu cuma PageHeader
+          teks polos; avatar dan lencana tahap membuatnya langsung terbaca
+          sebagai PROFIL seseorang, bukan sekadar judul halaman. */}
+      <div className="anim-muncul border-b border-ink-200 bg-white px-4 py-5 sm:px-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3.5">
+            <Avatar nama={displayName(contact)} ukuran={56} />
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-ink-950">
+                {displayName(contact)}
+              </h1>
+              <p className="truncate text-sm text-ink-500">
+                {contact.phone ??
+                  (contact.waJid?.endsWith("@lid")
+                    ? "nomor disembunyikan WhatsApp"
+                    : "nomor tidak diketahui")}
+              </p>
+              <div className="mt-1.5">
+                <StageBadge stage={contact.stage} />
+              </div>
+            </div>
+          </div>
+          {/* Hitam, bukan biru: biru disimpan untuk tombol yang MENYELESAIKAN
+              tujuan halaman ini (membetulkan data orangnya), bukan pindah layar. */}
+          <div className="flex shrink-0 items-center gap-2">
             <Link href="/app/kontak" className="btn-ghost">
               Semua pelanggan
             </Link>
-            {/* Hitam, bukan biru. Biru disimpan untuk tombol yang
-                MENYELESAIKAN tujuan halaman ini, dan tujuan halaman ini
-                membetulkan data orangnya, bukan pindah ke layar lain. */}
             {obrolan && (
               <Link href={`/app/inbox?c=${obrolan.id}`} className="btn-ink">
                 Buka obrolan
               </Link>
             )}
           </div>
-        }
-      />
+        </div>
+      </div>
 
       <div className="space-y-5 p-4 sm:p-6">
         {/* Keluhan paling atas, mendahului apa pun.
@@ -273,7 +288,8 @@ export default async function KontakDetailPage({
             </div>
 
             <div className="card-pad">
-              <h2 className="text-sm font-semibold text-ink-900">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-900">
+                <Ikon nama="chat" size={16} className="text-ink-400" />
                 Perjalanan perasaannya
               </h2>
               <p className="mt-1 text-xs leading-relaxed text-ink-500">
@@ -283,7 +299,8 @@ export default async function KontakDetailPage({
             </div>
 
             <div className="card-pad">
-              <h2 className="text-sm font-semibold text-ink-900">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-900">
+                <Ikon nama="gambar" size={16} className="text-ink-400" />
                 Lampiran {totalLampiran > 0 && `(${totalLampiran})`}
               </h2>
               {totalLampiran > lampiran.length && (
@@ -327,7 +344,7 @@ export default async function KontakDetailPage({
             </div>
 
             <div className="card-pad">
-              <h2 className="text-sm font-semibold text-ink-900">Riwayat</h2>
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-900"><Ikon nama="jam" size={16} className="text-ink-400" />Riwayat</h2>
               <dl className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div>
                   <dt className="text-xs text-ink-500">Pertama chat</dt>
@@ -357,7 +374,7 @@ export default async function KontakDetailPage({
 
           <div className="space-y-5">
             <div className="card-pad">
-              <h2 className="text-sm font-semibold text-ink-900">Tahap</h2>
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-900"><Ikon nama="catat" size={16} className="text-ink-400" />Tahap</h2>
               <form
                 action={updateContactAction}
                 className="mt-3 flex flex-wrap items-center gap-2"
@@ -402,7 +419,7 @@ export default async function KontakDetailPage({
                 salah dengar. */}
             <form action={updateContactAction} className="card-pad space-y-4">
               <input type="hidden" name="id" value={contact.id} />
-              <h2 className="text-sm font-semibold text-ink-900">Janji temu</h2>
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-900"><Ikon nama="kalender" size={16} className="text-ink-400" />Janji temu</h2>
 
               <div>
                 <label className="text-xs text-ink-500" htmlFor="janjiPada">
@@ -453,7 +470,7 @@ export default async function KontakDetailPage({
                 tengah jalan. */}
             <form action={updateContactAction} className="card-pad space-y-4">
               <input type="hidden" name="id" value={contact.id} />
-              <h2 className="text-sm font-semibold text-ink-900">Data pelanggan</h2>
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-900"><Ikon nama="pelanggan" size={16} className="text-ink-400" />Data pelanggan</h2>
 
               <div>
                 <label className="text-xs text-ink-500" htmlFor="nama">
