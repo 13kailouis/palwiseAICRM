@@ -5440,11 +5440,17 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // tablet dia hilang seluruhnya, dan tanpa jalan pengganti itu berarti
     // orang yang membalas dari HP kehilangan semua yang sudah dikumpulkan
     // sistem tentang lawan bicaranya.
+    //
+    // Sejak kotak masuk dirombak 30 Agustus 2026, jalan penggantinya BUKAN lagi
+    // baris "Lihat profil" yang xl:hidden, tapi menu titik-tiga di kepala
+    // obrolan yang tampil di SEMUA ukuran layar. Yang dijaga tetap sama: dari
+    // dalam obrolan, di HP sekalipun, harus ada tautan ke halaman profilnya.
     check(
       "profil pelanggan tetap bisa dibuka dari HP dan tablet",
-      /xl:hidden[\s\S]{0,400}\/app\/kontak\/\$\{detail\.contact\.id\}/.test(
-        kotakMasuk,
-      ),
+      /aria-label="Menu obrolan"/.test(kotakMasuk) &&
+        /\/app\/kontak\/\$\{detail\.contact\.id\}[\s\S]{0,600}Lihat profil/.test(
+          kotakMasuk,
+        ),
     );
 
     // Layar pengaturan tidak boleh menutup fiturnya buat usaha jasa.

@@ -332,6 +332,35 @@ body {
   }
 }
 
+/* Obrolan yang dibuka: naik sedikit sambil memunculkan diri, seperti layar
+ * yang mendarat. Dipakai waktu satu percakapan dipilih, dan di HP waktu layar
+ * penuh obrolannya masuk. */
+@keyframes obrolan-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Tiga titik "sedang mengetik". Naik-turun bergiliran, bukan berkedip
+ * bersamaan, supaya terbaca sebagai gerakan hidup, bukan lampu rusak. */
+@keyframes titik-ketik {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
 .anim-naik {
   animation: naik-muncul var(--gerak) var(--lengkung-masuk) both;
 }
@@ -340,6 +369,26 @@ body {
 }
 .anim-laci {
   animation: geser-masuk-kiri var(--gerak) var(--lengkung-masuk) both;
+}
+.anim-obrolan {
+  animation: obrolan-masuk var(--gerak-pelan) var(--lengkung-masuk) both;
+}
+
+/* Tiga titik mengetik. Tiap titik telat 160 ms dari sebelumnya, jadi
+ * gelombangnya berjalan dari kiri ke kanan. */
+.titik-ketik span {
+  display: inline-block;
+  height: 6px;
+  width: 6px;
+  border-radius: 9999px;
+  background-color: currentColor;
+  animation: titik-ketik 1.2s ease-in-out infinite;
+}
+.titik-ketik span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.titik-ketik span:nth-child(3) {
+  animation-delay: 0.32s;
 }
 
 /* Berurutan, bukan barengan.

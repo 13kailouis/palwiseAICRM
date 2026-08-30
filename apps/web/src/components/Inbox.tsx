@@ -4,7 +4,47 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { RingkasanAI } from "@/components/RingkasanAI";
 import { formatJanji } from "@/components/ui";
 import { InfoTip } from "@/components/InfoTip";
+import { Ikon } from "@/components/Ikon";
 import { tampilanRasa } from "@/lib/rasa";
+
+/**
+ * Avatar inisial, digambar sendiri.
+ *
+ * Foto pelanggan tidak pernah ada di WhatsApp lewat jalur ini, jadi yang paling
+ * dikenali orang justru inisial dalam lingkaran, sama seperti aplikasi chat
+ * yang mereka pakai tiap hari. Warnanya netral (abu di atas abu muda), bukan
+ * warna acak per orang: warna acak menarik mata ke hiasan, padahal yang penting
+ * namanya, bukan warnanya.
+ */
+function Avatar({
+  nama,
+  ukuran = 40,
+}: {
+  nama: string;
+  ukuran?: number;
+}) {
+  const inisial = (nama.trim()[0] ?? "?").toUpperCase();
+  return (
+    <span
+      aria-hidden
+      className="grid shrink-0 place-items-center rounded-full bg-ink-100 font-semibold text-ink-600"
+      style={{ height: ukuran, width: ukuran, fontSize: ukuran * 0.42 }}
+    >
+      {inisial}
+    </span>
+  );
+}
+
+/** Tiga titik "sedang diketik". Warnanya ikut warna teks induknya. */
+function TitikKetik() {
+  return (
+    <span className="titik-ketik inline-flex items-center gap-1">
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
 
 interface ConvSummary {
   id: string;
@@ -131,6 +171,9 @@ export function Inbox({ initialId }: { initialId: string | null }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Menu titik-tiga di kepala obrolan (HP dan desktop sama), supaya tombol
+  // aksi yang jarang dipakai tidak berdesakan dengan nama di layar sempit.
+  const [aksiTerbuka, setAksiTerbuka] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastCount = useRef(0);
 
@@ -314,10 +357,17 @@ export function Inbox({ initialId }: { initialId: string | null }) {
               <button
                 key={c.id}
                 onClick={() => setSelectedId(c.id)}
-                className={`w-full border-b border-ink-100 px-4 py-3 text-left transition ${
-                  selectedId === c.id ? "bg-brand-50/70" : "hover:bg-ink-50"
+                className={`relative flex w-full gap-3 border-b border-ink-100 px-4 py-3 text-left transition ${
+                  selectedId === c.id ? "bg-ink-100" : "hover:bg-ink-50"
                 }`}
               >
+                {/* Garis penanda di tepi kiri waktu terpilih. Cuma di layar
+                    lebar, tempat daftarnya berdampingan dengan obrolannya. */}
+                {selectedId === c.id && (
+                  <span className="absolute inset-y-0 left-0 hidden w-0.5 bg-ink-900 lg:block" />
+                )}
+                <Avatar nama={c.name} />
+                <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="truncate text-sm font-medium text-ink-900">
                     {c.name}
@@ -363,6 +413,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                     {c.rasaAlasan}
                   </p>
                 )}
+                </div>
               </button>
             ))
           )}
@@ -376,26 +427,42 @@ export function Inbox({ initialId }: { initialId: string | null }) {
         </div>
       ) : (
         <>
-          <div className="flex min-w-0 flex-1 flex-col bg-ink-50">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-200 bg-white px-4 py-3 sm:px-5">
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                {/* Kembali ke daftar. Cuma ada di HP, karena di layar lebar
-                    daftarnya tidak pernah hilang. */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(null)}
-                  aria-label="Kembali ke daftar obrolan"
-                  className="-ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-600 active:bg-ink-100 lg:hidden"
-                >
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 5l-7 7 7 7" />
-                  </svg>
-                </button>
-                <div className="min-w-0">
-                <p className="truncate font-medium text-ink-900">
+          {/* Di HP satu obrolan itu LAYAR PENUH yang menutupi bar menu bawah.
+
+              `fixed inset-0 z-50` menutupi kepala halaman dan bar menu, jadi
+              tinggi layar penuh jadi milik obrolannya, sama seperti membuka satu
+              chat di WhatsApp. Bar menu tidak perlu di sini: yang lagi di dalam
+              obrolan tidak sedang berpindah halaman, dia sedang membalas.
+              Tombol kembali di kepala obrolan yang menutupnya lagi.
+
+              Di layar lebar (lg) dia balik jadi panel biasa di sebelah daftar.
+              key-nya id percakapan, jadi tiap pindah obrolan animasinya main
+              lagi. */}
+          <div
+            key={detail.conversation.id}
+            className="anim-obrolan fixed inset-0 z-50 flex flex-col bg-ink-50 lg:static lg:z-auto lg:min-w-0 lg:flex-1"
+          >
+            <div className="flex items-center gap-2.5 border-b border-ink-200 bg-white px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5 lg:pt-2.5">
+              {/* Kembali ke daftar. Cuma di HP; di layar lebar daftarnya tidak
+                  pernah hilang. */}
+              <button
+                type="button"
+                onClick={() => setSelectedId(null)}
+                aria-label="Kembali ke daftar obrolan"
+                className="-ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-600 transition active:bg-ink-100 lg:hidden"
+              >
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 5l-7 7 7 7" />
+                </svg>
+              </button>
+
+              <Avatar nama={detail.contact.name} ukuran={38} />
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium leading-tight text-ink-900">
                   {detail.contact.name}
                 </p>
-                <p className="truncate text-xs text-ink-500">
+                <p className="truncate text-xs leading-tight text-ink-500">
                   {detail.conversation.isPlayground
                     ? "Ruang coba, bukan WhatsApp beneran"
                     : (detail.contact.phone ?? "tanpa nomor")}
@@ -403,61 +470,102 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                     !detail.conversation.channelConnected &&
                     " · nomornya lagi tidak nyambung"}
                 </p>
-
-                {/* Jalan menuju profil, khusus layar di bawah xl.
-
-                    Panel kanan yang memuat ringkasan, lampiran, janji temu,
-                    dan tautan profil baru muncul di 1280px ke atas. Di HP dan
-                    tablet dia hilang seluruhnya, dan dulu itu berarti tidak ada
-                    satu pun jalan dari obrolan menuju profil pelanggannya.
-                    Orang yang membalas dari HP kehilangan semua yang sudah
-                    dikumpulkan sistem tentang lawan bicaranya. */}
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 xl:hidden">
-                  <a
-                    href={`/app/kontak/${detail.contact.id}`}
-                    className="tap-aman text-xs font-medium text-brand-700"
-                  >
-                    Lihat profil
-                  </a>
-                  {detail.contact.masalah && (
-                    <span className="badge bg-red-50 text-red-700">
-                      ada keluhan
-                    </span>
-                  )}
-                  {detail.contact.janjiPada &&
-                    new Date(detail.contact.janjiPada).getTime() > Date.now() && (
-                      <span className="badge bg-brand-50 text-brand-700">
-                        {formatJanji(detail.contact.janjiPada)}
+                {/* Konteks cepat (keluhan / janji) cuma muncul kalau memang ada,
+                    dan disembunyikan di xl karena panel kanan sudah memuatnya. */}
+                {(detail.contact.masalah ||
+                  (detail.contact.janjiPada &&
+                    new Date(detail.contact.janjiPada).getTime() > Date.now())) && (
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 xl:hidden">
+                    {detail.contact.masalah && (
+                      <span className="badge bg-red-50 text-red-700">
+                        ada keluhan
                       </span>
                     )}
-                </div>
-                </div>
+                    {detail.contact.janjiPada &&
+                      new Date(detail.contact.janjiPada).getTime() > Date.now() && (
+                        <span className="badge bg-brand-50 text-brand-700">
+                          {formatJanji(detail.contact.janjiPada)}
+                        </span>
+                      )}
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Ambil alih (yang paling sering) tetap terlihat; sisanya di menu
+                  titik-tiga supaya kepala obrolan tidak berdesakan di HP.
+                  Labelnya dipendekkan ("Saya balas" / "Ke asisten") supaya muat
+                  di layar sempit tanpa mendorong nama pelanggannya. */}
+              <button
+                onClick={() =>
+                  updateSettings({ aiEnabled: !detail.conversation.aiEnabled })
+                }
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  detail.conversation.aiEnabled
+                    ? "border border-ink-200 text-ink-700 hover:bg-ink-50"
+                    : "bg-brand-600 text-white hover:bg-brand-700"
+                }`}
+              >
+                {detail.conversation.aiEnabled ? "Saya balas" : "Ke asisten"}
+              </button>
+
+              <div className="relative shrink-0">
                 <button
-                  onClick={() =>
-                    updateSettings({ aiEnabled: !detail.conversation.aiEnabled })
-                  }
-                  className={
-                    detail.conversation.aiEnabled ? "btn-ghost" : "btn-primary"
-                  }
+                  type="button"
+                  onClick={() => setAksiTerbuka((v) => !v)}
+                  aria-label="Menu obrolan"
+                  aria-expanded={aksiTerbuka}
+                  className="grid h-9 w-9 place-items-center rounded-lg text-ink-500 transition hover:bg-ink-100 hover:text-ink-800"
                 >
-                  {detail.conversation.aiEnabled
-                    ? "Saya yang balas"
-                    : "Balik ke asisten"}
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                    <circle cx="12" cy="5" r="1.6" />
+                    <circle cx="12" cy="12" r="1.6" />
+                    <circle cx="12" cy="19" r="1.6" />
+                  </svg>
                 </button>
-                <button
-                  onClick={() =>
-                    updateSettings({
-                      status:
-                        detail.conversation.status === "open" ? "resolved" : "open",
-                    })
-                  }
-                  className="btn-ghost"
-                >
-                  {detail.conversation.status === "open" ? "Sudah beres" : "Buka lagi"}
-                </button>
+                {aksiTerbuka && (
+                  <>
+                    {/* Sekali klik di luar menutupnya. */}
+                    <span
+                      aria-hidden
+                      onClick={() => setAksiTerbuka(false)}
+                      className="fixed inset-0 z-40"
+                    />
+                    <div className="anim-naik absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-xl border border-ink-200 bg-white py-1 shadow-[0_8px_24px_-8px_rgba(15,15,15,0.25)]">
+                      <button
+                        onClick={() => {
+                          setAksiTerbuka(false);
+                          updateSettings({
+                            status:
+                              detail.conversation.status === "open"
+                                ? "resolved"
+                                : "open",
+                          });
+                        }}
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-700 hover:bg-ink-50"
+                      >
+                        <Ikon
+                          nama="centang"
+                          size={16}
+                          className="shrink-0 text-ink-500"
+                        />
+                        {detail.conversation.status === "open"
+                          ? "Tandai sudah beres"
+                          : "Buka lagi"}
+                      </button>
+                      <a
+                        href={`/app/kontak/${detail.contact.id}`}
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-700 hover:bg-ink-50"
+                      >
+                        <Ikon
+                          nama="pelanggan"
+                          size={16}
+                          className="shrink-0 text-ink-500"
+                        />
+                        Lihat profil
+                      </a>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -514,13 +622,22 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                     key={m.id}
                     className={`flex ${mine ? "justify-end" : "justify-start"}`}
                   >
+                    {/* Warnanya hitam putih, bukan biru.
+                        - Pelanggan (mereka): putih bertepi, di kiri.
+                        - Kita (kanan): gelap. Balasanmu sendiri paling gelap
+                          (ink-950), balasan asisten sedikit lebih muda (ink-800),
+                          jadi sekilas kelihatan mana yang kamu ketik dan mana
+                          yang asisten, diperkuat labelnya di bawah.
+                        Biru sengaja dilepas dari gelembung: dulu tiap balasan AI
+                        jadi bidang biru, padahal biru disimpan untuk hal yang
+                        bisa diklik. */}
                     <div
-                      className={`min-w-0 max-w-[70%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+                      className={`min-w-0 max-w-[78%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm sm:max-w-[70%] ${
                         m.role === "customer"
                           ? "rounded-bl-sm border border-ink-200 bg-white text-ink-900"
                           : m.role === "human"
-                            ? "rounded-br-sm bg-ink-800 text-white"
-                            : "rounded-br-sm bg-brand-600 text-white"
+                            ? "rounded-br-sm bg-ink-950 text-white"
+                            : "rounded-br-sm bg-ink-800 text-white"
                       }`}
                     >
                       {m.mediaUrl && m.mediaType === "image" && (
@@ -579,12 +696,25 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                   </div>
                 );
               })}
+              {/* "Sedang mengirim" sebagai gelembung titik di sisi kita,
+                  muncul sesaat sesudah tombol kirim ditekan. Kecil, hidup,
+                  tidak mengganggu. */}
+              {sending && (
+                <div className="flex justify-end">
+                  <div className="rounded-2xl rounded-br-sm bg-ink-950 px-4 py-3 text-white/80 shadow-sm">
+                    <TitikKetik />
+                  </div>
+                </div>
+              )}
               <div ref={bottomRef} />
             </div>
 
-            <div className="border-t border-ink-200 bg-white p-4">
+            {/* Kotak tulis. Di HP menempel di dasar layar penuh (jarak aman
+                iPhone dihormati), tombol kirim jadi lingkaran berikon supaya
+                hemat lebar dan langsung terbaca sebagai "kirim". */}
+            <div className="border-t border-ink-200 bg-white px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5">
               {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
-              <div className="flex gap-2">
+              <div className="flex items-end gap-2">
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
@@ -594,21 +724,26 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                       send();
                     }
                   }}
-                  rows={2}
-                  placeholder="Ketik balasan. Enter untuk kirim, Shift+Enter buat ganti baris."
-                  className="input resize-none"
+                  rows={1}
+                  placeholder="Ketik balasan"
+                  className="input max-h-32 min-h-[44px] flex-1 resize-none py-2.5"
                 />
                 <button
                   onClick={send}
                   disabled={sending || !draft.trim()}
-                  className="btn-primary self-end"
+                  aria-label="Kirim"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-600 text-white transition hover:bg-brand-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-ink-200 disabled:text-ink-400"
                 >
-                  Kirim
+                  <Ikon nama="kirim" size={19} />
                 </button>
               </div>
-              <p className="mt-2 text-xs text-ink-500">
-                Begitu kamu ikut balas, asisten langsung berhenti di obrolan ini.
-              </p>
+              {/* Cuma diperlihatkan selama asisten masih yang membalas; begitu
+                  kamu sudah ambil alih, kalimat ini tidak berlaku lagi. */}
+              {detail.conversation.aiEnabled && (
+                <p className="mt-2 text-[11px] leading-relaxed text-ink-500">
+                  Begitu kamu ikut balas, asisten langsung berhenti di obrolan ini.
+                </p>
+              )}
             </div>
           </div>
 
