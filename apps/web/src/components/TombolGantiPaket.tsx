@@ -45,6 +45,7 @@ export function TombolGantiPaket({
   planId,
   label,
   akibat = [],
+  turun = false,
 }: {
   action: (state: PlanState, formData: FormData) => Promise<PlanState>;
   planId: string;
@@ -55,6 +56,10 @@ export function TombolGantiPaket({
    * tidak ada yang hilang.
    */
   akibat?: string[];
+  /** Paket tujuannya lebih murah dari yang sekarang: ini turun, bukan beli.
+   *  Cuma mengubah kata-kata konfirmasinya biar jelas dijadwalkan, tidak
+   *  menagih sekarang. */
+  turun?: boolean;
 }) {
   const [state, formAction] = useActionState(action, {} as PlanState);
   const [tanya, setTanya] = useState(false);
@@ -101,7 +106,9 @@ export function TombolGantiPaket({
     <form action={formAction} className={bungkus}>
       <input type="hidden" name="plan" value={planId} />
       <div className="rounded-lg bg-amber-50 px-3 py-2.5 text-left text-xs leading-relaxed text-amber-900">
-        <p className="font-semibold">Yang berubah kalau pindah ke sini:</p>
+        <p className="font-semibold">
+          {turun ? "Kalau turun ke sini:" : "Yang berubah kalau pindah ke sini:"}
+        </p>
         <ul className="mt-1.5 space-y-1">
           {akibat.map((a) => (
             <li key={a} className="flex gap-1.5">
@@ -120,7 +127,7 @@ export function TombolGantiPaket({
           Batal
         </button>
         <div className="flex-1">
-          <Submit label="Ya, pindah" />
+          <Submit label={turun ? "Ya, jadwalkan" : "Ya, pindah"} />
         </div>
       </div>
       {state?.error && <Galat pesan={state.error} />}

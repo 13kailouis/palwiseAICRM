@@ -367,11 +367,23 @@ export default async function TagihanPage({
               const aktifLama =
                 current && berbayar && langganan.aktif && !langganan.segeraHabis;
 
+              // Paket yang lebih murah dari yang sekarang itu TURUN, bukan beli.
+              //
+              // Dulu tombolnya "Ambil Growth · Rp 499.000" padahal orangnya di
+              // Pro: kata "Ambil" plus harga terbaca seperti dia harus MEMBAYAR
+              // Rp 499.000 untuk pindah ke paket yang lebih murah, kebalikan dari
+              // yang terjadi. Turun paket dijadwalkan di akhir periode dan tidak
+              // menagih apa pun sekarang (lihat changePlanAction). Jadi labelnya
+              // "Turun ke X" tanpa harga, seperti app langganan pada umumnya.
+              const turun = p.pricePerMonth < plan.pricePerMonth;
+
               const label = current
                 ? `Perpanjang ${p.name}`
-                : berbayar
-                  ? `Ambil ${p.name} · ${formatIDR(p.pricePerMonth)}`
-                  : `Pindah ke ${p.name}`;
+                : turun
+                  ? `Turun ke ${p.name}`
+                  : berbayar
+                    ? `Ambil ${p.name} · ${formatIDR(p.pricePerMonth)}`
+                    : `Pindah ke ${p.name}`;
 
               return (
                 <div
@@ -499,6 +511,7 @@ export default async function TagihanPage({
                       action={changePlanAction}
                       planId={p.id}
                       label={label}
+                      turun={turun}
                       // Dua sumber, dan dua-duanya perlu.
                       //
                       // kalauAkibat menghitung apa yang HILANG dari pemakaian
