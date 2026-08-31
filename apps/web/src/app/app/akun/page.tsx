@@ -1,6 +1,7 @@
 import { prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
 import { FormDuaKolom, KOLOM_FORM, PageHeader, PanelBantuan } from "@/components/ui";
+import { Ikon } from "@/components/Ikon";
 import {
   GantiEmailForm,
   GantiSandiForm,
@@ -47,11 +48,16 @@ export default async function AkunPage() {
         <div className="space-y-6">
         <div className="card-pad">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm text-ink-500">Email kamu</p>
-              <p className="mt-1 truncate text-lg font-medium text-ink-950">
-                {baris.email}
-              </p>
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink-100 text-ink-600">
+                <Ikon nama="amplop" size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm text-ink-500">Email kamu</p>
+                <p className="mt-0.5 truncate text-lg font-medium text-ink-950">
+                  {baris.email}
+                </p>
+              </div>
             </div>
             <span
               className={`badge ${
@@ -88,7 +94,10 @@ export default async function AkunPage() {
         </div>
 
         <div className="card-pad">
-          <h2 className="font-semibold text-ink-900">Ganti email</h2>
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="amplop" size={16} className="text-ink-400" />
+            Ganti email
+          </h2>
           <p className="mb-5 mt-1 text-sm text-ink-500">
             Alamat lama akan dikabari kalau ini terjadi.
           </p>
@@ -96,7 +105,10 @@ export default async function AkunPage() {
         </div>
 
         <div className="card-pad">
-          <h2 className="font-semibold text-ink-900">Ganti password</h2>
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="gembok" size={16} className="text-ink-400" />
+            Ganti password
+          </h2>
           <p className="mb-5 mt-1 text-sm text-ink-500">
             Perangkat lain yang masih terbuka akan diminta masuk ulang. Perangkat
             ini tidak.

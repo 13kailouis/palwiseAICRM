@@ -52,7 +52,9 @@ export type NamaIkon =
   | "silang"
   | "berkas"
   | "website"
-  | "salin";
+  | "salin"
+  | "amplop"
+  | "gembok";
 
 const GAMBAR: Record<NamaIkon, React.ReactNode> = {
   // Bidang-bidang halaman, cara paling umum menggambarkan "ringkasan".
@@ -327,6 +329,23 @@ const GAMBAR: Record<NamaIkon, React.ReactNode> = {
     <>
       <rect x="9" y="9" width="11.5" height="11.5" rx="2.5" />
       <path d="M5.5 15H5a2 2 0 0 1-2-2V5.5A2.5 2.5 0 0 1 5.5 3H13a2 2 0 0 1 2 2v.5" />
+    </>
+  ),
+
+  // Amplop: badan surat plus lipatan "V" di atas. Untuk hal-hal soal email.
+  amplop: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3.5 7l8.5 6 8.5-6" />
+    </>
+  ),
+  // Gembok: badan kotak, sengkang melengkung di atas, plus lubang kunci kecil.
+  // Untuk hal-hal soal password.
+  gembok: (
+    <>
+      <rect x="4.5" y="10.5" width="15" height="9.5" rx="2" />
+      <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+      <circle cx="12" cy="15" r="1.2" />
     </>
   ),
 
