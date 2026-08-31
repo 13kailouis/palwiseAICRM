@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Ikon } from "@/components/Ikon";
 
 interface Status {
   status: string;
@@ -21,7 +22,10 @@ const STEPS = [
 const LABEL: Record<string, { text: string; className: string }> = {
   connected: { text: "Aktif", className: "bg-brand-50 text-brand-700" },
   connecting: { text: "Lagi nyambung", className: "bg-amber-50 text-amber-700" },
-  qr: { text: "Tunggu di-scan", className: "bg-blue-50 text-blue-700" },
+  // "Tunggu di-scan" itu keadaan menunggu, sama keluarga dengan "Lagi
+  // nyambung", jadi ikut amber. Dulu biru bawaan Tailwind (bukan biru merek),
+  // jadi terbaca seperti warna asing yang tidak ada di halaman lain.
+  qr: { text: "Tunggu di-scan", className: "bg-amber-50 text-amber-700" },
   logged_out: { text: "Dicabut dari HP", className: "bg-red-50 text-red-700" },
   disconnected: { text: "Belum nyambung", className: "bg-ink-100 text-ink-600" },
 };
@@ -51,6 +55,7 @@ export function WhatsAppConnect({
   });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [konfirmCabut, setKonfirmCabut] = useState(false);
   const prevStatus = useRef(initialStatus);
 
   const refresh = useCallback(async () => {
@@ -145,42 +150,70 @@ export function WhatsAppConnect({
 
       <div className="p-5">
         {connected ? (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-50 text-brand-600">
-                ✓
-              </span>
-              <div>
-                <p className="font-medium text-ink-900">Nomor ini sudah jalan</p>
-                <p className="text-sm text-ink-500">
-                  Chat yang masuk ke sini otomatis dibalas.
-                </p>
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600">
+                  <Ikon nama="centang" size={20} />
+                </span>
+                <div>
+                  <p className="font-medium text-ink-900">Nomor ini sudah jalan</p>
+                  <p className="text-sm text-ink-500">
+                    Chat yang masuk ke sini otomatis dibalas.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button className="btn-ghost" disabled={busy} onClick={() => post("stop")}>
+                  Matikan sementara
+                </button>
+                <button
+                  className="btn-danger"
+                  disabled={busy}
+                  onClick={() => setKonfirmCabut(true)}
+                >
+                  Cabut nomor
+                </button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button className="btn-ghost" disabled={busy} onClick={() => post("stop")}>
-                Matikan sementara
-              </button>
-              <button
-                className="btn-danger"
-                disabled={busy}
-                onClick={() => {
-                  if (
-                    confirm(
-                      "Cabut nomor ini dari Palwise? Nanti kamu perlu scan QR lagi kalau mau pakai.",
-                    )
-                  ) {
-                    post("stop", { logout: true });
-                  }
-                }}
-              >
-                Cabut nomor
-              </button>
-            </div>
+
+            {/* Konfirmasi di tempat, bukan kotak bawaan browser: dia bisa
+                diblokir, dan tidak bisa menjelaskan akibatnya sepelan ini. */}
+            {konfirmCabut && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                <p className="text-sm leading-relaxed text-red-900">
+                  Cabut nomor ini dari Palwise? Chat yang masuk berhenti dibalas,
+                  dan kamu perlu scan QR lagi kalau mau memakainya. Riwayat
+                  obrolannya tetap tersimpan.
+                </p>
+                <div className="mt-2.5 flex gap-2">
+                  <button
+                    className="btn-danger px-3 py-1.5 text-xs"
+                    disabled={busy}
+                    onClick={() => {
+                      setKonfirmCabut(false);
+                      post("stop", { logout: true });
+                    }}
+                  >
+                    Ya, cabut
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-xs text-ink-700 hover:bg-ink-50"
+                    onClick={() => setKonfirmCabut(false)}
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="grid gap-8 md:grid-cols-[260px_minmax(0,1fr)]">
-            <div className="grid aspect-square place-items-center rounded-xl border border-ink-200 bg-ink-50">
+          <div className="grid gap-6 md:grid-cols-[260px_minmax(0,1fr)] md:gap-8">
+            {/* Di HP kotaknya dibatasi 240px dan ditaruh di tengah. Tanpa itu
+                dia jadi persegi selebar layar, dan waktu QR-nya belum muncul
+                yang kelihatan cuma satu kotak kosong raksasa. */}
+            <div className="mx-auto grid aspect-square w-full max-w-[240px] place-items-center rounded-xl border border-ink-200 bg-ink-50 md:mx-0 md:max-w-none">
               {showingQr ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
