@@ -17,6 +17,7 @@ import {
   formatJanji,
   formatWaktu,
 } from "@/components/ui";
+import { Ikon } from "@/components/Ikon";
 import { SpandukTutup } from "@/components/SpandukTutup";
 
 export const dynamic = "force-dynamic";
@@ -195,13 +196,13 @@ export default async function DashboardPage() {
                     }`}
                   >
                     <span
-                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] ${
+                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${
                         s.done
                           ? "bg-brand-600 text-white"
-                          : "border border-ink-300 text-transparent"
+                          : "border-2 border-ink-300"
                       }`}
                     >
-                      ✓
+                      {s.done && <Ikon nama="centang" size={12} />}
                     </span>
                     <span className={s.done ? "line-through" : "font-medium text-ink-800"}>
                       {s.label}
@@ -271,21 +272,38 @@ export default async function DashboardPage() {
           </SpandukTutup>
         )}
 
-        <div className="anim-urut grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Dua kolom di HP, bukan satu.
+
+            Empat kartu yang menumpuk ke bawah di layar 360px itu empat layar
+            penuh yang harus digulir cuma untuk empat angka. Dijejer dua-dua
+            (2x2) tingginya jadi separuh, dan angka-angka yang memang saling
+            dibandingkan (balasan vs obrolan, nunggu vs total) berdiri
+            bersebelahan, bukan berjauhan. */}
+        <div className="anim-urut grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {/* "Balasan", bukan "Chat dibalas". Satuannya harus sama persis
               dengan kartu jatah, karena dua angka bersatuan beda di satu layar
               bikin orang mengira salah satunya bohong. */}
           <Stat
             label="Balasan minggu ini"
             value={balasanMingguIni.toLocaleString("id-ID")}
+            ikon="kirim"
           />
-          <Stat label="Obrolan yang masih jalan" value={openConvs} />
+          <Stat label="Obrolan yang masih jalan" value={openConvs} ikon="chat" />
+          {/* Satu-satunya kartu yang bisa ditindaklanjuti, jadi dia yang
+              dinyalakan dan dijadikan tautan langsung ke kotak masuk. */}
           <Stat
             label="Nunggu kamu balas"
             value={needsHuman}
+            ikon="kendali"
+            nyala={needsHuman > 0}
             sub={needsHuman > 0 ? "Cek sekarang" : "Aman, tidak ada"}
+            href={needsHuman > 0 ? "/app/inbox" : undefined}
           />
-          <Stat label="Total pelanggan" value={contacts.toLocaleString("id-ID")} />
+          <Stat
+            label="Total pelanggan"
+            value={contacts.toLocaleString("id-ID")}
+            ikon="pelanggan"
+          />
         </div>
 
         {/* Janji temu.
@@ -297,7 +315,8 @@ export default async function DashboardPage() {
         {janji.length > 0 && (
           <div className="anim-urut card-pad">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-semibold text-ink-900">
+              <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+                <Ikon nama="kalender" size={16} className="text-ink-400" />
                 Janji temu{totalJanji > janji.length && ` (${totalJanji})`}
               </h2>
               {totalJanji > janji.length ? (
@@ -378,7 +397,10 @@ export default async function DashboardPage() {
         <div className="anim-urut grid gap-6 lg:grid-cols-3">
           <div className="card-pad lg:col-span-2">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-ink-900">Obrolan terbaru</h2>
+              <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+                <Ikon nama="chat" size={16} className="text-ink-400" />
+                Obrolan terbaru
+              </h2>
               <Link
                 href="/app/inbox"
                 className="tap-aman text-sm text-brand-700 hover:underline"
@@ -426,7 +448,10 @@ export default async function DashboardPage() {
 
           <div className="space-y-6">
             <div className="card-pad">
-              <h2 className="font-semibold text-ink-900">Pemakaian bulan ini</h2>
+              <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+                <Ikon nama="paket" size={16} className="text-ink-400" />
+                Pemakaian bulan ini
+              </h2>
               <p className="mt-3 text-sm text-ink-600">
                 <span className="text-2xl font-semibold text-ink-950">
                   {terpakai.toLocaleString("id-ID")}
@@ -454,7 +479,10 @@ export default async function DashboardPage() {
             </div>
 
             <div className="card-pad">
-              <h2 className="font-semibold text-ink-900">Nomor WhatsApp</h2>
+              <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+                <Ikon nama="whatsapp" size={16} className="text-ink-400" />
+                Nomor WhatsApp
+              </h2>
               <ul className="mt-3 space-y-3">
                 {channels.length === 0 && (
                   <li className="text-sm text-ink-500">Belum ada nomor.</li>

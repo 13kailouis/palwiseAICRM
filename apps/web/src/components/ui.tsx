@@ -217,20 +217,61 @@ export function Stat({
   label,
   value,
   sub,
+  ikon,
+  href,
+  nyala = false,
 }: {
   label: string;
   value: string | number;
   sub?: string;
+  ikon?: NamaIkon;
+  /** Kalau diisi, seluruh kartunya jadi tautan. */
+  href?: string;
+  /** Tandai kartu yang butuh perhatian (mis. ada yang nunggu dibalas): tepi
+   *  dan lambangnya jadi amber supaya matanya berhenti di sana lebih dulu. */
+  nyala?: boolean;
 }) {
-  return (
-    <div className="card-pad">
-      <p className="text-sm text-ink-500">{label}</p>
-      <p className="mt-1.5 text-2xl font-semibold tracking-tight text-ink-950">
+  const isi = (
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[13px] leading-snug text-ink-500">{label}</p>
+        {ikon && (
+          <span
+            className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
+              nyala ? "bg-amber-100 text-amber-700" : "bg-ink-100 text-ink-500"
+            }`}
+          >
+            <Ikon nama={ikon} size={15} />
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-[26px] font-semibold leading-none tracking-tight tabular-nums text-ink-950">
         {value}
       </p>
-      {sub && <p className="mt-1 text-xs text-ink-500">{sub}</p>}
-    </div>
+      {sub && (
+        <p
+          className={`mt-1.5 text-xs ${
+            nyala ? "font-medium text-amber-700" : "text-ink-500"
+          }`}
+        >
+          {sub}
+        </p>
+      )}
+    </>
   );
+
+  const kelas = `card p-4 ${nyala ? "border-amber-200" : ""}`;
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={`${kelas} block transition hover:border-ink-300`}
+      >
+        {isi}
+      </Link>
+    );
+  }
+  return <div className={kelas}>{isi}</div>;
 }
 
 export function EmptyState({
