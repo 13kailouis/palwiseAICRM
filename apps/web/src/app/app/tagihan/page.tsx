@@ -49,6 +49,15 @@ const LABEL_STATUS: Record<string, string> = {
   [BAYAR_DIKEMBALIKAN]: "Dikembalikan",
 };
 
+// Palet dijaga: lunas = biru merek (beres), menunggu = amber, gagal/kembali =
+// netral. Tidak ada hijau (hijau khusus "hemat") dan tidak ada biru bawaan.
+const GAYA_STATUS: Record<string, string> = {
+  [BAYAR_LUNAS]: "bg-brand-50 text-brand-700",
+  [BAYAR_MENUNGGU]: "bg-amber-50 text-amber-700",
+  [BAYAR_GAGAL]: "bg-ink-100 text-ink-500",
+  [BAYAR_DIKEMBALIKAN]: "bg-ink-100 text-ink-600",
+};
+
 export default async function TagihanPage({
   searchParams,
 }: {
@@ -167,7 +176,10 @@ export default async function TagihanPage({
         <div className="card-pad">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-sm text-ink-500">Paket aktif</p>
+              <p className="flex items-center gap-1.5 text-sm text-ink-500">
+                <Ikon nama="paket" size={14} className="text-ink-400" />
+                Paket aktif
+              </p>
               <p className="mt-1 text-2xl font-semibold tracking-tight">
                 {plan.name}{" "}
                 <span className="text-base font-normal text-ink-500">
@@ -300,8 +312,11 @@ export default async function TagihanPage({
         />
 
         <div>
-          <h2 className="font-semibold text-ink-900">Ganti paket</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="paket" size={16} className="text-ink-400" />
+            Ganti paket
+          </h2>
+          <div className="anim-urut mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {SEMUA_PAKET.map((p) => {
               const current = p.id === plan.id;
               const berbayar = p.pricePerMonth > 0;
@@ -558,8 +573,16 @@ export default async function TagihanPage({
             memuat yang berhasil bikin percakapan itu jadi saling menebak. */}
         {riwayat.length > 0 && (
           <div>
-            <h2 className="font-semibold text-ink-900">Riwayat pembayaran</h2>
-            <div className="card mt-4 overflow-x-auto">
+            <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+              <Ikon nama="jam" size={16} className="text-ink-400" />
+              Riwayat pembayaran
+            </h2>
+
+            {/* Tabel di layar lebar, baris ringkas di HP.
+                Tabel empat kolom di layar 375px memaksa geser ke samping cuma
+                untuk membaca satu baris. Di HP tiap pembayaran jadi satu kartu
+                kecil: tanggal + status di atas, paket + jumlah di bawah. */}
+            <div className="card mt-4 hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-ink-100 text-left text-xs text-ink-500">
@@ -584,14 +607,46 @@ export default async function TagihanPage({
                       <td className="whitespace-nowrap px-4 py-2.5 text-ink-900">
                         {p.jumlah === 0 ? "Gratis" : formatIDR(p.jumlah)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-ink-700">
-                        {LABEL_STATUS[p.status] ?? p.status}
+                      <td className="whitespace-nowrap px-4 py-2.5">
+                        <span
+                          className={`badge ${GAYA_STATUS[p.status] ?? "bg-ink-100 text-ink-600"}`}
+                        >
+                          {LABEL_STATUS[p.status] ?? p.status}
+                        </span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            <ul className="card mt-4 divide-y divide-ink-100 md:hidden">
+              {riwayat.map((p) => (
+                <li key={p.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink-900">
+                      {getPlan(p.planId).name}
+                      {p.sumber === SUMBER_BULAN_GRATIS && (
+                        <span className="font-normal text-ink-500"> · bulan gratis</span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs text-ink-500">
+                      {tanggalIndo(p.createdAt)}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-medium text-ink-900">
+                      {p.jumlah === 0 ? "Gratis" : formatIDR(p.jumlah)}
+                    </p>
+                    <span
+                      className={`badge mt-1 ${GAYA_STATUS[p.status] ?? "bg-ink-100 text-ink-600"}`}
+                    >
+                      {LABEL_STATUS[p.status] ?? p.status}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
             <p className="mt-3 text-xs leading-relaxed text-ink-500">
               Butuh bukti bayar resmi atau minta uang kembali? Aturannya ada di{" "}
               <Link href="/pengembalian" className="text-brand-600 hover:underline">
