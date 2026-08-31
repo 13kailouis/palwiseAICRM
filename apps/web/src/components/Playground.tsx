@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { tampilanRasa } from "@/lib/rasa";
+import { Ikon } from "@/components/Ikon";
+import { Avatar } from "@/components/ui";
 
 interface Bubble {
   from: "customer" | "ai" | "error" | "berkas";
@@ -115,36 +117,58 @@ export function Playground({
           jadi kolom ketiknya terdorong keluar layar dan orang tidak menemukan
           tempat mengetik. Di HP tingginya ikut layar, dikurangi kepala halaman
           dan bar bawah. */}
-      <div className="card flex h-[calc(100dvh-260px)] min-h-[380px] flex-col overflow-hidden lg:h-[600px]">
-        <div className="flex items-center justify-between border-b border-ink-200 px-4 py-3 sm:px-5">
-          <div>
-            <p className="text-sm font-medium text-ink-900">{agentName}</p>
-            <p className="text-xs text-ink-500">Pura-pura chat WhatsApp</p>
+      <div className="card flex h-[calc(100dvh-230px)] min-h-[380px] flex-col overflow-hidden lg:h-[600px]">
+        <div className="flex items-center justify-between gap-3 border-b border-ink-200 px-4 py-2.5 sm:px-5">
+          <div className="flex items-center gap-2.5">
+            <Avatar nama={agentName} ukuran={38} />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-ink-900">
+                {agentName}
+              </p>
+              <p className="flex items-center gap-1.5 text-xs text-ink-500">
+                {/* Titik kecil "hidup", penanda pura-pura seperti status online
+                    di app chat. */}
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+                Pura-pura chat WhatsApp
+              </p>
+            </div>
           </div>
-          <button onClick={reset} disabled={busy} className="btn-ghost px-3 py-1.5 text-xs">
+          <button
+            onClick={reset}
+            disabled={busy}
+            className="btn-ghost shrink-0 px-3 py-1.5 text-xs"
+          >
             Mulai dari awal
           </button>
         </div>
 
-        <div className="thin-scroll min-h-0 flex-1 space-y-3 overflow-y-auto bg-ink-50 px-5 py-5">
+        <div className="thin-scroll min-h-0 flex-1 space-y-3 overflow-y-auto bg-ink-50 px-4 py-5 sm:px-5">
           {chat.length === 0 && (
-            <p className="py-10 text-center text-sm text-ink-500">
-              Coba tanya seperti pelanggan beneran, lihat jawabannya pas atau tidak.
-            </p>
+            <div className="grid h-full place-items-center px-6 text-center">
+              <div className="max-w-xs">
+                <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white text-ink-400 shadow-sm ring-1 ring-ink-200">
+                  <Ikon nama="coba" size={22} />
+                </span>
+                <p className="mt-3 text-sm leading-relaxed text-ink-500">
+                  Tulis seperti pelanggan beneran, lihat jawabannya pas atau
+                  tidak. Yang kamu ketik di sini tidak dikirim ke siapa pun.
+                </p>
+              </div>
+            </div>
           )}
           {chat.map((b, i) => (
             <div
               key={i}
-              className={`flex ${b.from === "customer" ? "justify-end" : "justify-start"}`}
+              className={`anim-naik flex ${b.from === "customer" ? "justify-end" : "justify-start"}`}
               title={b.from === "berkas" ? "Di WhatsApp ini terkirim sebagai lampiran" : undefined}
             >
               <div
-                className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+                className={`max-w-[78%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
                   b.from === "customer"
-                    ? "rounded-br-sm bg-brand-600 text-white"
+                    ? "rounded-br-md bg-brand-600 text-white"
                     : b.from === "error"
-                      ? "rounded-bl-sm border border-red-200 bg-red-50 text-red-700"
-                      : "rounded-bl-sm border border-ink-200 bg-white text-ink-900"
+                      ? "rounded-bl-md border border-red-200 bg-red-50 text-red-700"
+                      : "rounded-bl-md bg-white text-ink-900 shadow-sm ring-1 ring-ink-200/70"
                 }`}
               >
                 {b.from === "berkas" && b.fileName && (
@@ -168,38 +192,65 @@ export function Playground({
             </div>
           ))}
           {busy && (
-            <div className="flex justify-start">
-              <div className="rounded-2xl rounded-bl-sm border border-ink-200 bg-white px-4 py-2.5 text-sm text-ink-400">
-                sedang mengetik
+            <div className="anim-naik flex justify-start">
+              <div className="titik-ketik rounded-2xl rounded-bl-md bg-white px-4 py-3 text-ink-400 shadow-sm ring-1 ring-ink-200/70">
+                <span />
+                <span />
+                <span />
               </div>
             </div>
           )}
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t border-ink-200 p-4">
-          <div className="flex gap-2">
+        {/* Contoh pertanyaan tepat di atas kotak ketik, khusus HP.
+
+            Di layar lebar contoh ada di panel kanan yang selalu kelihatan. Di
+            HP panel itu jatuh JAUH di bawah kotak obrolan, jadi orang tidak
+            pernah sampai ke sana. Dijadikan satu baris yang bisa digeser tepat
+            di atas tempat mengetik, dia selalu terjangkau jempol. */}
+        <div className="thin-scroll flex gap-2 overflow-x-auto border-t border-ink-100 px-4 py-2.5 lg:hidden">
+          {CONTOH.map((c) => (
+            <button
+              key={c}
+              onClick={() => send(c)}
+              disabled={busy}
+              className="shrink-0 whitespace-nowrap rounded-full border border-ink-200 px-3 py-1.5 text-xs text-ink-700 transition active:bg-ink-100 disabled:opacity-50"
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <div className="border-t border-ink-200 p-3 sm:p-4">
+          <div className="flex items-center gap-2">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send(draft)}
               placeholder="Tulis pesan seolah kamu pelanggan"
-              className="input"
+              className="input flex-1"
             />
             <button
               onClick={() => send(draft)}
               disabled={busy || !draft.trim()}
-              className="btn-primary"
+              aria-label="Kirim"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-40"
             >
-              Kirim
+              <Ikon nama="kirim" size={19} />
             </button>
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        <div className="card-pad">
-          <h3 className="text-sm font-semibold text-ink-900">Coba tanya ini</h3>
+        {/* Di HP contoh sudah jadi baris di atas kotak ketik, jadi panel ini
+            khusus layar lebar biar tidak dobel. */}
+        <div className="card-pad hidden lg:block">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-ink-900">
+            <Ikon nama="coba" size={15} className="text-ink-400" />
+            Coba tanya ini
+          </h3>
           <div className="mt-3 space-y-2">
             {CONTOH.map((c) => (
               <button
@@ -221,7 +272,10 @@ export function Playground({
             sungguhan. */}
         {rasa && (
           <div className="card-pad">
-            <h3 className="text-sm font-semibold text-ink-900">Dia baca apa</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-ink-900">
+              <Ikon nama="sapa" size={15} className="text-ink-400" />
+              Dia baca apa
+            </h3>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {(() => {
@@ -275,7 +329,10 @@ export function Playground({
 
         {(meta.knowledgeUsed !== undefined || meta.handoff) && (
           <div className="card-pad">
-            <h3 className="text-sm font-semibold text-ink-900">Jawaban barusan</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-ink-900">
+              <Ikon nama="ringkasan" size={15} className="text-ink-400" />
+              Jawaban barusan
+            </h3>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="text-ink-500">Ngambil dari info kamu</dt>
