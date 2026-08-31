@@ -263,14 +263,9 @@ export default async function KontakPage({
               {/* HP: kartu. Tabel tujuh kolom di layar 375px memaksa orang
                   menggeser ke samping, dan begitu digeser dia kehilangan kolom
                   nama yang jadi patokannya. */}
-              <div className="divide-y divide-ink-100 md:hidden">
+              <div className="anim-urut divide-y divide-ink-100 md:hidden">
                 {contacts.map((c) => (
-                  <KontakKartu
-                    key={c.id}
-                    contact={c}
-                    tahapan={STAGES}
-                    menggantung={menggantung}
-                  />
+                  <KontakKartu key={c.id} contact={c} menggantung={menggantung} />
                 ))}
               </div>
 

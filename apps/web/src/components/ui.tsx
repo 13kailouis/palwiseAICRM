@@ -300,12 +300,17 @@ export function EmptyState({
   );
 }
 
+// Palet dijaga: ink, biru merek, amber, merah. Tidak ada biru bawaan Tailwind
+// dan tidak ada ungu (dulu tertarik pakai blue-50 dan closing pakai violet-50,
+// dua warna asing yang tidak muncul di layar lain). Corongnya terbaca lewat
+// kedalaman: netral (baru) → biru (tertarik) → amber makin pekat (negosiasi,
+// closing) → hitam "selesai" → merah "batal".
 const STAGE_STYLES: Record<string, string> = {
-  baru: "bg-ink-100 text-ink-700",
-  tertarik: "bg-blue-50 text-blue-700",
+  baru: "bg-ink-100 text-ink-600",
+  tertarik: "bg-brand-50 text-brand-700",
   negosiasi: "bg-amber-50 text-amber-700",
-  closing: "bg-violet-50 text-violet-700",
-  selesai: "bg-brand-50 text-brand-700",
+  closing: "bg-amber-100 text-amber-800",
+  selesai: "bg-ink-900 text-white",
   batal: "bg-red-50 text-red-700",
 };
 
@@ -320,7 +325,7 @@ export function StageBadge({ stage }: { stage: string }) {
 const CHANNEL_STATUS: Record<string, { label: string; className: string }> = {
   connected: { label: "Aktif", className: "bg-brand-50 text-brand-700" },
   connecting: { label: "Lagi nyambung", className: "bg-amber-50 text-amber-700" },
-  qr: { label: "Tunggu di-scan", className: "bg-blue-50 text-blue-700" },
+  qr: { label: "Tunggu di-scan", className: "bg-amber-50 text-amber-700" },
   logged_out: { label: "Dicabut dari HP", className: "bg-red-50 text-red-700" },
   disconnected: { label: "Belum nyambung", className: "bg-ink-100 text-ink-600" },
 };
