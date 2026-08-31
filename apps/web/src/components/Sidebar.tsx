@@ -137,10 +137,27 @@ export function Sidebar({
           onClick={togel}
           title="Lebarkan menu"
           aria-label="Lebarkan menu"
-          className="grid h-16 w-full shrink-0 place-items-center border-b border-ink-800 transition hover:bg-ink-900"
+          className="group grid h-16 w-full shrink-0 place-items-center border-b border-ink-800 transition hover:bg-ink-900"
           style={{ transitionDuration: "var(--gerak-cepat)" }}
         >
-          <Logo ukuran={28} />
+          {/* Diam: logo (merek tetap kelihatan). Diarahkan kursor: berubah jadi
+              panah lebarkan, jadi jelas logonya bisa diklik untuk membuka menu,
+              bukan cuma hiasan. Dua-duanya di sel grid yang sama, gantian. */}
+          <Logo ukuran={28} className="group-hover:hidden" />
+          <svg
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="hidden text-white group-hover:block"
+            aria-hidden="true"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </button>
       ) : (
         <div className="flex h-16 shrink-0 items-center gap-2 border-b border-ink-800 px-4">
