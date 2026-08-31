@@ -75,3 +75,26 @@ export const MENU_BAWAH: Menu[] = [
 export function sedangDibuka(href: string, pathname: string): boolean {
   return href === "/app" ? pathname === "/app" : pathname.startsWith(href);
 }
+
+/**
+ * Halaman "sekunder" di HP: yang dibuka dari tombol Menu, bukan salah satu dari
+ * empat tab utama di bar bawah. Di HP halaman ini jadi layar dorongan ala app
+ * (tombol kembali di atas, tanpa bar bawah), bukan tab yang setara.
+ *
+ * Empat tab utama (Ringkasan, Chat, Pelanggan, Asisten) tetap punya bar bawah
+ * supaya pindah antar yang dibuka tiap hari cukup satu ketuk.
+ */
+export function halamanSekunder(pathname: string): boolean {
+  if (!pathname.startsWith("/app")) return false;
+  return !MENU_BAWAH.some((m) => sedangDibuka(m.href, pathname));
+}
+
+/** Judul halaman yang sedang dibuka, buat kepala layar dorongan di HP. Ambil
+ *  menu dengan href terpanjang yang cocok, supaya /app/knowledge tidak kalah
+ *  oleh /app (Ringkasan) yang juga awalan semua halaman. */
+export function judulHalaman(pathname: string): string | null {
+  const cocok = [...SEMUA_MENU]
+    .filter((m) => sedangDibuka(m.href, pathname))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+  return cocok?.label ?? null;
+}

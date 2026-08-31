@@ -139,11 +139,16 @@ function KnowledgeItem({ source }: { source: KnowledgeItemData }) {
             </span>
           </span>
 
-          <span className="mt-2 block font-medium text-ink-900">
+          {/* line-clamp memakai display:-webkit-box; menambah "block" di
+              sebelahnya justru membatalkan potongannya, jadi teksnya jatuh
+              berbaris-baris. Jadi cukup line-clamp saja, tanpa block. Judul
+              satu baris, isinya dua baris, sisanya titik-titik, seperti daftar
+              di app chat. */}
+          <span className="mt-2 line-clamp-1 font-medium text-ink-900">
             {source.title}
           </span>
           {!open && (
-            <span className="mt-1 line-clamp-2 block text-sm leading-relaxed text-ink-500">
+            <span className="mt-1 line-clamp-2 text-sm leading-relaxed text-ink-500">
               {source.content.slice(0, 220)}
             </span>
           )}

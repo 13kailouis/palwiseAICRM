@@ -38,6 +38,27 @@ body {
   height: 100%;
 }
 
+/* Layar dorongan ala app di HP.
+ *
+ * Halaman yang dibuka dari tombol Menu (Info bisnis, Gambar, Nomor WhatsApp,
+ * Paket, Akun) bukan tab yang setara, jadi di HP dia jadi layar yang "didorong
+ * masuk": kepala dengan tombol kembali (BarAtas), tanpa bar bawah. BarAtas
+ * menandai <html data-dorong="1"> saat halaman seperti ini dibuka.
+ *
+ * Cuma di HP. Di desktop bar bawahnya memang tidak ada dan sidebar-nya tetap,
+ * jadi penanda ini tidak mengubah apa pun di sana. */
+@media (max-width: 1023px) {
+  html[data-dorong="1"] {
+    /* Tidak ada bar bawah di sini, jadi jarak aman di dasar halaman nol. */
+    --bar-bawah: 0px;
+  }
+  /* Judulnya sudah tampil di kepala (BarAtas), jadi PageHeader tidak perlu
+   * mengulanginya. Membiarkannya bikin judul dobel di dua baris beruntun. */
+  html[data-dorong="1"] .kepala-halaman {
+    display: none;
+  }
+}
+
 body {
   @apply bg-ink-50 text-ink-900 antialiased;
   /* Angka dengan lebar yang sama semua.

@@ -4,7 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Ikon } from "@/components/Ikon";
-import { KELOMPOK, MENU_BAWAH, sedangDibuka } from "@/lib/navigasi";
+import {
+  KELOMPOK,
+  MENU_BAWAH,
+  halamanSekunder,
+  sedangDibuka,
+} from "@/lib/navigasi";
 
 /**
  * Menu bawah untuk HP.
@@ -22,6 +27,11 @@ import { KELOMPOK, MENU_BAWAH, sedangDibuka } from "@/lib/navigasi";
 export function NavBawah({ logout }: { logout: () => Promise<void> }) {
   const pathname = usePathname();
   const [laciTerbuka, setLaciTerbuka] = useState(false);
+
+  // Halaman sekunder di HP jadi layar dorongan (tombol kembali di kepala,
+  // lihat BarAtas), jadi bar bawahnya tidak ikut muncul. Di desktop bar ini
+  // memang selalu tersembunyi (lg:hidden), jadi ini cuma soal HP.
+  if (halamanSekunder(pathname)) return null;
 
   const adaDiBawah = MENU_BAWAH.some((m) => sedangDibuka(m.href, pathname));
 

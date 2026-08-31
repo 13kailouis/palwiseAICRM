@@ -68,7 +68,7 @@ export function PageHeader({
      * Gerak naik tetap dipakai untuk kartu di dalam halaman, karena di sana
      * tidak ada apa pun tepat di bawahnya yang bisa tertimpa. */
     <div
-      className={`anim-muncul border-b border-ink-200 bg-white py-4 sm:py-5 ${
+      className={`kepala-halaman anim-muncul border-b border-ink-200 bg-white py-4 sm:py-5 ${
         dalam ? "" : "px-5 sm:px-6"
       }`}
     >

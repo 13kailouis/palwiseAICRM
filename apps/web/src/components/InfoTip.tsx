@@ -39,6 +39,11 @@ export function InfoTip({
   judul?: string;
 }) {
   const [buka, setBuka] = useState(false);
+  // Di layar lebar gelembungnya keluar dari sisi ikon. Kalau ikonnya ada di
+  // panel kanan (Info bisnis, pita peringatan), membukanya ke kanan bikin
+  // isinya terpotong keluar layar. Jadi sisinya dipilih menurut ruang yang
+  // tersisa: ikon di paruh kanan layar membuka ke kiri, selebihnya ke kanan.
+  const [sisi, setSisi] = useState<"kiri" | "kanan">("kiri");
   const bungkus = useRef<HTMLSpanElement>(null);
   const id = useId();
 
@@ -47,6 +52,16 @@ export function InfoTip({
   const adaHover = () =>
     typeof window !== "undefined" &&
     window.matchMedia?.("(hover: hover)").matches;
+
+  // Diukur tepat sebelum dibuka, bukan sekali di awal: lebar layar dan posisi
+  // ikonnya bisa berubah (putar layar, panel yang bergeser).
+  function buka1() {
+    const r = bungkus.current?.getBoundingClientRect();
+    if (r && typeof window !== "undefined") {
+      setSisi(r.left > window.innerWidth / 2 ? "kanan" : "kiri");
+    }
+    setBuka(true);
+  }
 
   useEffect(() => {
     if (!buka) return;
@@ -77,8 +92,8 @@ export function InfoTip({
         aria-label={label}
         aria-expanded={buka}
         aria-controls={id}
-        onClick={() => setBuka((v) => !v)}
-        onMouseEnter={() => adaHover() && setBuka(true)}
+        onClick={() => (buka ? setBuka(false) : buka1())}
+        onMouseEnter={() => adaHover() && buka1()}
         onMouseLeave={() => adaHover() && setBuka(false)}
         className="grid h-[18px] w-[18px] place-items-center rounded-full border border-ink-300 text-ink-400 transition hover:border-ink-500 hover:text-ink-700 focus-visible:text-ink-700"
       >
@@ -112,8 +127,10 @@ export function InfoTip({
           <span
             id={id}
             role="dialog"
-            className="anim-naik fixed inset-x-4 bottom-4 z-50 block rounded-2xl border border-ink-200 bg-white p-4 text-left text-sm leading-relaxed text-ink-600 shadow-xl
-                       sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:z-30 sm:mt-2 sm:w-72 sm:rounded-xl sm:p-3.5 sm:shadow-[0_8px_24px_-8px_rgba(15,15,15,0.25)]"
+            className={`anim-naik fixed inset-x-4 bottom-4 z-50 block rounded-2xl border border-ink-200 bg-white p-4 text-left text-sm leading-relaxed text-ink-600 shadow-xl
+                       sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-full sm:z-30 sm:mt-2 sm:w-72 sm:max-w-[calc(100vw-2rem)] sm:rounded-xl sm:p-3.5 sm:shadow-[0_8px_24px_-8px_rgba(15,15,15,0.25)] ${
+              sisi === "kanan" ? "sm:right-0" : "sm:left-0"
+            }`}
           >
             {judul && (
               <span className="mb-1.5 block text-[13px] font-semibold text-ink-900">

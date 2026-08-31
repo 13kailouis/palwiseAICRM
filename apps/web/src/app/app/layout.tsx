@@ -97,7 +97,7 @@ export default async function AppLayout({
             Cuma di HP. Di desktop bar bawahnya tidak ada, jadi jarak ini cuma
             jadi ruang kosong 60px yang tidak ada gunanya di dasar tiap
             halaman. */}
-        <main className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-ink-50 pb-[var(--bar-bawah)] lg:pb-0">
+        <main className="isi-utama thin-scroll min-h-0 flex-1 overflow-y-auto bg-ink-50 pb-[var(--bar-bawah)] lg:pb-0">
           {children}
         </main>
       </div>
