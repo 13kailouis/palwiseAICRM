@@ -5494,20 +5494,22 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
           baca("apps/web/src/app/actions/contact.ts"),
         ),
     );
+    // Ringkasan AI hidup di profil (RingkasanKontak). Panel kanan kotak masuk
+    // yang dulu menduplikatnya (plus lampiran dan data pelanggan) sudah dihapus
+    // 01-09-2026: makan tempat obrolan, dan isinya sama persis dengan profil
+    // yang cuma seketuk dari kepala obrolan. Yang dijaga: profilnya benar-benar
+    // punya ringkasan itu, dan dari obrolan ada tautan ke profil (dicek di bawah).
     check(
-      "ringkasan AI dipasang di profil dan di kotak masuk",
-      /RingkasanKontak/.test(profil) && /RingkasanAI/.test(kotakMasuk),
+      "ringkasan AI dipasang di profil pelanggan",
+      /RingkasanKontak/.test(profil),
     );
 
-    // Panel kanan di kotak masuk baru muncul di 1280px ke atas. Di HP dan
-    // tablet dia hilang seluruhnya, dan tanpa jalan pengganti itu berarti
-    // orang yang membalas dari HP kehilangan semua yang sudah dikumpulkan
-    // sistem tentang lawan bicaranya.
-    //
-    // Sejak kotak masuk dirombak 30 Agustus 2026, jalan penggantinya BUKAN lagi
-    // baris "Lihat profil" yang xl:hidden, tapi menu titik-tiga di kepala
-    // obrolan yang tampil di SEMUA ukuran layar. Yang dijaga tetap sama: dari
-    // dalam obrolan, di HP sekalipun, harus ada tautan ke halaman profilnya.
+    // Data pelanggan dulu punya dua tempat: panel kanan kotak masuk dan halaman
+    // profil. Panelnya dihapus, jadi profil sekarang satu-satunya tempatnya, dan
+    // dari dalam obrolan harus tetap ada jalan ke sana. Sejak kotak masuk
+    // dirombak 30 Agustus 2026 jalannya menu titik-tiga di kepala obrolan yang
+    // tampil di SEMUA ukuran layar (bukan lagi baris "Lihat profil" yang
+    // xl:hidden).
     check(
       "profil pelanggan tetap bisa dibuka dari HP dan tablet",
       /aria-label="Menu obrolan"/.test(kotakMasuk) &&

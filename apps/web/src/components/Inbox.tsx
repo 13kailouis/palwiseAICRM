@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RingkasanAI } from "@/components/RingkasanAI";
 import { Avatar, formatJanji } from "@/components/ui";
 import { InfoTip } from "@/components/InfoTip";
 import { Ikon } from "@/components/Ikon";
@@ -499,12 +498,14 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                     !detail.conversation.channelConnected &&
                     " · nomornya lagi tidak nyambung"}
                 </p>
-                {/* Konteks cepat (keluhan / janji) cuma muncul kalau memang ada,
-                    dan disembunyikan di xl karena panel kanan sudah memuatnya. */}
+                {/* Konteks cepat (keluhan / janji) cuma muncul kalau memang ada.
+                    Dulu disembunyikan di xl karena panel kanan memuatnya; panel
+                    itu sudah dihapus (memakan tempat, isinya sama dengan profil
+                    yang seketuk dari kepala ini), jadi sekarang selalu tampil. */}
                 {(detail.contact.masalah ||
                   (detail.contact.janjiPada &&
                     new Date(detail.contact.janjiPada).getTime() > Date.now())) && (
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5 xl:hidden">
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     {detail.contact.masalah && (
                       <span className="badge bg-red-50 text-red-700">
                         ada keluhan
@@ -789,162 +790,6 @@ export function Inbox({ initialId }: { initialId: string | null }) {
             </div>
           </div>
 
-          {/* Panel kontak.
-
-              Urutannya menurut seberapa sering dipakai, bukan menurut rapinya
-              tabel: ringkasan dulu karena itu yang menjawab "ada apa dengan
-              orang ini", lalu keluhan, lalu lampiran yang dia kirim, baru
-              identitasnya. Nama dan nomor sudah tertulis di kepala obrolan,
-              jadi mengulangnya di urutan pertama cuma memakan tempat. */}
-          <div className="thin-scroll hidden w-72 shrink-0 overflow-y-auto border-l border-ink-200 bg-white p-5 xl:block">
-            <RingkasanAI
-              contactId={detail.contact.id}
-              isi={detail.contact.ringkasan}
-              dibuatPada={detail.contact.ringkasanAt}
-              pesanTerakhir={
-                detail.messages[detail.messages.length - 1]?.createdAt ?? null
-              }
-              onSelesai={() => loadDetail(detail.conversation.id, true)}
-            />
-
-            {detail.contact.janjiPada &&
-              new Date(detail.contact.janjiPada).getTime() > Date.now() && (
-                <div
-                  className={`mt-5 rounded-lg border px-3 py-2.5 ${
-                    detail.contact.janjiDipastikan
-                      ? "border-brand-200 bg-brand-50"
-                      : "border-amber-300 bg-amber-50"
-                  }`}
-                >
-                  <p className="text-xs font-medium text-ink-900">
-                    {formatJanji(detail.contact.janjiPada)}
-                  </p>
-                  {detail.contact.janjiCatatan && (
-                    <p className="mt-0.5 text-xs text-ink-600">
-                      {detail.contact.janjiCatatan}
-                    </p>
-                  )}
-                  {!detail.contact.janjiDipastikan && (
-                    <p className="mt-1 text-[11px] text-amber-800">
-                      Belum kamu pastikan. Asisten cuma mencatat permintaannya.
-                    </p>
-                  )}
-                </div>
-              )}
-
-            {detail.contact.masalah && (
-              <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
-                <p className="text-xs font-medium text-red-900">Keluhan</p>
-                <p className="mt-1 text-xs leading-relaxed text-red-900">
-                  {detail.contact.masalah}
-                </p>
-              </div>
-            )}
-
-            {/* Lampiran dikumpulkan jadi satu.
-
-                Bukti transfer, foto barang rusak, dan PDF penawaran itu yang
-                paling sering dicari ulang, dan mencarinya berarti menggulir
-                obrolan panjang ke atas sambil menebak-nebak. Di sini semuanya
-                berderet dengan bacaan AI-nya, jadi nominalnya kebaca tanpa
-                membuka gambarnya. */}
-            {(() => {
-              const lampiran = detail.messages.filter(
-                (m) => m.mediaUrl && m.mediaType !== "text",
-              );
-              if (lampiran.length === 0) return null;
-              return (
-                <div className="mt-6">
-                  <h4 className="text-sm font-semibold text-ink-900">
-                    Lampiran ({lampiran.length})
-                  </h4>
-                  <ul className="mt-2 space-y-2">
-                    {lampiran
-                      .slice()
-                      .reverse()
-                      .map((m) => (
-                        <li key={m.id}>
-                          <a
-                            href={m.mediaUrl ?? "#"}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block rounded-lg border border-ink-200 px-2.5 py-2 transition hover:border-brand-400"
-                          >
-                            <p className="text-xs leading-relaxed text-ink-800">
-                              {m.mediaSummary ??
-                                m.content ??
-                                `Lampiran ${m.mediaType}`}
-                            </p>
-                            <p className="mt-1 text-[11px] text-ink-400">
-                              {m.role === "customer" ? "dari pelanggan" : "kita kirim"}
-                              {" · "}
-                              {m.mediaType} · {jam(m.createdAt)}
-                            </p>
-                          </a>
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              );
-            })()}
-
-            <h3 className="mt-6 text-sm font-semibold text-ink-900">Data pelanggan</h3>
-            <dl className="mt-3 space-y-3 text-sm">
-              {(
-                [
-                  ["Nama", detail.contact.name],
-                  ["Nomor", detail.contact.phone],
-                  ["Email", detail.contact.email],
-                  ["Tahap", detail.contact.stage],
-                  // Dua ini cuma muncul kalau memang terisi. Menampilkan
-                  // "Nama usaha: belum tahu" ke warung yang pembelinya orang
-                  // biasa bikin produknya kelihatan salah alamat, seolah cuma
-                  // untuk jualan antar perusahaan.
-                  ["Nama usaha", detail.contact.businessName],
-                  ["Bidang usaha", detail.contact.industry],
-                ] as [string, string | null][]
-              )
-                .filter(
-                  ([label, value]) =>
-                    value ||
-                    label === "Nama" ||
-                    label === "Nomor" ||
-                    label === "Tahap",
-                )
-                .map(([label, value]) => (
-                  <div key={label}>
-                    <dt className="text-xs text-ink-500">{label}</dt>
-                    <dd className="break-words text-ink-900">
-                      {value || "belum tahu"}
-                    </dd>
-                  </div>
-                ))}
-            </dl>
-
-            {detail.contact.tags.length > 0 && (
-              <>
-                <h4 className="mt-5 text-xs text-ink-500">Minatnya</h4>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {detail.contact.tags.map((t) => (
-                    <span key={t} className="badge bg-ink-100 text-ink-700">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </>
-            )}
-
-            <a
-              href={`/app/kontak/${detail.contact.id}`}
-              className="tap-aman mt-6 block text-xs font-medium text-brand-700 hover:underline"
-            >
-              Buka profil lengkapnya
-            </a>
-            <p className="mt-3 text-xs leading-relaxed text-ink-400">
-              Data ini terisi otomatis dari isi obrolan. Yang salah bisa dibetulkan
-              di profilnya.
-            </p>
-          </div>
         </>
       )}
     </div>
