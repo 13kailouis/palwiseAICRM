@@ -151,7 +151,7 @@ export default async function KontakDetailPage({
       <div className="anim-muncul border-b border-ink-200 bg-white px-4 py-5 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3.5">
-            <Avatar nama={displayName(contact)} ukuran={56} />
+            <Avatar nama={displayName(contact)} ukuran={56} fotoPath={contact.waFotoPath} />
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold tracking-tight text-ink-950">
                 {displayName(contact)}

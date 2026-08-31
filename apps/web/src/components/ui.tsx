@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
+import { AvatarFoto } from "@/components/AvatarFoto";
 
 /** Lebar kolom untuk halaman berbentuk formulir. Dipakai bersama supaya
  *  kepala halaman, baris tab, dan isinya berdiri di garis kiri yang sama. */
@@ -23,15 +24,29 @@ export const KOLOM_FORM = "mx-auto w-full max-w-5xl px-5 sm:px-6";
  * menarik mata ke hiasan, padahal yang penting namanya) dan bukan foto orang
  * asing. Sama seperti aplikasi chat yang orang pakai tiap hari.
  */
-export function Avatar({ nama, ukuran = 40 }: { nama: string; ukuran?: number }) {
+export function Avatar({
+  nama,
+  ukuran = 40,
+  fotoPath,
+}: {
+  nama: string;
+  ukuran?: number;
+  /** Nama berkas foto profil WhatsApp di MEDIA_DIR, kalau ada. Huruf awal tetap
+   *  jadi cadangan di belakangnya, jadi kalau fotonya gagal dimuat tidak
+   *  kosong. */
+  fotoPath?: string | null;
+}) {
   const inisial = (nama.trim()[0] ?? "?").toUpperCase();
   return (
     <span
       aria-hidden
-      className="grid shrink-0 place-items-center rounded-full bg-ink-100 font-semibold text-ink-600"
+      className="relative grid shrink-0 place-items-center overflow-hidden rounded-full bg-ink-100 font-semibold text-ink-600"
       style={{ height: ukuran, width: ukuran, fontSize: ukuran * 0.42 }}
     >
       {inisial}
+      {fotoPath && (
+        <AvatarFoto src={`/api/media/${encodeURIComponent(fotoPath)}`} />
+      )}
     </span>
   );
 }

@@ -47,6 +47,7 @@ export async function GET(
       id: conversation.contact.id,
       name: displayName(conversation.contact),
       crmName: conversation.contact.name,
+      waFotoPath: conversation.contact.waFotoPath,
       phone: conversation.contact.phone,
       email: conversation.contact.email,
       businessName: conversation.contact.businessName,

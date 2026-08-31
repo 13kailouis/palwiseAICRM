@@ -27,6 +27,7 @@ export function KontakKartu({
     id: string;
     name: string;
     waPushName: string | null;
+    waFotoPath: string | null;
     waJid: string | null;
     phone: string | null;
     email: string | null;
@@ -53,7 +54,7 @@ export function KontakKartu({
       href={`/app/kontak/${contact.id}`}
       className="flex items-center gap-3 px-4 py-3 transition active:bg-ink-50"
     >
-      <Avatar nama={displayName(contact)} ukuran={44} />
+      <Avatar nama={displayName(contact)} ukuran={44} fotoPath={contact.waFotoPath} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">

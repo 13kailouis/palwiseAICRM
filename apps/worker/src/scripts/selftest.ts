@@ -6066,6 +6066,47 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
         /deleteContactAction/.test(profil),
     );
 
+    // ─── Foto profil WhatsApp untuk avatar ──────────────────────────────────
+    //
+    // Pengambilannya WAJIB hemat: foto tidak boleh diminta ke WhatsApp tiap
+    // pesan (apalagi borongan), karena itu kelihatan seperti bot dan bisa
+    // memancing pembatasan pada nomornya, yang justru urat nadi produk ini.
+    const wa = baca("apps/worker/src/wa/manager.ts");
+    check(
+      "foto profil dibatasi, tidak diminta tiap pesan",
+      /FOTO_CEK_ULANG_HARI/.test(wa) && /waFotoDicekPada/.test(wa),
+    );
+    // Dan tidak boleh menahan balasan: diambil di latar belakang.
+    check(
+      "pengambilan foto tidak menahan balasan ke pelanggan",
+      /void ambilFotoProfil\(/.test(wa),
+    );
+    // URL foto WA kedaluwarsa, jadi yang disimpan berkasnya bukan tautannya.
+    check(
+      "foto profil disimpan sebagai berkas, bukan tautan yang kedaluwarsa",
+      /writeFileSync\([^\n]*waFoto|waFotoPath: filename/.test(wa),
+    );
+    // Privasi: foto profil satu akun cuma boleh dilihat akun itu, sama seperti
+    // lampiran chat dan gambar galeri.
+    check(
+      "foto profil kontak cuma boleh dilihat pemilik akunnya",
+      /waFotoPath: bersih, workspaceId: user\.workspaceId/.test(
+        baca("apps/web/src/app/api/media/[name]/route.ts"),
+      ),
+    );
+    // Avatar tetap punya cadangan huruf awal, jadi foto yang gagal dimuat tidak
+    // menyisakan lingkaran kosong.
+    check(
+      "avatar tetap menampilkan huruf awal di belakang fotonya",
+      /\{inisial\}/.test(baca("apps/web/src/components/ui.tsx")) &&
+        /fotoPath &&/.test(baca("apps/web/src/components/ui.tsx")) &&
+        // Foto yang gagal dimuat menyembunyikan diri supaya huruf awalnya yang
+        // muncul, bukan lambang gambar rusak.
+        /onError=\{\(\) => setGagal\(true\)\}/.test(
+          baca("apps/web/src/components/AvatarFoto.tsx"),
+        ),
+    );
+
     // Tiap paket harus menyebut batas catatannya sendiri.
     //
     // Batas yang tidak diumumkan lebih menjengkelkan daripada batas yang kecil,

@@ -297,7 +297,7 @@ export default async function KontakPage({
                       <tr key={c.id} className="hover:bg-ink-50/60">
                         <td className="px-4 py-3">
                           <div className="flex items-start gap-3">
-                            <Avatar nama={displayName(c)} ukuran={38} />
+                            <Avatar nama={displayName(c)} ukuran={38} fotoPath={c.waFotoPath} />
                             <div className="min-w-0 flex-1">
                           <Link
                             href={`/app/kontak/${c.id}`}

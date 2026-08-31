@@ -21,6 +21,7 @@ function TitikKetik() {
 interface ConvSummary {
   id: string;
   name: string;
+  waFotoPath: string | null;
   phone: string | null;
   stage: string;
   aiEnabled: boolean;
@@ -57,6 +58,7 @@ interface Detail {
   contact: {
     id: string;
     name: string;
+    waFotoPath: string | null;
     phone: string | null;
     email: string | null;
     businessName: string | null;
@@ -367,7 +369,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                   {selectedId === c.id && (
                     <span className="absolute inset-y-0 left-0 hidden w-0.5 bg-ink-900 lg:block" />
                   )}
-                  <Avatar nama={c.name} ukuran={44} />
+                  <Avatar nama={c.name} ukuran={44} fotoPath={c.waFotoPath} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
                       <span
@@ -483,7 +485,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                 href={`/app/kontak/${detail.contact.id}`}
                 className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg transition hover:opacity-80"
               >
-                <Avatar nama={detail.contact.name} ukuran={38} />
+                <Avatar nama={detail.contact.name} ukuran={38} fotoPath={detail.contact.waFotoPath} />
 
                 <div className="min-w-0 flex-1">
                 <p className="truncate font-medium leading-tight text-ink-900">

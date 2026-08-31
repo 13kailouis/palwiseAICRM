@@ -110,6 +110,7 @@ export async function GET(req: Request) {
     conversations: conversations.map((c) => ({
       id: c.id,
       name: displayName(c.contact),
+      waFotoPath: c.contact.waFotoPath,
       phone: c.contact.phone,
       stage: c.contact.stage,
       aiEnabled: c.aiEnabled,

@@ -23,8 +23,9 @@ export async function GET(
   const bersih = name.replace(/[/\\]/g, "");
 
   // Boleh dilihat kalau berkas ini muncul di salah satu obrolan milik akun ini,
-  // atau memang berkas galeri milik salah satu asistennya.
-  const [pesan, aset] = await Promise.all([
+  // berkas galeri milik salah satu asistennya, atau foto profil salah satu
+  // kontaknya.
+  const [pesan, aset, kontak] = await Promise.all([
     prisma.message.findFirst({
       where: {
         mediaPath: bersih,
@@ -36,9 +37,13 @@ export async function GET(
       where: { fileName: bersih, agent: { workspaceId: user.workspaceId } },
       select: { id: true },
     }),
+    prisma.contact.findFirst({
+      where: { waFotoPath: bersih, workspaceId: user.workspaceId },
+      select: { id: true },
+    }),
   ]);
 
-  if (!pesan && !aset) {
+  if (!pesan && !aset && !kontak) {
     return new Response("Tidak ditemukan", { status: 404 });
   }
 

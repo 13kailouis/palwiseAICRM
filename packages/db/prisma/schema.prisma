@@ -476,6 +476,15 @@ model Contact {
   /// Nama dari profil WhatsApp. Sekadar cadangan tampilan — bukan data CRM,
   /// jadi tidak boleh menghalangi AI mengisi `name`.
   waPushName String?
+  /// Nama berkas foto profil WhatsApp yang sudah diunduh ke MEDIA_DIR, kalau
+  /// ada dan publik. Cuma hiasan avatar; huruf awal tetap jadi cadangannya.
+  /// URL foto WA bertanda tangan dan kedaluwarsa, jadi yang disimpan berkasnya,
+  /// bukan tautannya.
+  waFotoPath String?
+  /// Kapan terakhir kali fotonya dicek. Dipakai membatasi pengambilan supaya
+  /// tidak menanyai WhatsApp berulang-ulang (dan kelihatan seperti bot), dan
+  /// supaya kontak yang fotonya memang tidak ada tidak dicek terus-menerus.
+  waFotoDicekPada DateTime?
   email String?
   businessName String?
   industry     String?

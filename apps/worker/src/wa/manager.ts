@@ -1055,6 +1055,94 @@ function bacaStempel(nilai: unknown): number | null {
   return null;
 }
 
+/**
+ * Berapa lama foto profil dianggap masih segar sebelum boleh dicek lagi.
+ *
+ * Panjang dengan sengaja. Foto profil jarang ganti, dan yang paling penting:
+ * meminta foto ke WhatsApp terlalu sering, apalagi borongan, kelihatan seperti
+ * bot dan bisa memancing pembatasan pada nomornya. Nomor itu urat nadi produk
+ * ini, jadi hiasan avatar tidak boleh mempertaruhkannya.
+ */
+const FOTO_CEK_ULANG_HARI = 7;
+
+/**
+ * Ambil foto profil WhatsApp satu kontak, kalau ada dan publik, lalu simpan
+ * berkasnya.
+ *
+ * Dipanggil TANPA di-await (di latar belakang) dari alur pesan masuk: kalaupun
+ * gagal, balasan ke pelanggan tidak boleh ikut tertahan. Dan hanya sesekali per
+ * kontak (lihat [FOTO_CEK_ULANG_HARI]), bukan tiap pesan.
+ *
+ * URL foto WA bertanda tangan dan kedaluwarsa, jadi yang disimpan berkasnya,
+ * bukan tautannya. Kalau fotonya disembunyikan ("kontak saya saja", dan nomor
+ * bisnis biasanya belum jadi kontak pelanggan baru) atau memang tidak ada,
+ * `profilePictureUrl` melempar; itu bukan galat, cuma berarti tidak ada foto.
+ * Yang penting: waktu ceknya tetap dicatat supaya tidak ditanyakan lagi tiap
+ * pesan.
+ */
+async function ambilFotoProfil(
+  sock: WASocket,
+  contact: { id: string; waJid: string | null; waFotoDicekPada: Date | null },
+) {
+  if (!contact.waJid) return;
+  if (
+    contact.waFotoDicekPada &&
+    Date.now() - contact.waFotoDicekPada.getTime() <
+      FOTO_CEK_ULANG_HARI * 86_400_000
+  ) {
+    return;
+  }
+  try {
+    const url = await sock.profilePictureUrl(contact.waJid, "image");
+    if (!url) {
+      await prisma.contact.update({
+        where: { id: contact.id },
+        data: { waFotoDicekPada: new Date() },
+      });
+      return;
+    }
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`unduh foto ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    // Foto profil WA kecil; batas ini cuma jaring pengaman.
+    if (buf.length > 2_000_000) throw new Error("foto profil kebesaran");
+
+    const lama = (
+      await prisma.contact.findUnique({
+        where: { id: contact.id },
+        select: { waFotoPath: true },
+      })
+    )?.waFotoPath;
+
+    const filename = `${randomUUID()}.jpg`;
+    fs.writeFileSync(path.join(env.MEDIA_DIR, filename), buf);
+    await prisma.contact.update({
+      where: { id: contact.id },
+      data: { waFotoPath: filename, waFotoDicekPada: new Date() },
+    });
+    // Foto lama dibuang supaya tidak menumpuk di penyimpanan.
+    if (lama && lama !== filename) {
+      try {
+        fs.unlinkSync(path.join(env.MEDIA_DIR, lama));
+      } catch {
+        // sudah tidak ada, tidak apa-apa
+      }
+    }
+  } catch {
+    // Tidak ada foto / disembunyikan / gagal. Waktu ceknya tetap dicatat supaya
+    // tidak ditanyakan lagi tiap pesan; foto yang mungkin sudah ada dari cek
+    // sebelumnya dibiarkan apa adanya.
+    try {
+      await prisma.contact.update({
+        where: { id: contact.id },
+        data: { waFotoDicekPada: new Date() },
+      });
+    } catch {
+      // kontaknya keburu hilang, abaikan
+    }
+  }
+}
+
 async function handleIncoming(
   session: Session,
   msg: proto.IWebMessageInfo,
@@ -1124,6 +1212,10 @@ async function handleIncoming(
     phone: nomor,
     pushName: msg.pushName ?? undefined,
   });
+
+  // Foto profil diambil di latar belakang, tidak menahan balasan, dan cuma
+  // sesekali per kontak. Sengaja tidak di-await.
+  if (session.sock) void ambilFotoProfil(session.sock, contact);
 
   const conversation = await getOrCreateConversation({
     workspaceId: channel.workspaceId,
