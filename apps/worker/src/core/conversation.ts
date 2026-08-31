@@ -1039,12 +1039,16 @@ export async function runAgentOnConversation(params: {
     }
   }
 
-  const agent = await resolveAgent(conversation);
+  const agent = await resolveAgent(conversation, params.ruangCoba);
   if (!agent) {
     return {
       status: "skipped",
       code: "no_agent",
-      reason: "belum ada asisten yang menjaga nomor ini",
+      // Di ruang coba pesannya beda: di sana tidak ada "nomor", dan satu-satunya
+      // sebab yang mungkin sampai sini adalah asistennya benar-benar belum ada.
+      reason: params.ruangCoba
+        ? "Asistennya belum ada. Atur dulu di halaman Asisten."
+        : "belum ada asisten yang menjaga nomor ini",
     };
   }
 
@@ -1587,10 +1591,21 @@ export async function runAgentOnConversation(params: {
   };
 }
 
-async function resolveAgent(conversation: Conversation): Promise<Agent | null> {
+async function resolveAgent(
+  conversation: Conversation,
+  ruangCoba = false,
+): Promise<Agent | null> {
   if (conversation.agentId) {
     const a = await prisma.agent.findUnique({ where: { id: conversation.agentId } });
-    if (a?.isActive) return a;
+    // Ruang coba tetap boleh menguji asisten yang lagi dimatikan.
+    //
+    // Sakelar "Matikan sementara" itu untuk pelanggan ASLI. Ruang coba justru
+    // tempat mencoba asisten SEBELUM atau SELAGI dimatikan buat mereka. Kalau
+    // di sini pun menuntut isActive, orang harus menyalakannya ke pelanggan
+    // sungguhan cuma untuk mengetesnya, persis kebalikan dari guna halaman ini.
+    // Dulu tanpa ini ruang coba menjawab "belum ada asisten yang menjaga nomor
+    // ini" untuk asisten yang jelas-jelas ada, cuma sedang dimatikan.
+    if (a && (a.isActive || ruangCoba)) return a;
   }
 
   // Nomor WhatsApp yang punya channel: keputusan pemiliknya dihormati apa

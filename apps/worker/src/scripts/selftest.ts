@@ -2083,6 +2083,69 @@ async function main() {
     data: { playgroundUsed: 0 },
   });
 
+  // 7d-bis. Ruang coba tetap bisa menguji asisten yang lagi dimatikan ----------
+  //
+  // Bug nyata 2026-08-31: pemilik menekan "halo" di Coba dulu dan dijawab
+  // "belum ada asisten yang menjaga nomor ini", padahal asistennya jelas ada,
+  // cuma sedang dimatikan. Sakelar "Matikan sementara" itu untuk pelanggan
+  // ASLI; ruang coba justru tempat mencoba asisten SEBELUM atau SELAGI
+  // dimatikan buat mereka. Kalau di sini pun menuntut aktif, orang harus
+  // menyalakannya ke pelanggan sungguhan cuma untuk mengetesnya.
+  console.log("\nRuang coba menguji asisten yang dimatikan");
+  await prisma.agent.update({
+    where: { id: agent.id },
+    data: { isActive: false },
+  });
+  await mundurkanRiwayat(conversation.id);
+  scriptedReply = {
+    reply: ["Halo kak."],
+    handoff: false,
+    contact: {},
+    stage: "",
+    tags: [],
+  };
+  await appendMessage({
+    conversationId: conversation.id,
+    workspaceId: workspace.id,
+    role: "customer",
+    content: "tes asisten yang lagi dimatikan",
+  });
+  const rCobaMati = await runAgentOnConversation({
+    conversationId: conversation.id,
+    force: true,
+    ruangCoba: true,
+  });
+  check(
+    "ruang coba tetap menjawab walau asistennya lagi dimatikan",
+    rCobaMati.status === "replied",
+    rCobaMati.status === "skipped" ? rCobaMati.code : rCobaMati.status,
+  );
+  // Tapi pelanggan sungguhan TIDAK boleh dijawab asisten yang dimatikan: itu
+  // justru guna sakelarnya. Statusnya dipastikan supaya jalannya benar-benar
+  // sampai ke pemilihan asisten, bukan berhenti lebih dulu di rem lain.
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: { aiEnabled: true, needsHuman: false },
+  });
+  await appendMessage({
+    conversationId: conversation.id,
+    workspaceId: workspace.id,
+    role: "customer",
+    content: "pelanggan sungguhan ke asisten yang dimatikan",
+  });
+  const rPelangganMati = await runAgentOnConversation({
+    conversationId: conversation.id,
+  });
+  check(
+    "pelanggan sungguhan tidak dijawab asisten yang dimatikan",
+    rPelangganMati.status === "skipped" && rPelangganMati.code === "no_agent",
+    rPelangganMati.status === "skipped" ? rPelangganMati.code : rPelangganMati.status,
+  );
+  await prisma.agent.update({
+    where: { id: agent.id },
+    data: { isActive: true },
+  });
+
   // 7e. Kuota habis tidak boleh gagal dalam diam -------------------------------
   console.log("\nPemberitahuan saat kuota habis");
   const pesanPertama = await kabariPelangganSekali(conversation.id);
