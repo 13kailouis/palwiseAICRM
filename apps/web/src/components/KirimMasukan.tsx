@@ -46,6 +46,12 @@ export function KirimMasukan({
     return () => clearTimeout(t);
   }, [state?.ok]);
 
+  // Di kotak masuk tombol kirim composer ada di pojok kanan bawah juga, jadi
+  // pil ini menutupinya. Kotak masuk itu halaman kerja utama; kalau ada
+  // masukan, tinggal kirim dari halaman lain. (Di HP obrolan kotak masuk itu
+  // layar penuh yang menutup pil ini sendiri, jadi ini terutama soal desktop.)
+  if (pathname.startsWith("/app/inbox")) return null;
+
   if (!buka) {
     return (
       <button

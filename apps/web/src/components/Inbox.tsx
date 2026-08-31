@@ -86,9 +86,48 @@ const FILTERS = [
 ];
 
 /**
- * Ubah tautan jadi bisa diklik, dan pastikan alamat panjang ikut turun baris.
+ * Format ala WhatsApp: *tebal*, _miring_, ~coret~.
  *
- * Tanpa ini satu tautan panjang mendorong lebar seluruh kolom chat sampai
+ * Pelanggan dan asisten menulis dengan tanda ini karena itu yang mereka pakai
+ * di WhatsApp, jadi menampilkan bintangnya mentah ("*Total*") bukan cuma jelek,
+ * tapi bikin pesan yang di WhatsApp rapi jadi berantakan di sini. Penandanya
+ * harus menempel ke huruf (bukan spasi), sama seperti aturan WhatsApp, supaya
+ * "2 * 3" atau "snake_case" tidak ikut terformat. Boleh bersarang, jadi
+ * fungsinya memanggil dirinya sendiri untuk isi di dalam penanda.
+ */
+function formatWA(teks: string, kunci: string): React.ReactNode[] {
+  // Isi penanda diawali DAN diakhiri huruf/tanda (bukan spasi) lewat pola
+  // `\S(?:...\S)?`, bukan lookbehind: lookbehind belum jalan di Safari iOS lama
+  // dan galat sintaksnya menjatuhkan seluruh bundel, bukan cuma fitur ini.
+  const re = /([*_~])(\S(?:[\s\S]*?\S)?)\1/g;
+  const keluar: React.ReactNode[] = [];
+  let akhir = 0;
+  let m: RegExpExecArray | null;
+  let n = 0;
+  while ((m = re.exec(teks))) {
+    if (m.index > akhir) keluar.push(teks.slice(akhir, m.index));
+    const [utuh, tanda, dalam] = m;
+    const anak = formatWA(dalam, `${kunci}.${n}`);
+    if (tanda === "*") keluar.push(<strong key={`${kunci}.${n}`}>{anak}</strong>);
+    else if (tanda === "_") keluar.push(<em key={`${kunci}.${n}`}>{anak}</em>);
+    else
+      keluar.push(
+        <span key={`${kunci}.${n}`} className="line-through">
+          {anak}
+        </span>,
+      );
+    akhir = m.index + utuh.length;
+    n++;
+  }
+  if (akhir < teks.length) keluar.push(teks.slice(akhir));
+  return keluar;
+}
+
+/**
+ * Ubah tautan jadi bisa diklik (dan pastikan alamat panjang ikut turun baris),
+ * lalu format sisanya ala WhatsApp.
+ *
+ * Tanpa linkify, satu tautan panjang mendorong lebar seluruh kolom chat sampai
  * pesannya keluar layar dan harus digeser mendatar.
  */
 function TeksPesan({ isi }: { isi: string }) {
@@ -108,7 +147,7 @@ function TeksPesan({ isi }: { isi: string }) {
             {bagian}
           </a>
         ) : (
-          <span key={i}>{bagian}</span>
+          <span key={i}>{formatWA(bagian, `f${i}`)}</span>
         ),
       )}
     </p>

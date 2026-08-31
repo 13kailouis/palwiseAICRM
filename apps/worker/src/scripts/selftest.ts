@@ -5467,6 +5467,26 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "bacaan AI atas lampiran ditampilkan di gelembung chat",
       /m\.mediaSummary\s*&&/.test(kotakMasuk),
     );
+    // Pesan pakai format WhatsApp (*tebal*, _miring_, ~coret~). Menampilkan
+    // bintangnya mentah bikin pesan yang di WhatsApp rapi jadi berantakan.
+    check(
+      "gelembung chat memformat *tebal* ala WhatsApp, bukan menampilkan bintangnya",
+      /function formatWA/.test(kotakMasuk) && /formatWA\(/.test(kotakMasuk),
+    );
+    // Lookbehind (?<=) menjatuhkan seluruh bundel di Safari iOS lama, bukan
+    // cuma fitur formatnya. Formatnya harus dibuat tanpa itu.
+    check(
+      "format pesan tidak memakai lookbehind yang galat di Safari lama",
+      !/\(\?<[=!]/.test(kotakMasuk),
+    );
+    // Di kotak masuk, tombol kirim composer ada di pojok kanan bawah juga, jadi
+    // pil "Masukan" tidak boleh menutupinya.
+    check(
+      "tombol masukan tidak menutup composer di kotak masuk",
+      /pathname\.startsWith\("\/app\/inbox"\)/.test(
+        baca("apps/web/src/components/KirimMasukan.tsx"),
+      ),
+    );
     check(
       "kapan pelanggan selesai kelihatan di layar lebar",
       /c\.closedAt/.test(halamanKontak),
