@@ -8649,6 +8649,19 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /rasaState: null/.test(ruteCoba) && /rasaSerahkan: false/.test(ruteCoba),
       "tanpa ini percobaan berikutnya dibaca dengan sisa kekesalan percobaan sebelumnya",
     );
+    // Sesi ruang coba yang sudah lama menganggur harus mulai bersih sendiri.
+    //
+    // Tampilan chat hilang tiap halaman dimuat ulang, tapi riwayat di server
+    // tidak. Tanpa pembersihan otomatis, pesan customer yang belum sempat
+    // dijawab dari sesi kemarin (mesin sempat mati, asisten dimatikan) masih
+    // tertinggal, dan pesan "pertama" hari ini dijawab dengan minta maaf atas
+    // keterlambatan berjam-jam yang tidak pernah dirasakan penguji.
+    check(
+      "ruang coba yang lama menganggur dimulai bersih sendiri",
+      /RUANG_COBA_SEGAR_MENIT/.test(ruteCoba) &&
+        /bersihkanRuangCoba\(/.test(ruteCoba),
+      "tanpa ini pesan menggantung dari sesi kemarin bikin asisten minta maaf atas telat berjam-jam",
+    );
 
     const jejak = fs.readFileSync(
       path.join(akarRasa, "apps/web/src/components/JejakRasa.tsx"),

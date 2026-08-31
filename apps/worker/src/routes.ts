@@ -536,6 +536,57 @@ router.post("/assets/:id/read", async (req, res) => {
 // Playground -----------------------------------------------------------------
 
 /**
+ * Sesi ruang coba dianggap sudah "baru" kalau pesan terakhirnya lebih lama dari
+ * ini. Cukup panjang supaya sesi yang benar-benar sedang berjalan (jeda mikir,
+ * baca jawaban) tidak ikut dibersihkan, cukup pendek supaya kunjungan berikutnya
+ * tidak mewarisi pesan menggantung dari kemarin.
+ */
+const RUANG_COBA_SEGAR_MENIT = 30;
+
+/**
+ * Kosongkan satu percakapan ruang coba sampai bersih: pesannya, bacaan rasanya,
+ * dan data kontak yang sempat diisi AI. Dipakai tombol "Mulai dari awal" DAN
+ * pembersihan otomatis sesi yang sudah lama menganggur.
+ */
+async function bersihkanRuangCoba(conversationId: string, contactId: string) {
+  await prisma.message.deleteMany({ where: { conversationId } });
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: {
+      needsHuman: false,
+      handoffReason: null,
+      followUpCount: 0,
+      // Bacaan rasa ikut dikosongkan. Tanpa ini percobaan berikutnya dibaca
+      // dengan sisa kekesalan dari percobaan sebelumnya, dan pemilik usahanya
+      // melihat lencana yang bukan dia sebabkan.
+      rasaState: null,
+      rasaLabel: null,
+      rasaAlasan: null,
+      rasaKesal: 0,
+      rasaMinat: 0,
+      rasaPrioritas: 0,
+      rasaYakin: 0,
+      rasaSaat: null,
+      rasaSerahkan: false,
+      handoffAt: null,
+    },
+  });
+  await prisma.contact.update({
+    where: { id: contactId },
+    data: {
+      // dikosongkan supaya AI bisa mengisinya lagi dari percakapan baru
+      name: "",
+      waPushName: null,
+      email: null,
+      businessName: null,
+      industry: null,
+      stage: "baru",
+      tags: "[]",
+    },
+  });
+}
+
+/**
  * Tes agent tanpa WhatsApp. Memakai kontak khusus per agent supaya seluruh
  * pipeline (RAG, handoff, ekstraksi CRM) benar-benar teruji.
  */
@@ -567,44 +618,31 @@ router.post("/playground", async (req, res) => {
     });
 
     if (reset) {
-      await prisma.message.deleteMany({ where: { conversationId: conversation.id } });
-      await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: {
-          needsHuman: false,
-          handoffReason: null,
-          followUpCount: 0,
-          // Bacaan rasa ikut dikosongkan. Tanpa ini "Mulai dari awal" bohong:
-          // pesan pertama percobaan berikutnya dibaca dengan sisa kekesalan
-          // dari percobaan sebelumnya, dan pemilik usahanya melihat lencana
-          // yang bukan dia sebabkan.
-          rasaState: null,
-          rasaLabel: null,
-          rasaAlasan: null,
-          rasaKesal: 0,
-          rasaMinat: 0,
-          rasaPrioritas: 0,
-          rasaYakin: 0,
-          rasaSaat: null,
-          rasaSerahkan: false,
-          handoffAt: null,
-        },
-      });
-      await prisma.contact.update({
-        where: { id: contact.id },
-        data: {
-          // dikosongkan supaya AI bisa mengisinya lagi dari percakapan baru
-          name: "",
-          waPushName: null,
-          email: null,
-          businessName: null,
-          industry: null,
-          stage: "baru",
-          tags: "[]",
-        },
-      });
+      await bersihkanRuangCoba(conversation.id, contact.id);
       res.json({ ok: true, reset: true, conversationId: conversation.id, bubbles: [] });
       return;
+    }
+
+    // Sesi ruang coba yang sudah lama menganggur dimulai bersih.
+    //
+    // Riwayat disimpan di server supaya lapisan rasa dan ingatan bekerja seperti
+    // sungguhan, tapi tampilannya di layar hilang tiap halaman dimuat ulang.
+    // Tanpa ini, pesan customer dari sesi sebelumnya yang belum sempat dijawab
+    // (mis. waktu mesinnya sempat mati atau asistennya dimatikan) masih
+    // tertinggal, dan pesan "pertama" hari ini dijawab dengan minta maaf atas
+    // keterlambatan berjam-jam, karena dari sisi server pelanggannya memang
+    // menunggu sejak kemarin. Itu benar buat WhatsApp asli, tapi menyesatkan di
+    // ruang coba, tempat orang mengira baru mulai.
+    const terbaru = await prisma.message.findFirst({
+      where: { conversationId: conversation.id },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    if (
+      terbaru &&
+      Date.now() - terbaru.createdAt.getTime() > RUANG_COBA_SEGAR_MENIT * 60_000
+    ) {
+      await bersihkanRuangCoba(conversation.id, contact.id);
     }
 
     if (typeof message !== "string" || !message.trim()) {

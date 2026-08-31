@@ -50,10 +50,18 @@ export function Playground({
   const [busy, setBusy] = useState(false);
   const [meta, setMeta] = useState<{ handoff?: boolean; knowledgeUsed?: number }>({});
   const [rasa, setRasa] = useState<Rasa | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Gulir HANYA kotak obrolannya, bukan seluruh halaman.
+  //
+  // Dulu `bottomRef.scrollIntoView` dipakai, dan itu menggulir SEMUA induk yang
+  // bisa digulir sampai elemennya kelihatan, termasuk `<main>` halamannya. Jadi
+  // tiap asisten menjawab, seluruh layar ikut melompat ke bawah dan kepala
+  // halaman terdorong keluar. Menyetel scrollTop pada kotaknya sendiri cuma
+  // menggulir kotak itu.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [chat.length, busy]);
 
   async function send(text: string) {
@@ -142,7 +150,10 @@ export function Playground({
           </button>
         </div>
 
-        <div className="thin-scroll min-h-0 flex-1 space-y-3 overflow-y-auto bg-ink-50 px-4 py-5 sm:px-5">
+        <div
+          ref={scrollRef}
+          className="thin-scroll min-h-0 flex-1 space-y-3 overflow-y-auto bg-ink-50 px-4 py-5 sm:px-5"
+        >
           {chat.length === 0 && (
             <div className="grid h-full place-items-center px-6 text-center">
               <div className="max-w-xs">
@@ -200,7 +211,6 @@ export function Playground({
               </div>
             </div>
           )}
-          <div ref={bottomRef} />
         </div>
 
         {/* Contoh pertanyaan tepat di atas kotak ketik, khusus HP.
