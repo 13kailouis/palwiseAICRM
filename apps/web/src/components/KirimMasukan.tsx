@@ -51,12 +51,20 @@ export function KirimMasukan({
       <button
         type="button"
         onClick={() => setBuka(true)}
-        // Di HP digeser ke atas supaya tidak menabrak bar bawah.
-        className="fixed bottom-[calc(var(--bar-bawah)+12px)] right-4 z-30 grid h-11 w-11 place-items-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-lg transition hover:text-ink-950 lg:bottom-5 lg:right-5"
+        // Pil BERLABEL, bukan lingkaran ikon polos.
+        //
+        // Lingkaran berikon gelembung chat di pojok kanan bawah itu isyarat yang
+        // sudah universal untuk "chat CS", jadi dibaca sebagai tempat bertanya ke
+        // layanan, bukan tempat memberi masukan soal aplikasinya, dan banyak yang
+        // tidak menyadarinya sama sekali. Tulisan "Masukan" plus ikon menulis
+        // (bukan gelembung) menghapus dua-duanya: jelas gunanya, dan lebih
+        // kelihatan. Di HP digeser ke atas supaya tidak menabrak bar bawah.
+        className="fixed bottom-[calc(var(--bar-bawah)+12px)] right-4 z-30 inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3.5 py-2.5 text-sm font-medium text-ink-700 shadow-lg transition hover:-translate-y-0.5 hover:text-ink-950 hover:shadow-xl lg:bottom-5 lg:right-5"
+        style={{ transitionDuration: "var(--gerak)" }}
         aria-label="Kirim masukan"
-        title="Kirim masukan"
       >
-        <Ikon nama="chat" size={20} />
+        <Ikon nama="catat" size={17} className="text-brand-600" />
+        Masukan
       </button>
     );
   }

@@ -177,40 +177,114 @@ export default async function DashboardPage() {
 
       <div className="space-y-6 p-4 sm:p-6">
         {remaining.length > 0 && (
-          <div className="card p-5">
-            <h2 className="font-semibold text-ink-900">
-              Tinggal {remaining.length} langkah lagi
-            </h2>
-            <p className="mt-1 text-sm text-ink-500">
-              Selesaikan ini dulu supaya chat pelanggan bisa mulai dibalas otomatis.
-            </p>
-            <ul className="mt-4 space-y-2">
-              {steps.map((s) => (
-                <li key={s.label}>
-                  <Link
-                    href={s.href}
-                    className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm transition ${
-                      s.done
-                        ? "border-brand-200 bg-brand-50/50 text-ink-500"
-                        : "border-ink-200 hover:border-brand-400 hover:bg-brand-50/30"
-                    }`}
-                  >
-                    <span
-                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${
+          <div className="card p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-semibold text-ink-900">
+                  Tinggal {remaining.length} langkah lagi
+                </h2>
+                <p className="mt-1 text-sm text-ink-500">
+                  Selesaikan ini dulu supaya chat pelanggan bisa mulai dibalas
+                  otomatis.
+                </p>
+              </div>
+              <span className="shrink-0 text-sm text-ink-500">
+                <span className="font-semibold tabular-nums text-ink-900">
+                  {steps.length - remaining.length}
+                </span>
+                /{steps.length} selesai
+              </span>
+            </div>
+
+            {/* Bilah kemajuan: berapa banyak yang sudah beres, sekali lihat. */}
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-ink-100">
+              <div
+                className="h-full rounded-full bg-brand-500"
+                style={{
+                  width: `${((steps.length - remaining.length) / steps.length) * 100}%`,
+                  transition: "width var(--gerak-pelan) var(--lengkung-masuk)",
+                }}
+              />
+            </div>
+
+            {/* Menyamping di layar lebar, menumpuk di HP.
+                Tiga langkah berdiri sejajar di desktop biar kelihatan seperti
+                pemasangan app populer, bukan daftar ceklis panjang ke bawah.
+                Yang sedang giliran ditandai "Sekarang" dan diberi tepi biru
+                supaya matanya berhenti di sana lebih dulu. */}
+            <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+              {steps.map((s, i) => {
+                const berikut = !s.done && steps.slice(0, i).every((x) => x.done);
+                return (
+                  <li key={s.label}>
+                    <Link
+                      href={s.href}
+                      className={`group flex h-full flex-col gap-3 rounded-xl border p-4 transition ${
                         s.done
-                          ? "bg-brand-600 text-white"
-                          : "border-2 border-ink-300"
+                          ? "border-ink-200 bg-ink-50/60"
+                          : berikut
+                            ? "border-brand-300 bg-brand-50/40 hover:-translate-y-0.5 hover:border-brand-500 hover:shadow-md"
+                            : "border-ink-200 hover:-translate-y-0.5 hover:border-ink-300 hover:shadow-sm"
                       }`}
+                      style={{ transitionDuration: "var(--gerak)" }}
                     >
-                      {s.done && <Ikon nama="centang" size={12} />}
-                    </span>
-                    <span className={s.done ? "line-through" : "font-medium text-ink-800"}>
-                      {s.label}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold tabular-nums ${
+                            s.done
+                              ? "bg-brand-600 text-white"
+                              : berikut
+                                ? "border-2 border-brand-500 text-brand-700"
+                                : "border-2 border-ink-300 text-ink-400"
+                          }`}
+                        >
+                          {s.done ? <Ikon nama="centang" size={13} /> : i + 1}
+                        </span>
+                        {s.done ? (
+                          <span className="text-xs font-medium text-brand-700">
+                            Selesai
+                          </span>
+                        ) : berikut ? (
+                          <span className="text-xs font-medium text-brand-700">
+                            Sekarang
+                          </span>
+                        ) : (
+                          <span className="text-xs text-ink-400">Nanti</span>
+                        )}
+                      </div>
+                      <p
+                        className={`text-sm ${
+                          s.done
+                            ? "text-ink-400 line-through"
+                            : "font-medium text-ink-800"
+                        }`}
+                      >
+                        {s.label}
+                      </p>
+                      {berikut && (
+                        <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-brand-700">
+                          Lanjutkan
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="15"
+                            height="15"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="transition-transform group-hover:translate-x-0.5"
+                            aria-hidden="true"
+                          >
+                            <path d="M5 12h14M13 6l6 6-6 6" />
+                          </svg>
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ol>
             {/* Tautan panduan CUMA di sini, dan cuma selama langkahnya belum
                 selesai.
 
