@@ -8,15 +8,20 @@ import { SaveBar } from "@/components/SaveBar";
 import { PresetUsaha } from "@/components/PresetUsaha";
 import { FormDuaKolom, PanelBantuan } from "@/components/ui";
 import { InfoTip } from "@/components/InfoTip";
+import { Ikon, type NamaIkon } from "@/components/Ikon";
 
 function Section({
   title,
+  ikon,
   ringkas,
   detail,
   terkunci,
   children,
 }: {
   title: string;
+  /** Ikon kecil di depan judul, biar tiap bagian kebaca sekilas seperti
+   *  dashboard app. */
+  ikon?: NamaIkon;
   /** Satu baris yang selalu kelihatan. Sisanya taruh di `detail`. */
   ringkas?: string;
   /**
@@ -31,6 +36,7 @@ function Section({
   return (
     <section className="card-pad">
       <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+        {ikon && <Ikon nama={ikon} size={16} className="shrink-0 text-ink-400" />}
         {title}
         {detail && <InfoTip judul={title}>{detail}</InfoTip>}
       </h2>
@@ -49,6 +55,9 @@ function Section({
           ditandainya, bukan menggantung di antara dua hal. */}
       {terkunci && (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-ink-200 bg-ink-50 px-4 py-3">
+          <span className="shrink-0 text-ink-400">
+            <Ikon nama="gembok" size={16} />
+          </span>
           <p className="flex-1 text-sm leading-relaxed text-ink-700">
             Bagian ini belum termasuk paket kamu. Ada mulai paket{" "}
             <span className="font-medium text-ink-900">{terkunci}</span>.
@@ -264,7 +273,7 @@ export function AgentForm({
         />
       }
     >
-      <form action={formAction} className="space-y-6">
+      <form action={formAction} className="anim-urut space-y-6">
         <input type="hidden" name="agentId" value={agent.id} />
 
       {/* Paling atas, sebelum kotak mana pun.
@@ -277,6 +286,7 @@ export function AgentForm({
       <PresetUsaha namaBisnis={namaBisnis} />
 
       <Section
+        ikon="asisten"
         title="Cara dia bicara"
         ringkas="Ini yang paling ngaruh. Tulis kayak lagi ngelatih karyawan baru."
         detail="Siapa dia, gaya bicaranya gimana, dan apa yang harus ditanyain ke pelanggan. Makin jelas kamu nulisnya, makin bagus jawabannya."
@@ -356,6 +366,7 @@ export function AgentForm({
       </Section>
 
       <Section
+        ikon="chat"
         title="Nada bicara dan perasaan"
         ringkas="Nada bicaranya kamu tentuin sekali, tetap ke semua pelanggan."
         detail="Yang berubah cuma cara dia menjawab kalau pelanggannya kelihatan kesal, ragu, atau sudah mau beli. Faktanya tetap dari Info bisnis, ini soal caranya."
@@ -408,6 +419,7 @@ export function AgentForm({
       </Section>
 
       <Section
+        ikon="kendali"
         title="Kapan harus panggil kamu"
         ringkas="Tulis kapan dia harus berhenti dan nandain obrolan buat kamu lanjutkan."
         detail="Ada hal yang lebih baik ditangani orang: komplain berat, nego harga besar, atau apa pun yang kamu mau pegang sendiri."
@@ -432,6 +444,7 @@ export function AgentForm({
 
       <Section
         terkunci={boleh("jamKerja") ? undefined : paketUntuk("jamKerja")}
+        ikon="jam"
         title="Jam kerja tim"
         ringkas="Selama jam kerja, chat dibiarkan buat tim kamu. Lewat jam itu baru asisten yang balas."
       >
@@ -474,6 +487,7 @@ export function AgentForm({
 
       <Section
         terkunci={boleh("sapaOtomatis") ? undefined : paketUntuk("sapaOtomatis")}
+        ikon="sapa"
         title="Sapa lagi yang menghilang sebelum beli"
         ringkas="Calon pembeli yang nanya-nanya lalu diam, disapa lagi otomatis."
         detail="Ini yang paling sering nambah closing. Yang sudah beli tidak kena ini, ada bagiannya sendiri di bawah."
@@ -535,6 +549,7 @@ export function AgentForm({
 
       <Section
         terkunci={boleh("sapaOtomatis") ? undefined : paketUntuk("sapaOtomatis")}
+        ikon="pelanggan"
         title="Jaga hubungan setelah pembeli"
         ringkas="Jaga orang yang sudah beli. Biasanya mereka yang paling gampang diajak beli lagi."
         detail="Yang di atas mengejar yang belum jadi beli. Yang di sini berjalan otomatis begitu pelanggan masuk tahap selesai."
@@ -631,6 +646,7 @@ export function AgentForm({
 
       <Section
         terkunci={boleh("sapaOtomatis") ? undefined : paketUntuk("sapaOtomatis")}
+        ikon="kalender"
         title="Ingatkan sebelum janji temu"
         ringkas="Jadwal yang dicatat asisten diingatkan sendiri sebelum harinya tiba."
         detail="Buat yang pelanggannya datang atau ketemu online: klinik, salon, bengkel, properti, kursus."
@@ -682,7 +698,7 @@ export function AgentForm({
         )}
       </Section>
 
-      <Section title="Cara membalas">
+      <Section ikon="kirim" title="Cara membalas">
         <Toggle
           name="splitBubbles"
           label="Pecah jawaban panjang jadi beberapa pesan"
