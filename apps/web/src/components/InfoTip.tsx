@@ -44,6 +44,9 @@ export function InfoTip({
   // isinya terpotong keluar layar. Jadi sisinya dipilih menurut ruang yang
   // tersisa: ikon di paruh kanan layar membuka ke kiri, selebihnya ke kanan.
   const [sisi, setSisi] = useState<"kiri" | "kanan">("kiri");
+  // Arah vertikal gelembung di layar lebar. Kalau ikonnya dekat dasar layar,
+  // membuka ke bawah bikin isinya terpotong tepi bawah, jadi dibalik ke atas.
+  const [arah, setArah] = useState<"bawah" | "atas">("bawah");
   const bungkus = useRef<HTMLSpanElement>(null);
   const id = useId();
 
@@ -59,6 +62,10 @@ export function InfoTip({
     const r = bungkus.current?.getBoundingClientRect();
     if (r && typeof window !== "undefined") {
       setSisi(r.left > window.innerWidth / 2 ? "kanan" : "kiri");
+      // Buka ke atas cuma kalau ruang di bawah ikon sempit DAN di atasnya lebih
+      // lega. Angka 260 kira-kira setinggi gelembung terpanjang.
+      const ruangBawah = window.innerHeight - r.bottom;
+      setArah(ruangBawah < 260 && r.top > ruangBawah ? "atas" : "bawah");
     }
     setBuka(true);
   }
@@ -128,9 +135,11 @@ export function InfoTip({
             id={id}
             role="dialog"
             className={`anim-naik fixed inset-x-4 bottom-4 z-50 block rounded-2xl border border-ink-200 bg-white p-4 text-left text-sm leading-relaxed text-ink-600 shadow-xl
-                       sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-full sm:z-30 sm:mt-2 sm:w-72 sm:max-w-[calc(100vw-2rem)] sm:rounded-xl sm:p-3.5 sm:shadow-[0_8px_24px_-8px_rgba(15,15,15,0.25)] ${
-              sisi === "kanan" ? "sm:right-0" : "sm:left-0"
-            }`}
+                       sm:absolute sm:inset-x-auto sm:z-30 sm:w-72 sm:max-w-[calc(100vw-2rem)] sm:rounded-xl sm:p-3.5 sm:shadow-[0_8px_24px_-8px_rgba(15,15,15,0.25)] ${
+              arah === "atas"
+                ? "sm:top-auto sm:bottom-full sm:mb-2"
+                : "sm:bottom-auto sm:top-full sm:mt-2"
+            } ${sisi === "kanan" ? "sm:right-0" : "sm:left-0"}`}
           >
             {judul && (
               <span className="mb-1.5 block text-[13px] font-semibold text-ink-900">
