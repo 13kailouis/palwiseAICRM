@@ -6,9 +6,35 @@ import { AgentTabs } from "@/components/AgentTabs";
 import { GaleriTambah } from "@/components/GaleriTambah";
 import { GaleriDaftar } from "@/components/GaleriDaftar";
 import { Rincian } from "@/components/Kosong";
+import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { MAKS_BERKAS } from "@/lib/batas";
 
 export const dynamic = "force-dynamic";
+
+// "Cara kerjanya" dibuat baris berikon, bukan tembok paragraf: judul singkat
+// biar cepat dipindai, satu baris penjelasan di bawahnya.
+const CARA_KERJA: { ikon: NamaIkon; judul: string; isi: string }[] = [
+  {
+    ikon: "kirim",
+    judul: "Dikirim otomatis",
+    isi: "Asisten baca keterangan tiap gambar, lalu kirim sendiri di saat yang pas. Kamu nggak usah atur alur apa pun.",
+  },
+  {
+    ikon: "kendali",
+    judul: "Nggak berulang",
+    isi: "Sekali balas paling banyak 2 berkas, dan yang barusan dikirim nggak ditawarin lagi.",
+  },
+  {
+    ikon: "catat",
+    judul: "Biar harganya kejawab",
+    isi: "Kalau gambarnya memuat harga, centang “Baca juga tulisan di dalam gambarnya” biar tulisannya ikut kejawab.",
+  },
+  {
+    ikon: "paket",
+    judul: "Gratis, nggak per pesan",
+    isi: "Kirim gambar lewat Palwise nggak nambah biaya sama sekali.",
+  },
+];
 
 export default async function GaleriPage({
   searchParams,
@@ -136,25 +162,20 @@ export default async function GaleriPage({
               dilewati. Yang belum bertanya tidak boleh dipaksa membaca
               jawabannya. Isinya tetap ada dan tetap bisa dicari. */}
           <Rincian judul="Cara kerjanya">
-            <ul className="space-y-2 text-sm leading-relaxed text-ink-600">
-              <li>
-                Asistenmu membaca keterangan tiap gambar, lalu memutuskan otomatis
-                kapan mengirimnya. Kamu tidak perlu mengatur alur apa pun.
-              </li>
-              <li>
-                Sekali balas maksimal 2 berkas, dan gambar yang barusan dikirim
-                tidak ditawarkan lagi supaya tidak berulang-ulang.
-              </li>
-              <li>
-                Mengirim gambar dan tahu isinya itu dua hal berbeda. Centang
-                &ldquo;Baca juga tulisan di dalam gambarnya&rdquo; kalau gambarmu
-                memuat harga atau keterangan, supaya tulisannya ikut masuk ke
-                Info bisnis dan bisa dijawab kalau ditanya.
-              </li>
-              <li>
-                Mengirim gambar lewat Palwise tidak menambah biaya sama sekali,
-                karena jalur ini tidak menagih per pesan.
-              </li>
+            <ul className="space-y-4">
+              {CARA_KERJA.map((c) => (
+                <li key={c.judul} className="flex gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-600">
+                    <Ikon nama={c.ikon} size={18} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink-900">{c.judul}</p>
+                    <p className="mt-0.5 text-sm leading-relaxed text-ink-500">
+                      {c.isi}
+                    </p>
+                  </div>
+                </li>
+              ))}
             </ul>
           </Rincian>
         </div>
