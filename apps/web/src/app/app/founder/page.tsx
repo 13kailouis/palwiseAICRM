@@ -14,6 +14,7 @@ import { requireUser } from "@/lib/auth";
 import { bolehLihatFounder, emailFounder } from "@/lib/founder";
 import { bacaJejakBuka } from "@/lib/jejakFounder";
 import { PageHeader } from "@/components/ui";
+import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { tandaiMasukanDibacaAction } from "@/app/actions/masukan";
 
 /**
@@ -60,19 +61,28 @@ function Angka({
   nilai,
   label,
   catatan,
+  ikon,
 }: {
   nilai: string;
   label: string;
   catatan?: string;
+  ikon?: NamaIkon;
 }) {
   return (
-    <div className="card-pad">
-      <p className="text-sm text-ink-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tracking-tight text-ink-950">
+    <div className="card p-4">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[13px] leading-snug text-ink-500">{label}</p>
+        {ikon && (
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-500">
+            <Ikon nama={ikon} size={15} />
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-[26px] font-semibold leading-none tracking-tight tabular-nums text-ink-950">
         {nilai}
       </p>
       {catatan && (
-        <p className="mt-1 text-xs leading-relaxed text-ink-500">{catatan}</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{catatan}</p>
       )}
     </div>
   );
@@ -237,14 +247,18 @@ export default async function FounderPage() {
 
       <div className="space-y-6 p-4 sm:p-6">
         <div>
-          <h2 className="font-semibold text-ink-900">Pertumbuhan</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Angka nilai={String(totalWorkspace)} label="Total akun" />
-            <Angka nilai={String(baru7)} label="Daftar 7 hari terakhir" />
-            <Angka nilai={String(baru30)} label="Daftar 30 hari terakhir" />
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="ringkasan" size={16} className="text-ink-400" />
+            Pertumbuhan
+          </h2>
+          <div className="anim-urut mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <Angka nilai={String(totalWorkspace)} label="Total akun" ikon="pelanggan" />
+            <Angka nilai={String(baru7)} label="Daftar 7 hari terakhir" ikon="jam" />
+            <Angka nilai={String(baru30)} label="Daftar 30 hari terakhir" ikon="kalender" />
             <Angka
               nilai={String(adaNomor)}
               label="Sampai nyambungin nomor"
+              ikon="whatsapp"
               catatan={
                 totalWorkspace > 0
                   ? `${Math.round((adaNomor / totalWorkspace) * 100)}% dari total akun. Selisihnya di sini yang paling perlu diperbaiki.`
@@ -255,11 +269,15 @@ export default async function FounderPage() {
         </div>
 
         <div>
-          <h2 className="font-semibold text-ink-900">Uang</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="paket" size={16} className="text-ink-400" />
+            Uang
+          </h2>
+          <div className="anim-urut mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <Angka
               nilai={formatIDR(mrr)}
               label="MRR"
+              ikon="paket"
               catatan={
                 akunFounderBerbayar > 0
                   ? `Dari langganan yang tanggalnya masih berlaku. ${akunFounderBerbayar} akun founder tidak dihitung, paketnya diberikan bukan dibayar.`
@@ -269,23 +287,29 @@ export default async function FounderPage() {
             <Angka
               nilai={formatIDR(terkumpul30)}
               label="Masuk 30 hari terakhir"
+              ikon="paket"
               catatan={`${lunas30.length} pembayaran lunas`}
             />
             <Angka
               nilai={String(menunggu)}
               label="Tagihan menunggu"
+              ikon="jam"
               catatan="Kalau angkanya nggak turun-turun, curigai Payment Notification URL di Midtrans."
             />
             <Angka
               nilai={String(gagal30)}
               label="Gagal 30 hari terakhir"
+              ikon="silang"
               catatan="Termasuk yang ditinggalkan di halaman bayar."
             />
           </div>
         </div>
 
         <div>
-          <h2 className="font-semibold text-ink-900">Sebaran paket</h2>
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="paket" size={16} className="text-ink-400" />
+            Sebaran paket
+          </h2>
           <div className="card mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -320,14 +344,18 @@ export default async function FounderPage() {
         </div>
 
         <div>
-          <h2 className="font-semibold text-ink-900">Pemakaian</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="kirim" size={16} className="text-ink-400" />
+            Pemakaian
+          </h2>
+          <div className="anim-urut mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <Angka
               nilai={balasan30.toLocaleString("id-ID")}
               label="Balasan AI 30 hari"
+              ikon="kirim"
               catatan="Ini yang jadi ongkos token kamu. Bandingkan dengan yang masuk di atas."
             />
-            <Angka nilai={String(nomorTersambung)} label="Nomor tersambung sekarang" />
+            <Angka nilai={String(nomorTersambung)} label="Nomor tersambung sekarang" ikon="whatsapp" />
             <Angka
               nilai={
                 balasan30 > 0 && terkumpul30 > 0
@@ -335,11 +363,13 @@ export default async function FounderPage() {
                   : "—"
               }
               label="Pendapatan per balasan"
+              ikon="paket"
               catatan="Kalau angka ini di bawah ongkos token per balasan, tiap balasan bikin rugi."
             />
             <Angka
               nilai={String(masukanBaru)}
               label="Masukan belum dibaca"
+              ikon="catat"
             />
           </div>
         </div>
@@ -350,7 +380,10 @@ export default async function FounderPage() {
             sampai kolom nama usahanya hilang. Bentuk kartu sama enaknya di
             dua-duanya, cuma jadi dua kolom di layar lebar. */}
         <div>
-          <h2 className="font-semibold text-ink-900">Akun terbaru</h2>
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="pelanggan" size={16} className="text-ink-400" />
+            Akun terbaru
+          </h2>
           <p className="mt-1 text-xs leading-relaxed text-ink-500">
             25 pendaftar terakhir. Jumlah kontak dan obrolan cuma hitungan; isi
             chat pelanggan mereka tidak pernah bisa dibuka dari sini.
@@ -486,7 +519,10 @@ export default async function FounderPage() {
             "Midtrans belum mengabari kita" dari "orangnya memang meninggalkan
             halaman bayar". */}
         <div>
-          <h2 className="font-semibold text-ink-900">Pembayaran terakhir</h2>
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="paket" size={16} className="text-ink-400" />
+            Pembayaran terakhir
+          </h2>
 
           {bayarTerbaru.length === 0 ? (
             <p className="mt-4 text-sm leading-relaxed text-ink-500">
@@ -545,7 +581,10 @@ export default async function FounderPage() {
             yang membukanya, jadi yang membuka melihat jejaknya sendiri
             bertambah. */}
         <div>
-          <h2 className="font-semibold text-ink-900">Catatan bukaan chat</h2>
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="jam" size={16} className="text-ink-400" />
+            Catatan bukaan chat
+          </h2>
           <p className="mt-1 text-xs leading-relaxed text-ink-500">
             Kebijakan privasi kita menulis tiap bukaan tercatat. Ini catatannya,
             dan dia cuma bisa ditambah, tidak bisa dihapus dari aplikasi.
@@ -581,7 +620,8 @@ export default async function FounderPage() {
         </div>
 
         <div>
-          <h2 className="font-semibold text-ink-900">
+          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
+            <Ikon nama="catat" size={16} className="text-ink-400" />
             Masukan dari pengguna
             {masukanBaru > 0 && (
               <span className="ml-2 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">
