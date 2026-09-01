@@ -460,7 +460,7 @@ export function KnowledgeList({ sources }: { sources: KnowledgeItemData[] }) {
         <Kosong
           ikon="info"
           judul="Belum ada info apa-apa"
-          kalimat="Tempel daftar harga dan cara pesan lewat kotak di sebelah, biar asistenmu punya bahan menjawab."
+          kalimat="Tempel daftar harga dan cara pesan lewat kotak Tambah info, biar asistenmu punya bahan menjawab."
         />
       </div>
     );

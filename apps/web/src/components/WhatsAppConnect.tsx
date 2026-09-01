@@ -16,7 +16,7 @@ const STEPS = [
   "Buka WhatsApp di HP yang nomornya mau dipakai",
   "Ketuk titik tiga di pojok kanan atas, pilih Perangkat tertaut",
   "Ketuk Tautkan perangkat",
-  "Arahkan kamera HP ke kotak QR di sebelah",
+  "Arahkan kamera HP ke kotak QR di layar ini",
 ];
 
 const LABEL: Record<string, { text: string; className: string }> = {

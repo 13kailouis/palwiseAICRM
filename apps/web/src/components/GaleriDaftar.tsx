@@ -265,7 +265,7 @@ export function GaleriDaftar({ berkas }: { berkas: BerkasData[] }) {
         <Kosong
           ikon="gambar"
           judul="Belum ada gambar"
-          kalimat="Unggah foto barang, menu, atau daftar harga lewat kotak di sebelah, nanti asistenmu yang mengirimnya."
+          kalimat="Unggah foto barang, menu, atau daftar harga lewat kotak Tambah gambar, nanti asistenmu yang mengirimnya."
         />
       </div>
     );
