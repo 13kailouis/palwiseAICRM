@@ -55,7 +55,8 @@ export type NamaIkon =
   | "salin"
   | "amplop"
   | "gembok"
-  | "unggah";
+  | "unggah"
+  | "lokasi";
 
 const GAMBAR: Record<NamaIkon, React.ReactNode> = {
   // Bidang-bidang halaman, cara paling umum menggambarkan "ringkasan".
@@ -357,6 +358,15 @@ const GAMBAR: Record<NamaIkon, React.ReactNode> = {
       <path d="M12 15V4" />
       <path d="M7.5 8.5 12 4l4.5 4.5" />
       <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+    </>
+  ),
+
+  // Penanda peta: tetesan air dengan lubang bulat di tengah. Untuk alamat atau
+  // lokasi toko.
+  lokasi: (
+    <>
+      <path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10Z" />
+      <circle cx="12" cy="11" r="2.2" />
     </>
   ),
 

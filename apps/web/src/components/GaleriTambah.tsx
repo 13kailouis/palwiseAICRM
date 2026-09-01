@@ -4,14 +4,17 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { tambahBerkasAction, type GaleriState } from "@/app/actions/galeri";
 import { MAKS_MB, mb, periksaBerkas } from "@/lib/batas";
-import { Ikon } from "@/components/Ikon";
+import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { InfoTip } from "@/components/InfoTip";
 
-const CONTOH = [
-  "pelanggan minta lihat produknya",
-  "pelanggan menanyakan daftar harga lengkap",
-  "pelanggan sudah mau bayar dan butuh nomor rekening atau QRIS",
-  "pelanggan menanyakan alamat atau lokasi toko",
+// Chip contoh: label pendek biar muat satu baris, tapi yang ditulis ke kotak
+// tetap kalimat lengkapnya (itu yang dibaca asisten). Ikon kecil bikin tiap
+// pilihan cepat dikenali, bukan sekadar pil teks.
+const CONTOH: { label: string; nilai: string; ikon: NamaIkon }[] = [
+  { label: "Minta lihat produk", nilai: "pelanggan minta lihat produknya", ikon: "gambar" },
+  { label: "Tanya daftar harga", nilai: "pelanggan menanyakan daftar harga lengkap", ikon: "catat" },
+  { label: "Mau bayar / QRIS", nilai: "pelanggan sudah mau bayar dan butuh nomor rekening atau QRIS", ikon: "qr" },
+  { label: "Tanya lokasi toko", nilai: "pelanggan menanyakan alamat atau lokasi toko", ikon: "lokasi" },
 ];
 
 function Submit({ terkunci }: { terkunci: boolean }) {
@@ -238,20 +241,25 @@ export function GaleriTambah({ agentId }: { agentId: string }) {
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {CONTOH.map((c) => {
-              const aktif = keterangan.trim() === c;
+              const aktif = keterangan.trim() === c.nilai;
               return (
                 <button
-                  key={c}
+                  key={c.nilai}
                   type="button"
-                  onClick={() => setKeterangan(aktif ? "" : c)}
+                  onClick={() => setKeterangan(aktif ? "" : c.nilai)}
                   aria-pressed={aktif}
-                  className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
                     aktif
                       ? "border-brand-600 bg-brand-600 text-white"
-                      : "border-ink-200 text-ink-600 hover:border-brand-400 hover:text-brand-700"
+                      : "border-ink-200 text-ink-600 hover:border-brand-400 hover:bg-brand-50/60 hover:text-brand-700"
                   }`}
                 >
-                  {c}
+                  <Ikon
+                    nama={c.ikon}
+                    size={14}
+                    className={`shrink-0 ${aktif ? "text-white" : "text-ink-400"}`}
+                  />
+                  {c.label}
                 </button>
               );
             })}
