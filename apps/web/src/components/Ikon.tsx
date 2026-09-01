@@ -54,7 +54,8 @@ export type NamaIkon =
   | "website"
   | "salin"
   | "amplop"
-  | "gembok";
+  | "gembok"
+  | "unggah";
 
 const GAMBAR: Record<NamaIkon, React.ReactNode> = {
   // Bidang-bidang halaman, cara paling umum menggambarkan "ringkasan".
@@ -346,6 +347,16 @@ const GAMBAR: Record<NamaIkon, React.ReactNode> = {
       <rect x="4.5" y="10.5" width="15" height="9.5" rx="2" />
       <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
       <circle cx="12" cy="15" r="1.2" />
+    </>
+  ),
+
+  // Unggah: panah ke atas keluar dari baki terbuka. Lambang universal "upload",
+  // kebalikan dari panah-masuk-kotak yang berarti "unduh".
+  unggah: (
+    <>
+      <path d="M12 15V4" />
+      <path d="M7.5 8.5 12 4l4.5 4.5" />
+      <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
     </>
   ),
 

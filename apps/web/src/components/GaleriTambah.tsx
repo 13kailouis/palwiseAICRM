@@ -1,9 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { tambahBerkasAction, type GaleriState } from "@/app/actions/galeri";
 import { MAKS_MB, mb, periksaBerkas } from "@/lib/batas";
+import { Ikon } from "@/components/Ikon";
+import { InfoTip } from "@/components/InfoTip";
 
 const CONTOH = [
   "pelanggan minta lihat produknya",
@@ -21,6 +23,15 @@ function Submit({ terkunci }: { terkunci: boolean }) {
   );
 }
 
+type Jenis = "" | "image" | "video" | "pdf";
+
+function jenisDari(file: File): Jenis {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  if (file.type === "application/pdf") return "pdf";
+  return "";
+}
+
 export function GaleriTambah({ agentId }: { agentId: string }) {
   const [state, formAction] = useActionState(tambahBerkasAction, {} as GaleriState);
   const [namaFile, setNamaFile] = useState("");
@@ -29,18 +40,56 @@ export function GaleriTambah({ agentId }: { agentId: string }) {
   // Keluhan soal berkasnya diperiksa di browser, sebelum apa pun dikirim.
   const [keluhan, setKeluhan] = useState("");
   const [ukuran, setUkuran] = useState("");
+  const [jenis, setJenis] = useState<Jenis>("");
+  const [pratinjau, setPratinjau] = useState("");
+  const [seret, setSeret] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Buang alamat pratinjau lama supaya tidak menumpuk di memori.
+  useEffect(() => {
+    return () => {
+      if (pratinjau) URL.revokeObjectURL(pratinjau);
+    };
+  }, [pratinjau]);
 
   function pilihBerkas(file: File | undefined) {
+    if (pratinjau) URL.revokeObjectURL(pratinjau);
     if (!file) {
       setNamaFile("");
       setKeluhan("");
       setUkuran("");
+      setJenis("");
+      setPratinjau("");
       return;
     }
+    const j = jenisDari(file);
     setNamaFile(file.name);
     setUkuran(mb(file.size));
     setKeluhan(periksaBerkas(file) ?? "");
+    setJenis(j);
+    setPratinjau(j === "image" ? URL.createObjectURL(file) : "");
   }
+
+  // Menyerahkan berkas yang di-drop ke input asli, supaya form tetap
+  // mengirimnya seperti biasa waktu Simpan ditekan.
+  function terimaSeret(file: File | undefined) {
+    if (!file || !inputRef.current) return;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    inputRef.current.files = dt.files;
+    pilihBerkas(file);
+  }
+
+  function kosongkan() {
+    if (inputRef.current) inputRef.current.value = "";
+    pilihBerkas(undefined);
+  }
+
+  const adaFile = !!namaFile;
+  // Baca-tulisan cuma masuk akal untuk gambar. Untuk PDF atau video, pilihannya
+  // disembunyikan supaya tidak ada teks yang tidak berlaku.
+  const bisaOCR = !adaFile || jenis === "image";
 
   return (
     <div className="card p-5">
@@ -53,25 +102,105 @@ export function GaleriTambah({ agentId }: { agentId: string }) {
       <form action={formAction} className="mt-5 space-y-4">
         <input type="hidden" name="agentId" value={agentId} />
 
+        {/* Kotak seret-dan-lepas. Input aslinya disembunyikan; kotak inilah yang
+            memicunya, dan menampilkan pratinjau begitu ada gambar dipilih. */}
         <div>
-          <label className="label" htmlFor="file">
-            Gambarnya
-          </label>
           <input
+            ref={inputRef}
             id="file"
             name="file"
             type="file"
             accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf"
             onChange={(e) => pilihBerkas(e.target.files?.[0])}
-            className="input file:mr-3 file:rounded file:border-0 file:bg-ink-100 file:px-3 file:py-1.5 file:text-sm"
+            className="sr-only"
           />
+
+          {!adaFile ? (
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setSeret(true);
+              }}
+              onDragLeave={() => setSeret(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setSeret(false);
+                terimaSeret(e.dataTransfer.files?.[0]);
+              }}
+              className={`group flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition ${
+                seret
+                  ? "border-brand-500 bg-brand-50"
+                  : "border-ink-300 bg-ink-50/50 hover:border-brand-400 hover:bg-brand-50/50"
+              }`}
+            >
+              <span
+                className={`grid h-11 w-11 place-items-center rounded-full transition ${
+                  seret ? "bg-brand-100 text-brand-700" : "bg-white text-ink-500 group-hover:text-brand-600"
+                }`}
+              >
+                <Ikon nama="unggah" size={22} />
+              </span>
+              <span className="text-sm font-medium text-ink-800">
+                Seret gambar ke sini, atau klik untuk pilih
+              </span>
+              <span className="text-xs text-ink-400">
+                JPG, PNG, WEBP, video MP4, atau PDF · maksimal {MAKS_MB} MB
+              </span>
+            </button>
+          ) : (
+            <div
+              className={`flex items-center gap-3 rounded-xl border p-3 ${
+                keluhan ? "border-red-200 bg-red-50" : "border-ink-200 bg-white"
+              }`}
+            >
+              <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg bg-ink-100 text-ink-500">
+                {pratinjau ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={pratinjau} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <Ikon nama={jenis === "video" ? "gambar" : "berkas"} size={22} />
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-1 text-sm font-medium text-ink-900">
+                  {namaFile}
+                </p>
+                <p className="text-xs text-ink-400">
+                  {jenis === "image"
+                    ? "Gambar"
+                    : jenis === "video"
+                      ? "Video"
+                      : jenis === "pdf"
+                        ? "PDF"
+                        : "Berkas"}
+                  {ukuran && ` · ${ukuran}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={kosongkan}
+                aria-label="Ganti berkas"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-500 transition hover:bg-ink-100 hover:text-ink-800"
+              >
+                <Ikon nama="silang" size={18} />
+              </button>
+            </div>
+          )}
+
           {keluhan ? (
             <p className="mt-1.5 text-sm leading-relaxed text-red-600">{keluhan}</p>
           ) : (
-            <p className="hint">
-              JPG, PNG, WEBP, video MP4, atau PDF. Maksimal {MAKS_MB} MB.
-              {ukuran && ` Punyamu ${ukuran}.`}
-            </p>
+            adaFile && (
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="mt-1.5 text-xs font-medium text-brand-700 hover:underline"
+              >
+                Pilih berkas lain
+              </button>
+            )
           )}
         </div>
 
@@ -104,42 +233,60 @@ export function GaleriTambah({ agentId }: { agentId: string }) {
             placeholder="pelanggan menanyakan bentuk atau kemasan Arabika Gayo"
           />
           <p className="hint">
-            Ini yang dibaca asistenmu untuk memutuskan. Makin jelas, makin jarang
-            salah kirim.
+            Ini yang dibaca asistenmu untuk memutuskan. Ketuk contoh di bawah, atau
+            tulis sendiri.
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {CONTOH.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setKeterangan(c)}
-                className="rounded-full border border-ink-200 px-2.5 py-1 text-xs text-ink-600 transition hover:border-brand-400 hover:text-brand-700"
-              >
-                {c}
-              </button>
-            ))}
+            {CONTOH.map((c) => {
+              const aktif = keterangan.trim() === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setKeterangan(aktif ? "" : c)}
+                  aria-pressed={aktif}
+                  className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                    aktif
+                      ? "border-brand-600 bg-brand-600 text-white"
+                      : "border-ink-200 text-ink-600 hover:border-brand-400 hover:text-brand-700"
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 bg-ink-50/60 p-3">
-          <input
-            type="checkbox"
-            name="bacaIsinya"
-            defaultChecked
-            className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
-          />
-          <span>
-            <span className="text-sm font-medium text-ink-800">
-              Baca juga tulisan di dalam gambarnya
+        {/* Baca-tulisan: satu baris ringkas, alasan panjangnya masuk InfoTip.
+            Cuma muncul untuk gambar, karena memang cuma berlaku di gambar. */}
+        {bisaOCR && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 bg-ink-50/60 p-3">
+            <input
+              type="checkbox"
+              name="bacaIsinya"
+              defaultChecked
+              className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+            />
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-ink-800">
+                  Baca juga tulisan di dalam gambarnya
+                </span>
+                <InfoTip judul="Baca tulisan di gambar">
+                  Tanpa ini asistenmu bisa mengirim gambarnya tapi tidak tahu
+                  isinya, jadi tetap tidak bisa menjawab &ldquo;berapa
+                  harganya&rdquo;. Kalau dicentang, tulisan di gambar ikut masuk
+                  ke Info bisnis. Cuma berlaku untuk gambar.
+                </InfoTip>
+              </span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-ink-500">
+                Biar asisten bisa jawab &ldquo;berapa harganya&rdquo; dari tulisan
+                di gambar.
+              </span>
             </span>
-            <span className="mt-0.5 block text-xs leading-relaxed text-ink-500">
-              Tanpa ini asistenmu bisa mengirim gambarnya tapi tidak tahu isinya,
-              jadi tetap tidak bisa menjawab &ldquo;berapa harganya&rdquo;. Kalau
-              dicentang, tulisan di gambar ikut masuk ke Info bisnis. Cuma berlaku
-              untuk gambar.
-            </span>
-          </span>
-        </label>
+          </label>
+        )}
 
         <div className="flex items-center gap-3">
           <Submit terkunci={!!keluhan} />
