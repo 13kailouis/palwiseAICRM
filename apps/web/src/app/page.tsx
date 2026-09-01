@@ -108,7 +108,12 @@ function KepalaBagian({
   terang?: boolean;
 }) {
   return (
-    <div className="max-w-3xl">
+    // saat-terlihat: judul bagian naik pelan waktu digulir sampai kelihatan.
+    // Murni CSS (animation-timeline), dipagari @supports, dan menghormati
+    // prefers-reduced-motion, jadi di browser tanpa dukungan atau yang minta
+    // gerak dikurangi dia tampil biasa tanpa apa-apa. Yang di atas lipatan
+    // sudah lewat rentang masuknya waktu dimuat, jadi tidak berkedip.
+    <div className="saat-terlihat max-w-3xl">
       <p className={`kicker ${terang ? "text-ink-400" : ""}`}>{kicker}</p>
       <h2 className={`judul-bagian mt-3 ${terang ? "text-white" : ""}`}>
         {judul}
@@ -512,7 +517,7 @@ function Sorotan({
     >
       <div className={`${KOLOM} ${JARAK}`}>
         <div className="grid items-center gap-8 sm:gap-12 lg:grid-cols-2 lg:gap-16">
-          <div className={balik ? "lg:order-2" : ""}>
+          <div className={`saat-terlihat ${balik ? "lg:order-2" : ""}`}>
             <p className="kicker">{kicker}</p>
             <h2 className="judul-bagian mt-3">{judul}</h2>
             <Dua hp={bodyHp} lebar={body} className="teks-bagian" />
