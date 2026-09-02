@@ -518,6 +518,25 @@ export interface ContohInfo {
   nama: string;
   ikon: NamaIkon;
   isi: string;
+  /**
+   * Judul-judul blok di dalam contohnya, dipakai sebagai keterangan satu baris
+   * di layar pemilihan.
+   *
+   * DITURUNKAN dari isinya, bukan diketik lagi. Keterangan yang diketik
+   * terpisah adalah keterangan yang suatu hari akan berbohong: blok baru
+   * ditambahkan ke contohnya, keterangannya tidak ikut, dan yang membaca
+   * layar pemilihan memilih berdasarkan daftar yang sudah basi.
+   */
+  blok: string[];
+}
+
+/** Judul blok = baris yang seluruhnya huruf besar. */
+function judulBlok(isi: string): string[] {
+  return isi
+    .split("\n")
+    .map((b) => b.trim())
+    .filter((b) => /^[A-Z][A-Z ,]+$/.test(b))
+    .map((b) => b.charAt(0) + b.slice(1).toLowerCase());
 }
 
 /**
@@ -526,7 +545,13 @@ export interface ContohInfo {
  * datang ke Info bisnis mencari nama yang sama di posisi yang sama.
  */
 export const CONTOH_INFO: ContohInfo[] = PRESET.filter((p) => ISI[p.id]).map(
-  (p) => ({ id: p.id, nama: p.nama, ikon: p.ikon, isi: ISI[p.id] }),
+  (p) => ({
+    id: p.id,
+    nama: p.nama,
+    ikon: p.ikon,
+    isi: ISI[p.id],
+    blok: judulBlok(ISI[p.id]),
+  }),
 );
 
 /** Dipakai kalau suatu saat contohnya perlu diambil per id. */

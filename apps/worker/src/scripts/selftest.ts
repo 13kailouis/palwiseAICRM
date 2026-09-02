@@ -8275,16 +8275,23 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     const knowledgeAdd = baca("apps/web/src/components/KnowledgeAdd.tsx");
     const contohInfo = baca("apps/web/src/lib/contohInfo.ts");
 
-    // Panduan masih memakai contohnya sendiri (toko kopi), dan di sana itu
-    // memang cuma satu gambar bentuk, bukan isi yang ditempel orang. Yang
-    // dijaga tetap sama: ada kolom stok, ada baris yang habis, dan varian
-    // punya barisnya sendiri.
-    check("contoh info bisnis di panduan punya kolom stok", /stok \d/.test(panduan));
-    check("contoh info bisnis di panduan mencontohkan barang yang habis", /stok 0/.test(panduan));
+    // Panduan DULU mengetik ulang contohnya sendiri (toko kopi), terpisah dari
+    // contoh yang benar-benar dipakai tombol "Pakai contoh" di dalam aplikasi.
+    // Dua salinan contoh yang sama selalu berakhir sama: satu diperbaiki, satu
+    // tertinggal, dan yang tertinggal justru yang dibaca orang SEBELUM
+    // mendaftar. Sekarang dua-duanya membaca CONTOH_INFO, dan yang dijaga di
+    // sini tinggal satu hal: panduan tidak boleh punya salinannya sendiri lagi.
     check(
-      "contoh info bisnis di panduan memberi varian barisnya sendiri",
-      /200gr/.test(panduan) && /500gr/.test(panduan),
+      "panduan memakai contoh yang sama dengan aplikasinya",
+      /<ContohPanduan/.test(panduan) && !/Arabika Gayo 500gr/.test(panduan),
     );
+    check(
+      "pemilih contoh di panduan diturunkan dari daftar yang sama",
+      /CONTOH_INFO/.test(baca("apps/web/src/components/ContohPanduan.tsx")),
+    );
+    // Pelajaran samar lawan jelas tetap dijaga di tabelnya sendiri, dan di sana
+    // stok 0 memang harus tertulis apa adanya.
+    check("panduan mengajarkan menandai barang yang habis", /stok 0/.test(panduan));
 
     // ─── Contoh per bidang usaha ────────────────────────────────────────────
     //
@@ -8433,9 +8440,42 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "daftar contoh diturunkan dari preset",
       /PRESET\.filter/.test(contohInfo) && /import \{ PRESET \}/.test(contohInfo),
     );
+    // Pemilihnya MODAL, bukan kotak yang membuka di tempat. Sepuluh pilihan
+    // yang membuka di dalam halaman mendorong kolom isian keluar layar, dan
+    // kolom isian itu satu-satunya alasan orang membuka layar ini.
+    const contohModal = baca("apps/web/src/components/ContohModal.tsx");
     check(
-      "kotak Ketik sendiri memakai pemilih bidang usaha",
-      /CONTOH_INFO\.map/.test(knowledgeAdd) && /aria-pressed=\{aktif\}/.test(knowledgeAdd),
+      "kotak Ketik sendiri memanggil modal contoh",
+      /<ContohModal/.test(knowledgeAdd) && /CONTOH_INFO\.map/.test(contohModal),
+    );
+    // Penuh layar di HP, kartu di tengah pada layar lebar. Modal yang cuma
+    // kartu di tengah bikin isinya tidak muat dan tidak bisa digulung di HP.
+    check(
+      "modal contoh penuh layar di HP dan kartu di layar lebar",
+      /fixed inset-0 z-\[60\]/.test(contohModal) &&
+        /h-full w-full flex-col/.test(contohModal) &&
+        /sm:max-h-\[86vh\]/.test(contohModal) &&
+        /min-h-0 flex-1 overflow-y-auto/.test(contohModal),
+    );
+    // Esc dan klik latar menutup, dan halaman di belakangnya tidak ikut
+    // tergulung selama modalnya terbuka.
+    check(
+      "modal contoh bisa ditutup Esc dan klik latar",
+      /"Escape"/.test(contohModal) &&
+        /body\.style\.overflow = "hidden"/.test(contohModal),
+    );
+    // Menimpa tulisan orang tanpa bertanya itu kehilangan data yang tidak bisa
+    // dibatalkan, dan modal justru bikin tombolnya lebih gampang tertekan.
+    check(
+      "modal contoh bertanya dulu sebelum menimpa tulisan yang sudah ada",
+      /adaIsi \? setKonfirmasi/.test(contohModal) &&
+        /adaIsi=\{isi\.trim\(\)\.length > 0\}/.test(knowledgeAdd),
+    );
+    // Modal yang digambar DI DALAM <form> bikin tombolnya ikut terbawa waktu
+    // form dikirim, dan bikin konfirmasinya jadi form di dalam form.
+    check(
+      "modal contoh digambar di luar form",
+      knowledgeAdd.indexOf("</form>") < knowledgeAdd.indexOf("<ContohModal"),
     );
 
     // Bentuknya sudah dicontohkan, tapi contoh tidak bisa mengajarkan SEBERAPA

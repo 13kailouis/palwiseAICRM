@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContohPanduan } from "@/components/ContohPanduan";
 import Link from "next/link";
 import { getPlan } from "@palwise/db";
 import { keApp } from "@/lib/situs";
@@ -64,29 +65,6 @@ const SIAPKAN: { ikon: NamaIkon; judul: string; body: string }[] = [
   },
 ];
 
-/** Contoh isi Info bisnis yang benar-benar bisa ditempel. */
-const CONTOH_ISI = `HARGA DAN STOK
-Arabika Gayo 200gr Rp 85.000 stok 12
-Arabika Gayo 500gr Rp 190.000 stok 4
-Robusta Temanggung 200gr Rp 55.000 stok 0
-Paket sampler 3 x 50gr Rp 75.000 stok 8
-
-PENGIRIMAN
-Dikirim dari Bandung pakai JNE dan J&T.
-Area Bandung bisa COD.
-Gratis ongkir untuk belanja di atas Rp 300.000.
-Pesanan sebelum jam 2 siang dikirim hari yang sama.
-
-CARA PESAN DAN BAYAR
-Transfer BCA atau QRIS. Nomor rekening dikirim setelah total dihitung.
-Pesanan diproses setelah bukti transfer diterima.
-
-JAM BUKA
-Senin sampai Sabtu jam 9 pagi sampai 5 sore. Minggu tutup.
-
-RETUR
-Kemasan rusak diganti penuh. Lapor maksimal 3 hari dengan foto.
-Kopi yang sudah dibuka tidak bisa ditukar.`;
 
 const SALAH_BENAR: { salah: string; benar: string; kenapa: string }[] = [
   {
@@ -465,13 +443,14 @@ export default function PanduanPage() {
             Contoh isi info bisnis
           </h2>
           <p className="mt-3 max-w-2xl leading-relaxed text-ink-600">
-            Ini contoh toko kopi. Bentuknya yang penting, bukan isinya: judul
-            besar per topik, lalu angka dan aturan yang jelas di bawahnya. Tiru
-            bentuknya, ganti isinya sama jualanmu.
+            Pilih bidang yang paling deket sama usahamu. Bentuknya yang
+            penting, bukan angkanya: judul besar per topik, lalu harga dan
+            aturan yang jelas di bawahnya, satu baris satu barang atau layanan.
+            Contoh yang sama ada di dalam aplikasi, tinggal ditekan.
           </p>
-          <pre className="mt-6 overflow-x-auto rounded-2xl border border-ink-200 bg-ink-950 p-5 text-[13px] leading-relaxed text-ink-300">
-            {CONTOH_ISI}
-          </pre>
+          <div className="mt-6">
+            <ContohPanduan />
+          </div>
 
           <h3 className="mt-12 font-semibold text-ink-900">
             Bidang usahamu udah ada contohnya di dalam

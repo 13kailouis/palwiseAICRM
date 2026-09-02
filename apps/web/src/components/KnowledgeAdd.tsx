@@ -7,6 +7,7 @@ import { ImportFlow } from "@/components/ImportFlow";
 import { DariAiLain } from "@/components/DariAiLain";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { CONTOH_INFO } from "@/lib/contohInfo";
+import { ContohModal } from "@/components/ContohModal";
 import { InfoTip } from "@/components/InfoTip";
 
 type Tab = "text" | "qna" | "file" | "website" | "ai";
@@ -80,6 +81,8 @@ export function KnowledgeAdd({
   // Yang terakhir dipakai ditandai, supaya orang yang mencoba beberapa contoh
   // tahu yang mana yang sekarang ada di kolomnya.
   const [contohDipakai, setContohDipakai] = useState<string | null>(null);
+  const namaContoh =
+    CONTOH_INFO.find((c) => c.id === contohDipakai)?.nama ?? null;
   const [state, formAction] = useActionState(addKnowledgeAction, {} as KnowledgeState);
 
   // Lagi mengambil dari sumber luar (website/berkas/AI lain)? Deret "Ketik
@@ -216,73 +219,31 @@ export function KnowledgeAdd({
               {/* Contohnya benar-benar masuk ke kolomnya, bukan cuma dibayangi
                   sebagai placeholder yang hilang begitu diketik.
 
-                  Sekarang tombolnya MEMBUKA PILIHAN, bukan langsung mengisi.
-                  Contoh tunggal berisi daftar harga kopi mengajarkan dua hal
-                  yang salah sekaligus ke pemilik klinik, bengkel, atau
-                  sekolah: bahwa produk ini untuk toko, dan bahwa catatannya
-                  cukup berisi daftar harga. Padahal yang paling ditanyakan
-                  pasien itu jadwal praktik, dan yang paling ditanyakan calon
-                  murid itu berkas pendaftaran. */}
+                  Tombolnya MEMBUKA MODAL, bukan mengisi langsung dan bukan
+                  membuka kotak di tempat. Contoh tunggal berisi daftar harga
+                  kopi mengajarkan dua hal yang salah sekaligus ke pemilik
+                  klinik, bengkel, atau sekolah: bahwa produk ini untuk toko,
+                  dan bahwa catatannya cukup berisi daftar harga. Tapi sepuluh
+                  pilihan yang dibuka DI TEMPAT mendorong kolom isian keluar
+                  layar, dan kolom isian itu satu-satunya alasan orang membuka
+                  layar ini. Modal menyelesaikan dua-duanya. */}
               <button
                 type="button"
-                onClick={() => setContohBuka((b) => !b)}
-                aria-expanded={contohBuka}
+                onClick={() => setContohBuka(true)}
                 className="text-sm font-medium text-brand-700 hover:underline"
               >
-                {contohBuka ? "Tutup contoh" : "Pakai contoh"}
+                Pakai contoh
               </button>
             </div>
 
-            {/* Deret pilihan bidang usaha. Nama dan ikonnya diturunkan dari
-                PRESET, jadi bidang yang ada di layar Asisten selalu ada di
-                sini juga, dengan urutan yang sama.
-
-                Satu baris yang bisa digeser, bukan grid yang membungkus:
-                sepuluh kotak yang membungkus jadi tiga baris mendorong
-                kolom isiannya jauh ke bawah layar HP, dan yang dicari orang
-                di layar ini kolom isiannya. */}
-            {contohBuka && (
-              <div className="anim-naik mb-2.5 rounded-xl border border-ink-200 bg-ink-50 p-3">
-                <p className="text-xs leading-relaxed text-ink-600">
-                  Pilih yang paling dekat sama usahamu. Isinya cuma contoh
-                  bentuk, angkanya karangan, jadi timpa dengan datamu sendiri.
-                </p>
-                {/* Di HP satu baris yang digeser, di layar lebar dibiarkan
-                    membungkus. Sepuluh nama bidang yang membungkus di layar
-                    360px jadi enam baris dan mendorong kolom isian keluar
-                    layar, padahal kolom isian itu yang dicari orang di sini.
-                    Di layar lebar kebalikannya: yang digeser menyembunyikan
-                    setengah pilihan di balik tepi kotak, dan tidak ada yang
-                    tahu harus menggeser. */}
-                <div className="thin-scroll -mx-3 mt-2.5 flex gap-2 overflow-x-auto px-3 pb-1 sm:flex-wrap sm:overflow-visible">
-                  {CONTOH_INFO.map((c) => {
-                    const aktif = contohDipakai === c.id;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        aria-pressed={aktif}
-                        onClick={() => {
-                          setIsi(c.isi);
-                          setContohDipakai(c.id);
-                        }}
-                        className={`tap-aman inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
-                          aktif
-                            ? "border-brand-600 bg-brand-600 font-medium text-white"
-                            : "border-ink-200 bg-white text-ink-700 hover:border-ink-300"
-                        }`}
-                      >
-                        <Ikon
-                          nama={c.ikon}
-                          size={15}
-                          className={aktif ? "text-white" : "text-ink-400"}
-                        />
-                        <span className="whitespace-nowrap">{c.nama}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+            {/* Yang sedang terpakai disebut namanya. Tanpa ini orang yang
+                mencoba dua contoh tidak punya cara tahu mana yang sekarang ada
+                di kolomnya, karena isinya sudah tergulung jauh ke bawah. */}
+            {namaContoh && (
+              <p className="mb-1.5 flex items-center gap-1.5 text-xs text-ink-500">
+                <Ikon nama="centang" size={13} className="text-ink-400" />
+                Contoh {namaContoh} dimasukkan. Timpa dengan datamu sendiri.
+              </p>
             )}
             <textarea
               id="content"
@@ -367,6 +328,20 @@ export function KnowledgeAdd({
         </div>
       </form>
       )}
+
+      {/* Di luar <form>, dan itu disengaja. Modal yang digambar di dalam form
+          bikin tombol-tombolnya ikut terbawa waktu form dikirim, dan bikin
+          konfirmasinya jadi form di dalam form, yang tidak sah di HTML. */}
+      <ContohModal
+        buka={contohBuka}
+        onTutup={() => setContohBuka(false)}
+        onPilih={(id, isi) => {
+          setIsi(isi);
+          setContohDipakai(id);
+        }}
+        adaIsi={isi.trim().length > 0}
+        terpakai={contohDipakai}
+      />
     </div>
   );
 }
