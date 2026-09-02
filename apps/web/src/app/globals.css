@@ -90,6 +90,36 @@ body {
   border-radius: 6px;
 }
 
+/* KOTAK ISIAN MEMATIKAN OUTLINE DI ATAS, dan ini perbaikan bug, bukan selera.
+ *
+ * .input sudah punya penanda fokusnya sendiri: garis tepinya berubah biru plus
+ * cincin tipis yang menempel. Waktu outline di atas ikut menyala di kotak yang
+ * sama, yang kelihatan DUA kotak biru bertumpuk dengan celah putih di
+ * antaranya, karena outline digambar 2px DI LUAR garis tepinya. Kena di semua
+ * form, dan paling jelas di kotak isian yang besar.
+ *
+ * Yang dimatikan outline-nya, bukan cincinnya. Cincinnya memeluk kotaknya dan
+ * ikut lengkung sudutnya; outline menggambar kotak kedua bersudut 6px yang
+ * tidak pernah sejajar dengan sudut kotaknya.
+ *
+ * DITULIS SEBAGAI TAMBAHAN, BUKAN SEBAGAI PENGECUALIAN, dan itu wajib.
+ * Percobaan pertama memakai :not(.input, ...) di aturan atas, dan GAGAL diam-
+ * diam: Tailwind menggandakan tiap aturan yang menyebut kelas yang di-@apply
+ * orang lain, jadi .textarea dan .textarea-prosa yang meng-@apply input bikin
+ * dua salinan tambahan yang :not()-nya sudah TIDAK memuat .input lagi. CSS itu
+ * penjumlahan, jadi salinan yang tidak mengecualikan tetap menyala dan semua
+ * kotak .input tetap dobel. Aturan yang MENAMBAH kebal terhadap penggandaan
+ * itu; aturan yang MENGURANGI tidak. Bobotnya (0,2,0) lawan (0,1,0) milik
+ * :where() di atas, jadi selalu menang.
+ *
+ * Yang tidak punya penanda sendiri tetap dapat outline: kotak centang, kotak
+ * pilih kecil, tombol, dan tautan. */
+.input:focus-visible,
+.textarea:focus-visible,
+.textarea-prosa:focus-visible {
+  outline: none;
+}
+
 /* Sorotan teks ikut warnanya sendiri, bukan biru bawaan browser yang berbeda
  * di tiap sistem. */
 ::selection {
@@ -124,7 +154,7 @@ body {
   .input {
     @apply w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm
            text-ink-900 outline-none transition placeholder:text-ink-400
-           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30;
   }
   /* Huruf lebar-tetap. BENAR untuk daftar harga: angka dan kolomnya berbaris
      lurus ke bawah, dan itu memang gunanya.

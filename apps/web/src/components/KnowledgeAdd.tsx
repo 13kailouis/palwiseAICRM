@@ -258,9 +258,11 @@ export function KnowledgeAdd({
                 mencoba dua contoh tidak punya cara tahu mana yang sekarang ada
                 di kolomnya, karena isinya sudah tergulung jauh ke bawah. */}
             {namaContoh && (
-              <p className="mb-1.5 flex items-center gap-1.5 text-xs text-ink-500">
-                <Ikon nama="centang" size={13} className="text-ink-400" />
-                Contoh {namaContoh} dimasukkan. Timpa dengan datamu sendiri.
+              <p className="mb-1.5">
+                <span className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-ink-100 px-2 py-1 text-xs text-ink-600">
+                  <Ikon nama="centang" size={12} className="shrink-0 text-ink-500" />
+                  <span className="truncate">Contoh {namaContoh}</span>
+                </span>
               </p>
             )}
             <textarea
@@ -284,12 +286,29 @@ export function KnowledgeAdd({
                 menebak sendiri bahwa itu boleh, karena tidak ada satu kalimat
                 pun di layar ini yang mengatakannya. Yang lain berhenti di lima
                 baris karena mengira daftar panjang bikin asistennya bingung. */}
-            <p className="mt-2 text-xs leading-relaxed text-ink-500">
-              Tulis <strong className="font-medium text-ink-700">semua</strong>{" "}
-              barang atau layananmu, satu baris satu item, lengkap dengan
-              harganya. Daftar panjang justru bagus, ratusan baris tidak apa-apa.
-              Kalau datamu sudah ada di Excel atau Google Sheets, salin saja
-              kolomnya lalu tempel di sini apa adanya.
+            <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-ink-500">
+              <span>
+                Tulis{" "}
+                <strong className="font-medium text-ink-700">semua</strong>{" "}
+                barangmu, satu baris satu item. Daftar panjang justru bagus.
+              </span>
+              {/* Yang tinggal di layar cuma kalimat yang MENGUBAH KELAKUAN,
+                  yaitu bahwa daftar panjang itu benar. Sisanya caranya, dan
+                  cara cukup ada waktu dicari.
+
+                  "Ratusan baris" dan "tempel dari Excel" TIDAK BOLEH hilang
+                  dari mana pun. Pelanggan berbayar pertama menempelkan 842
+                  baris dan itu justru yang paling benar, tapi dia harus
+                  menebak sendiri bahwa itu boleh, dan yang lain berhenti di
+                  lima baris karena mengira daftar panjang bikin asistennya
+                  bingung. */}
+              <InfoTip judul="Seberapa banyak yang perlu ditulis">
+                Ratusan baris nggak apa-apa. Asistennya nyari per baris, bukan
+                baca semuanya sekaligus, jadi daftar yang panjang malah bikin
+                dia lebih jarang salah. Kalau datamu udah ada di Excel atau
+                Google Sheets, salin kolomnya terus tempel di sini apa adanya,
+                nggak usah dirapiin dulu.
+              </InfoTip>
             </p>
           </div>
         )}

@@ -8537,9 +8537,24 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // BANYAK: contoh empat baris diam-diam mengajarkan bahwa empat baris cukup.
     // Pelanggan sungguhan menempelkan 842 baris dan itu justru yang paling
     // benar, tapi dia harus menebak sendiri bahwa itu boleh.
+    // Keterangannya dipendekkan 3 September 2026 karena empat baris teks di
+    // bawah kotak isian terbaca sebagai tembok. Yang TETAP di layar cuma
+    // kalimat yang mengubah kelakuan, yaitu bahwa daftar panjang itu benar.
+    // Kalau kalimat itu ikut disembunyikan ke balik ikon, orang kembali
+    // berhenti di lima baris, dan itu yang hampir menghilangkan pelanggan
+    // berbayar pertama.
     check(
-      "kotak Ketik sendiri bilang daftar panjang itu bagus",
-      /ratusan baris/.test(knowledgeAdd) && /Excel/.test(knowledgeAdd),
+      "kotak Ketik sendiri bilang daftar panjang itu bagus, di layar",
+      /Daftar panjang justru bagus/.test(knowledgeAdd),
+    );
+    // Caranya boleh pindah ke balik ikon keterangan, tapi tidak boleh hilang:
+    // pelanggan yang menempelkan 842 baris dari Excel itu yang paling benar,
+    // dan dia harus menebak sendiri bahwa itu boleh.
+    check(
+      "caranya menempel dari Excel tetap ada, walau di balik ikon",
+      /atusan baris/.test(knowledgeAdd) &&
+        /Excel/.test(knowledgeAdd) &&
+        /<InfoTip judul="Seberapa banyak/.test(knowledgeAdd),
     );
     check(
       "panduan menjawab yang cuma menulis barang terlaris",
