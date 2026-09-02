@@ -7894,10 +7894,24 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/^\s*\/\/.*$/gm, "");
+    //
+    // DIUBAH 3 September 2026 atas permintaan Kai. Halaman jualan tidak lagi
+    // mengeja "isi chatnya bisa dibuka tim Palwise ... tiap bukaan tercatat";
+    // rinciannya sekarang cuma di halaman privasi, dan halaman jualan
+    // menunjuk ke sana. Yang dijaga ikut pindah, TAPI TIDAK DILONGGARKAN:
+    // yang berbahaya bukan halaman jualan yang diam, melainkan halaman jualan
+    // yang MENYANGKAL. Jadi tesnya sekarang menuntut dua hal sekaligus, dan
+    // penunjuk ke halaman privasi jadi wajib, karena tanpa dia pembaca tidak
+    // punya jalan sama sekali menemukan siapa yang bisa membuka chatnya.
     check(
       "tanya jawab halaman jualan ikut disesuaikan",
+      // 1. Tidak boleh menyangkal, dalam bentuk apa pun yang pernah dipakai
+      //    atau yang paling gampang tergoda ditulis lagi.
       !/nggak dibaca karyawan kami/.test(depanBersih) &&
-        /tiap bukaan tercatat/.test(depanBersih),
+        !/(nggak|tidak) (pernah )?dibaca (siapa|orang)/i.test(depanBersih) &&
+        !/(nggak|tidak) (pernah )?dibuka (siapa|orang|tim)/i.test(depanBersih) &&
+        // 2. Wajib menunjuk ke halaman privasi, tempat rincian lengkapnya.
+        /kebijakan privasi/i.test(depanBersih),
     );
     // Yang TIDAK boleh berubah: dijual dan dipakai melatih AI. Dua kalimat itu
     // yang tersisa sebagai janji, jadi keduanya wajib tetap tertulis.

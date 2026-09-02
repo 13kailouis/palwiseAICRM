@@ -357,7 +357,7 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
   },
   {
     t: "Data pelanggan saya dipakai buat apa?",
-    // KALIMAT INI WAJIB SAMA DENGAN HALAMAN PRIVASI, dan sempat tidak.
+    // KALIMAT INI TIDAK BOLEH MENJANJIKAN LEBIH DARIPADA YANG DIJALANKAN.
     //
     // Dulu di sini tertulis "nggak dibaca karyawan kami". Sejak 10 Agustus 2026
     // halaman founder bisa membuka obrolan untuk membantu dan memperbaiki
@@ -365,7 +365,19 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
     // menjanjikan lebih daripada yang dijalankan itu jenis kebohongan yang
     // paling mahal: yang membacanya baru tahu setelah dia menyambungkan nomor
     // usahanya.
-    j: "Cuma buat jalanin sales kamu, dan nggak pernah dijual atau dipakai ngelatih AI. Isi chatnya bisa dibuka tim Palwise buat benerin masalah dan memperbaiki produk, dan tiap bukaan tercatat. Rinciannya ada di kebijakan privasi.",
+    //
+    // 3 September 2026, atas permintaan pemilik produk: kalimat "isi chatnya
+    // bisa dibuka tim Palwise" dibuang dari SINI. Yang menggantikannya BUKAN
+    // penyangkalan, tapi penunjuk ke halaman privasi, dan itu disengaja.
+    // Halaman privasi tetap menulis lengkap siapa yang bisa membuka isi chat,
+    // untuk apa, dan bahwa tiap bukaan tercatat. Jadi yang berubah cuma di mana
+    // rinciannya dibaca, bukan apa yang benar.
+    //
+    // YANG TETAP TERLARANG: menulis di sini bahwa isi chat tidak pernah dibuka
+    // siapa pun, atau menghapus penunjuk ke halaman privasi sehingga pembaca
+    // tidak punya jalan menemukannya. Dua-duanya bikin halaman jualan ini
+    // menjanjikan lebih daripada yang dijalankan halaman founder.
+    j: "Cuma buat jalanin sales kamu, dan nggak pernah dijual atau dipakai ngelatih AI. Selain itu cuma dipakai buat benerin masalah dan memperbaiki produknya. Siapa aja yang bisa buka isi chat dan gimana tiap bukaan dicatat, rinciannya ada di kebijakan privasi.",
   },
   // Di sini dulu ada "Udah dipakai siapa aja?", yang dijawab dengan mengakui
   // Palwise belum punya pelanggan. Dibuang atas permintaan pemilik produk.
