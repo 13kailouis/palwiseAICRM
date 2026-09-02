@@ -28,11 +28,16 @@ export function IsiBesar({
   nilai,
   onUbah,
   onTutup,
+  judul = "Isi info bisnis",
+  placeholder,
 }: {
   buka: boolean;
   nilai: string;
   onUbah: (v: string) => void;
   onTutup: () => void;
+  /** Judul di kepalanya. Kotak ini dipakai beberapa layar yang berbeda. */
+  judul?: string;
+  placeholder?: string;
 }) {
   const kotak = useRef<HTMLTextAreaElement>(null);
 
@@ -67,13 +72,13 @@ export function IsiBesar({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Isi info bisnis"
+        aria-label={judul}
         onClick={(e) => e.stopPropagation()}
         className="flex h-full w-full flex-col bg-white sm:h-[88vh] sm:max-w-5xl sm:rounded-2xl sm:shadow-2xl"
       >
         <div className="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-3.5">
           <div className="min-w-0">
-            <h2 className="font-semibold text-ink-950">Isi info bisnis</h2>
+            <h2 className="font-semibold text-ink-950">{judul}</h2>
             {/* Angkanya ada karena daftar panjang itu yang benar dan orang
                 perlu bukti bahwa tempelannya masuk semua. Yang menempel 842
                 baris dari Excel tidak punya cara lain memastikannya. */}
@@ -101,7 +106,7 @@ export function IsiBesar({
             value={nilai}
             onChange={(e) => onUbah(e.target.value)}
             className="textarea h-full w-full resize-none text-[13.5px]"
-            placeholder="Daftar harga dan stok, cara pesan, jam buka, aturan retur, pertanyaan yang sering ditanya."
+            placeholder={placeholder}
           />
         </div>
 
@@ -116,5 +121,27 @@ export function IsiBesar({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Tombol pemicu kotak besar.
+ *
+ * Diekspor supaya empat layar yang memakainya tidak menyalin markup yang sama
+ * empat kali. Yang disalin selalu berakhir berbeda: satu dapat aria-label,
+ * yang lain tidak, dan yang tidak itu jadi tombol tanpa nama buat pembaca
+ * layar.
+ */
+export function TombolBesar({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Besarkan kotak isian"
+      title="Besarkan"
+      className="tap-aman grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+    >
+      <Ikon nama="perbesar" size={16} />
+    </button>
   );
 }

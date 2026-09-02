@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { IsiBesar, TombolBesar } from "@/components/IsiBesar";
 import { salinTeks } from "@/lib/salin";
 import { useFormStatus } from "react-dom";
 import { addKnowledgeAction, type KnowledgeState } from "@/app/actions/knowledge";
@@ -75,6 +76,8 @@ export function DariAiLain({
 }) {
   const [state, formAction] = useActionState(addKnowledgeAction, {} as KnowledgeState);
   const [nama, setNama] = useState(namaBisnis);
+  const [tempelan, setTempelan] = useState("");
+  const [besarBuka, setBesarBuka] = useState(false);
   const [tersalin, setTersalin] = useState(false);
   const [gagalSalin, setGagalSalin] = useState(false);
 
@@ -176,15 +179,30 @@ export function DariAiLain({
         </div>
 
         <div>
-          <label className="label" htmlFor="content-ai">
-            Tempel jawabannya di sini
-          </label>
+          <div className="mb-1.5 flex items-end justify-between gap-3">
+            <label className="label mb-0" htmlFor="content-ai">
+              Tempel jawabannya di sini
+            </label>
+            {/* Jawaban AI lain bisa panjang sekali, dan keterangan di bawah
+                menyuruh membacanya dulu. Sepuluh baris di kolom sempit bukan
+                tempat memeriksa harga. */}
+            <TombolBesar onClick={() => setBesarBuka(true)} />
+          </div>
           <textarea
             id="content-ai"
             name="content"
             rows={10}
             className="textarea"
+            value={tempelan}
+            onChange={(e) => setTempelan(e.target.value)}
             placeholder="Tempel isi blok kodenya di sini. Tanda kutip tiga di awal dan akhir boleh ikut, nanti dibuang otomatis."
+          />
+          <IsiBesar
+            buka={besarBuka}
+            nilai={tempelan}
+            onUbah={setTempelan}
+            onTutup={() => setBesarBuka(false)}
+            judul="Jawaban dari AI lain"
           />
           <p className="hint">
             Baca sekilas dulu sebelum simpan. Kalau ada harga yang keliru,

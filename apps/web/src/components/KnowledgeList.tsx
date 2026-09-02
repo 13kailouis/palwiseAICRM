@@ -69,6 +69,13 @@ function KnowledgeItem({ source }: { source: KnowledgeItemData }) {
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   const [konfirmHapus, setKonfirmHapus] = useState(false);
+  // Konfirmasi "tulisanmu belum disimpan" dulu memakai window.confirm bawaan
+  // browser, satu-satunya dialog bawaan yang tersisa di seluruh aplikasi.
+  // Bentuknya beda sendiri di tiap sistem, tidak bisa diberi kalimat yang
+  // benar-benar menjelaskan, dan di beberapa browser bisa ditekan orang tanpa
+  // sempat terbaca. Sekarang lapisan di dalam jendelanya, sama seperti
+  // konfirmasi hapus di sebelahnya.
+  const [konfirmTutup, setKonfirmTutup] = useState(false);
   const [content, setContent] = useState(source.content);
   const [title, setTitle] = useState(source.title);
   const [state, formAction] = useActionState(
@@ -87,15 +94,18 @@ function KnowledgeItem({ source }: { source: KnowledgeItemData }) {
    * mencegah itu setengah pekerjaan, jadi di sini benar-benar dicegah.
    */
   function tutupEditor() {
-    if (
-      dirty &&
-      !window.confirm("Perubahan yang belum disimpan akan hilang. Tutup saja?")
-    ) {
+    if (dirty) {
+      setKonfirmTutup(true);
       return;
     }
+    buangDanTutup();
+  }
+
+  function buangDanTutup() {
     setContent(source.content);
     setTitle(source.title);
     setKonfirmHapus(false);
+    setKonfirmTutup(false);
     setOpen(false);
   }
 
@@ -113,7 +123,11 @@ function KnowledgeItem({ source }: { source: KnowledgeItemData }) {
   useEffect(() => {
     if (!open) return;
     const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") tutupEditor();
+      // Esc membatalkan konfirmasinya dulu, baru menutup jendelanya. Tanpa
+      // ini satu tekan Esc melewati penjaganya sendiri.
+      if (e.key !== "Escape") return;
+      if (konfirmTutup) setKonfirmTutup(false);
+      else tutupEditor();
     };
     window.addEventListener("keydown", esc);
     const sebelum = document.body.style.overflow;
@@ -122,9 +136,23 @@ function KnowledgeItem({ source }: { source: KnowledgeItemData }) {
       window.removeEventListener("keydown", esc);
       document.body.style.overflow = sebelum;
     };
-    // tutupEditor sengaja tidak jadi dependensi: yang penting cuma buka/tutup.
+    // BUG LAMA, diperbaiki 3 September 2026. Dependensinya cuma [open], jadi
+    // pendengar Esc-nya menangkap tutupEditor dari render saat jendela BARU
+    // DIBUKA, dan di saat itu dirty pasti false karena belum ada yang diketik.
+    // Akibatnya Esc sesudah mengetik menutup jendela dan membuang suntingannya
+    // TANPA bertanya, persis kerusakan yang penjaga ini dibuat untuk mencegah.
+    // Tombol Tutup dan klik latar aman, karena dua-duanya memanggil
+    // tutupEditor yang segar dari render terakhir; cuma jalur Esc yang bocor,
+    // dan itu jalan keluar yang paling sering dipakai orang yang mengetik.
+    //
+    // Komentar lamanya berbunyi "yang penting cuma buka/tutup" dan terdengar
+    // benar sekali. Yang penting justru dirty, karena dia yang menentukan
+    // penjaganya menyala atau tidak.
+    //
+    // tutupEditor sendiri tetap di luar dependensi: identitasnya berubah tiap
+    // render, dan yang dibacanya cuma dirty plus penyetel yang stabil.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, dirty, konfirmTutup]);
 
   return (
     <li className="card p-4">
@@ -246,6 +274,9 @@ function KnowledgeItem({ source }: { source: KnowledgeItemData }) {
           tutup={tutupEditor}
           konfirmHapus={konfirmHapus}
           setKonfirmHapus={setKonfirmHapus}
+          konfirmTutup={konfirmTutup}
+          setKonfirmTutup={setKonfirmTutup}
+          buangDanTutup={buangDanTutup}
         />
       )}
     </li>
@@ -269,6 +300,9 @@ function EditorModal({
   tutup,
   konfirmHapus,
   setKonfirmHapus,
+  konfirmTutup,
+  setKonfirmTutup,
+  buangDanTutup,
 }: {
   source: KnowledgeItemData;
   title: string;
@@ -281,6 +315,9 @@ function EditorModal({
   tutup: () => void;
   konfirmHapus: boolean;
   setKonfirmHapus: (v: boolean) => void;
+  konfirmTutup: boolean;
+  setKonfirmTutup: (v: boolean) => void;
+  buangDanTutup: () => void;
 }) {
   return (
     <div
@@ -425,6 +462,36 @@ function EditorModal({
         {/* Konfirmasi hapus, sebagai lapisan di dalam jendela. Form hapusnya
             berdiri sendiri, bukan di dalam form suntingan (form di dalam form
             itu HTML yang tidak sah dan pecah di browser). */}
+        {/* Konfirmasi buang suntingan. Bentuknya sengaja sama persis dengan
+            konfirmasi hapus di bawahnya, karena dua-duanya pekerjaan yang
+            sama: menahan sesuatu yang tidak bisa dibatalkan. */}
+        {konfirmTutup && (
+          <div className="absolute inset-0 z-10 flex items-end bg-ink-950/20 backdrop-blur-[2px] sm:items-center sm:justify-center sm:p-4">
+            <div className="w-full rounded-t-2xl border-t border-ink-200 bg-white p-4 shadow-[0_-8px_24px_-8px_rgba(15,15,15,0.2)] sm:w-auto sm:max-w-sm sm:rounded-2xl sm:border">
+              <p className="text-sm leading-relaxed text-ink-900">
+                Ada yang kamu ubah tapi belum disimpan. Kalau ditutup sekarang,
+                perubahannya hilang dan nggak bisa dibalikin.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={buangDanTutup}
+                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+                >
+                  Tutup, buang perubahannya
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKonfirmTutup(false)}
+                  className="rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-xs text-ink-700 hover:bg-ink-50"
+                >
+                  Lanjut edit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {konfirmHapus && (
           <div className="absolute inset-0 z-10 flex items-end bg-ink-950/20 backdrop-blur-[2px] sm:items-center sm:justify-center sm:p-4">
             <div className="w-full rounded-t-2xl border-t border-ink-200 bg-white p-4 shadow-[0_-8px_24px_-8px_rgba(15,15,15,0.2)] sm:w-auto sm:max-w-sm sm:rounded-2xl sm:border">

@@ -474,6 +474,24 @@ const NAMA_ASISTEN_BAWAAN = "Sari";
  * Dikumpulkan sekali di sini supaya penyalin, pengganti nama, dan pemeriksa
  * penanda tidak pernah memakai daftar kolom yang berbeda-beda.
  */
+/**
+ * Nama manusiawi tiap kotak yang diisi preset, dipakai layar pratinjau.
+ *
+ * Ditaruh SEBELAH isiPreset supaya dua daftar ini tidak bisa berjalan sendiri-
+ * sendiri. Pratinjau yang melewatkan satu kotak berarti orang menyetujui
+ * tulisan yang tidak pernah dia lihat, dan itu justru yang mau dihilangkan.
+ * Selftest memastikan tiap id di isiPreset punya namanya di sini.
+ */
+export const NAMA_KOTAK: Record<string, string> = {
+  behaviorPrompt: "Cara kerja dan gaya bicara",
+  welcomeMessage: "Sapaan pembuka",
+  handoffCondition: "Kapan dilempar ke kamu",
+  followUpPrompt: "Follow-up sebelum beli",
+  afterSalesPrompt: "Tanya kabar setelah beli",
+  restockPrompt: "Ajakan beli lagi",
+  pengingatPrompt: "Pengingat janji temu",
+};
+
 export function isiPreset(preset: Preset): [string, string][] {
   return [
     ["behaviorPrompt", preset.behaviorPrompt],

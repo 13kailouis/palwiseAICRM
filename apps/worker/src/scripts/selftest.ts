@@ -8520,9 +8520,102 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     check(
       "kotak isi bisa dibuka jadi satu layar penuh",
       /<IsiBesar/.test(knowledgeAdd) &&
-        /Besarkan kotak isian/.test(knowledgeAdd) &&
+        /<TombolBesar/.test(knowledgeAdd) &&
+        /Besarkan kotak isian/.test(isiBesar) &&
         /h-full w-full flex-col/.test(isiBesar) &&
         /sm:max-w-5xl/.test(isiBesar),
+    );
+    // Tombol yang sama dipakai empat layar. Waktu markupnya disalin-salin,
+    // yang satu dapat aria-label dan yang lain tidak, dan yang tidak itu jadi
+    // tombol tanpa nama buat pembaca layar.
+    check(
+      "tombol besarkan dipakai bareng, tidak disalin per layar",
+      /export function TombolBesar/.test(isiBesar) &&
+        ["apps/web/src/components/ImportFlow.tsx",
+         "apps/web/src/components/DariAiLain.tsx"].every((p) =>
+          /<TombolBesar/.test(baca(p)),
+        ),
+    );
+    // Kedua jalur impor menaruh teks panjang di kotak sempit lalu MENYURUH
+    // memeriksanya. Menyuruh memeriksa puluhan ribu huruf lewat jendela 18
+    // baris itu menyuruh sesuatu yang tidak akan dikerjakan.
+    for (const [nama, berkas] of [
+      ["hasil telusur website", "apps/web/src/components/ImportFlow.tsx"],
+      ["tempelan dari AI lain", "apps/web/src/components/DariAiLain.tsx"],
+    ] as const) {
+      check(`${nama} bisa dibuka jadi satu layar penuh`, /<IsiBesar/.test(baca(berkas)));
+    }
+
+    // ─── Contoh jenis usaha di layar Asisten ────────────────────────────────
+    //
+    // Tombol ini menimpa TUJUH kotak sekaligus, termasuk seluruh watak dan
+    // aturan asistennya. Sebelum 3 September 2026 isinya tidak pernah bisa
+    // dilihat dulu, jadi satu-satunya cara tahu isi contohnya apa adalah
+    // menimpanya. Ini tombol yang sama yang dulu pernah MENURUNKAN mutu
+    // asisten orang, jadi taruhannya bukan kenyamanan.
+    const presetUsaha = baca("apps/web/src/components/PresetUsaha.tsx");
+    check(
+      "contoh jenis usaha diperlihatkan sebelum menimpa kotak",
+      /<pre/.test(presetUsaha) &&
+        /Pakai contoh ini/.test(presetUsaha) &&
+        /onClick=\{\(\) => setDilihat\(p\.id\)\}/.test(presetUsaha),
+    );
+    // Pratinjau yang masih memperlihatkan [nama toko] bukan pratinjau isi yang
+    // akan masuk, dan penanda yang lolos ke sapaan pembuka sampai ke pelanggan.
+    check(
+      "pratinjaunya sudah memakai nama usaha yang sebenarnya",
+      /isiPenanda\(teks, namaBisnis\)/.test(presetUsaha),
+    );
+    // Tiap kotak yang akan ketimpa disebut namanya. Tujuh kotak yang disambung
+    // tanpa label tidak menjawab "yang mana yang akan ketimpa".
+    const presetFileNama = baca("apps/web/src/lib/preset.ts");
+    const idKotak = [
+      ...presetFileNama
+        .slice(presetFileNama.indexOf("export function isiPreset"))
+        .matchAll(/\["([a-zA-Z]+)", preset\./g),
+    ].map((m) => m[1]);
+    const tanpaNama = idKotak.filter(
+      (id) => !new RegExp(`^  ${id}: "`, "m").test(presetFileNama),
+    );
+    check(
+      "tiap kotak yang diisi preset punya namanya di layar pratinjau",
+      idKotak.length >= 7 && tanpaNama.length === 0,
+      tanpaNama.join(" "),
+    );
+
+    // ─── Tidak ada lagi dialog bawaan browser ───────────────────────────────
+    //
+    // window.confirm bentuknya beda sendiri di tiap sistem, tidak bisa diberi
+    // kalimat yang benar-benar menjelaskan, dan di beberapa browser bisa
+    // ditekan tanpa sempat terbaca. Dua tempat terakhir yang memakainya
+    // (menimpa kotak preset, dan menutup editor Info bisnis) sudah diganti
+    // lapisan di dalam jendelanya sendiri.
+    //
+    // Komentarnya dibuang dulu, dan ini KELIMA kalinya pola yang sama menjebak
+    // di berkas ini: komentar yang menceritakan kode LAMA ikut terbaca, jadi
+    // tesnya menuduh berkas yang justru sudah dibetulkan.
+    const tanpaKomentar = (t: string) =>
+      t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const pakaiConfirm = [
+      "apps/web/src/components/PresetUsaha.tsx",
+      "apps/web/src/components/KnowledgeList.tsx",
+      "apps/web/src/components/KnowledgeAdd.tsx",
+      "apps/web/src/components/ContohModal.tsx",
+    ].filter((p) => /window.confirm/.test(tanpaKomentar(baca(p))));
+    check(
+      "tidak ada dialog bawaan browser lagi",
+      pakaiConfirm.length === 0,
+      pakaiConfirm.join(" "),
+    );
+    // BUG LAMA: pendengar Esc-nya menangkap dirty dari render saat jendela baru
+    // dibuka, dan di saat itu dirty pasti false. Jadi Esc sesudah mengetik
+    // menutup jendela dan membuang suntingannya TANPA bertanya, persis
+    // kerusakan yang penjaga ini dibuat untuk mencegah.
+    const knowledgeList = baca("apps/web/src/components/KnowledgeList.tsx");
+    check(
+      "Esc di editor Info bisnis benar-benar lewat penjaganya",
+      /\}, \[open, dirty, konfirmTutup\]\)/.test(knowledgeList) &&
+        /konfirmTutup && \(/.test(knowledgeList),
     );
     // Kotak besarnya menulis ke kolom yang SAMA, bukan menyimpan sendiri.
     // Tombol simpan kedua di dalamnya bikin orang mengira ada dua simpanan

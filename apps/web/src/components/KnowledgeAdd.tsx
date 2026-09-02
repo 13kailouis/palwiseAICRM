@@ -8,7 +8,7 @@ import { DariAiLain } from "@/components/DariAiLain";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { CONTOH_INFO } from "@/lib/contohInfo";
 import { ContohModal } from "@/components/ContohModal";
-import { IsiBesar } from "@/components/IsiBesar";
+import { IsiBesar, TombolBesar } from "@/components/IsiBesar";
 import { InfoTip } from "@/components/InfoTip";
 
 type Tab = "text" | "qna" | "file" | "website" | "ai";
@@ -242,15 +242,7 @@ export function KnowledgeAdd({
                     hurufnya, jadi tombol ini membuka kotak yang sama selebar
                     layar. Ikonnya bukan kaca pembesar: kaca pembesar sudah
                     berarti "cari" di hampir semua aplikasi. */}
-                <button
-                  type="button"
-                  onClick={() => setBesarBuka(true)}
-                  aria-label="Besarkan kotak isian"
-                  title="Besarkan"
-                  className="tap-aman grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-900"
-                >
-                  <Ikon nama="perbesar" size={16} />
-                </button>
+                <TombolBesar onClick={() => setBesarBuka(true)} />
               </div>
             </div>
 
@@ -374,6 +366,7 @@ export function KnowledgeAdd({
         nilai={isi}
         onUbah={setIsi}
         onTutup={() => setBesarBuka(false)}
+        placeholder="Daftar harga dan stok, cara pesan, jam buka, aturan retur, pertanyaan yang sering ditanya."
       />
 
       <ContohModal

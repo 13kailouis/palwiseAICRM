@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { IsiBesar, TombolBesar } from "@/components/IsiBesar";
 import { useRouter } from "next/navigation";
 import { MAKS_BACA_BYTE, MAKS_BACA_MB, mb } from "@/lib/batas";
 
@@ -56,6 +57,10 @@ export function ImportFlow({
   const t = TEKS[mode];
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
+  // Hasil telusur bisa puluhan ribu huruf, dan keterangannya sendiri menyuruh
+  // memeriksanya. Memeriksa lewat jendela 18 baris di kolom sempit itu
+  // menyuruh sesuatu yang tidak akan dikerjakan.
+  const [besarBuka, setBesarBuka] = useState(false);
   const [url, setUrl] = useState("");
   const [fileName, setFileName] = useState("");
   const [log, setLog] = useState<LogLine[]>([]);
@@ -409,12 +414,15 @@ export function ImportFlow({
           </div>
 
           <div>
-            <label className="label" htmlFor={`hasil-${mode}`}>
-              Hasilnya{" "}
-              <span className="font-normal text-ink-400">
-                ({content.length.toLocaleString("id-ID")} huruf, bisa diedit)
-              </span>
-            </label>
+            <div className="mb-1.5 flex items-end justify-between gap-3">
+              <label className="label mb-0" htmlFor={`hasil-${mode}`}>
+                Hasilnya{" "}
+                <span className="font-normal text-ink-400">
+                  ({content.length.toLocaleString("id-ID")} huruf, bisa diedit)
+                </span>
+              </label>
+              <TombolBesar onClick={() => setBesarBuka(true)} />
+            </div>
             <textarea
               id={`hasil-${mode}`}
               value={content}
@@ -427,6 +435,13 @@ export function ImportFlow({
               aturan yang keliru, betulkan sekarang, karena asistenmu akan
               menganggap ini benar.
             </p>
+            <IsiBesar
+              buka={besarBuka}
+              nilai={content}
+              onUbah={setContent}
+              onTutup={() => setBesarBuka(false)}
+              judul="Hasil telusur website"
+            />
           </div>
 
           <div className="flex flex-wrap gap-2">
