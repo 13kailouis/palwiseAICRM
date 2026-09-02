@@ -127,9 +127,20 @@ body {
            focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
   }
   /* Huruf lebar-tetap. BENAR untuk daftar harga: angka dan kolomnya berbaris
-     lurus ke bawah, dan itu memang gunanya. */
+     lurus ke bawah, dan itu memang gunanya.
+
+     Hurufnya kecil DENGAN SENGAJA, karena ini kotak data, bukan kotak
+     kalimat. Yang dikerjakan orang di sini memeriksa banyak baris sekaligus,
+     bukan membaca satu kalimat. Huruf yang lebih besar berarti lebih sedikit
+     baris yang kelihatan sekaligus, dan lebih banyak baris yang terlipat jadi
+     dua di kolom yang sempit.
+
+     Di layar sentuh ini TIDAK BERLAKU: blok pointer:coarse di bawah
+     menaikkannya lagi jadi 16px, karena iOS memperbesar halaman sendiri kalau
+     kotak isian hurufnya di bawah itu. Jadi yang mengecil cuma di desktop,
+     tempat kolomnya memang sempit dan penunjuknya presisi. */
   .textarea {
-    @apply input resize-y font-mono text-[13px] leading-relaxed;
+    @apply input resize-y font-mono text-[12px] leading-[1.55];
   }
   /* Huruf biasa, untuk tulisan yang dibaca sebagai kalimat, bukan sebagai
      data. Keterangan sifat asisten itu karangan tentang orang, bukan tabel.

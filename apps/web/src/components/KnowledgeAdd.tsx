@@ -8,6 +8,7 @@ import { DariAiLain } from "@/components/DariAiLain";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { CONTOH_INFO } from "@/lib/contohInfo";
 import { ContohModal } from "@/components/ContohModal";
+import { IsiBesar } from "@/components/IsiBesar";
 import { InfoTip } from "@/components/InfoTip";
 
 type Tab = "text" | "qna" | "file" | "website" | "ai";
@@ -78,6 +79,7 @@ export function KnowledgeAdd({
   // baris keterangan tidak butuh sepuluh kotak lagi di atasnya sebelum ada
   // yang meminta.
   const [contohBuka, setContohBuka] = useState(false);
+  const [besarBuka, setBesarBuka] = useState(false);
   // Yang terakhir dipakai ditandai, supaya orang yang mencoba beberapa contoh
   // tahu yang mana yang sekarang ada di kolomnya.
   const [contohDipakai, setContohDipakai] = useState<string | null>(null);
@@ -227,13 +229,29 @@ export function KnowledgeAdd({
                   pilihan yang dibuka DI TEMPAT mendorong kolom isian keluar
                   layar, dan kolom isian itu satu-satunya alasan orang membuka
                   layar ini. Modal menyelesaikan dua-duanya. */}
-              <button
-                type="button"
-                onClick={() => setContohBuka(true)}
-                className="text-sm font-medium text-brand-700 hover:underline"
-              >
-                Pakai contoh
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setContohBuka(true)}
+                  className="text-sm font-medium text-brand-700 hover:underline"
+                >
+                  Pakai contoh
+                </button>
+                {/* Kolomnya duduk di kolom kanan yang sempit, dan isinya
+                    daftar harga panjang. Yang kurang LEBARNYA, bukan ukuran
+                    hurufnya, jadi tombol ini membuka kotak yang sama selebar
+                    layar. Ikonnya bukan kaca pembesar: kaca pembesar sudah
+                    berarti "cari" di hampir semua aplikasi. */}
+                <button
+                  type="button"
+                  onClick={() => setBesarBuka(true)}
+                  aria-label="Besarkan kotak isian"
+                  title="Besarkan"
+                  className="tap-aman grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+                >
+                  <Ikon nama="perbesar" size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Yang sedang terpakai disebut namanya. Tanpa ini orang yang
@@ -332,6 +350,13 @@ export function KnowledgeAdd({
       {/* Di luar <form>, dan itu disengaja. Modal yang digambar di dalam form
           bikin tombol-tombolnya ikut terbawa waktu form dikirim, dan bikin
           konfirmasinya jadi form di dalam form, yang tidak sah di HTML. */}
+      <IsiBesar
+        buka={besarBuka}
+        nilai={isi}
+        onUbah={setIsi}
+        onTutup={() => setBesarBuka(false)}
+      />
+
       <ContohModal
         buka={contohBuka}
         onTutup={() => setContohBuka(false)}

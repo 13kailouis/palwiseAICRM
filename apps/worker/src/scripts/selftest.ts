@@ -8478,6 +8478,61 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       knowledgeAdd.indexOf("</form>") < knowledgeAdd.indexOf("<ContohModal"),
     );
 
+    // ─── Kotak isi yang bisa dibuka penuh ───────────────────────────────────
+    //
+    // Kolom isian duduk di kolom kanan yang sempit dan isinya daftar harga
+    // panjang. Baris yang agak panjang terlipat jadi tiga, dan daftar yang tiap
+    // barisnya terlipat tiga tidak bisa dibaca sebagai daftar sama sekali.
+    // Mengecilkan hurufnya menolong sedikit; yang kurang LEBARNYA.
+    const isiBesar = baca("apps/web/src/components/IsiBesar.tsx");
+    check(
+      "kotak isi bisa dibuka jadi satu layar penuh",
+      /<IsiBesar/.test(knowledgeAdd) &&
+        /Besarkan kotak isian/.test(knowledgeAdd) &&
+        /h-full w-full flex-col/.test(isiBesar) &&
+        /sm:max-w-5xl/.test(isiBesar),
+    );
+    // Kotak besarnya menulis ke kolom yang SAMA, bukan menyimpan sendiri.
+    // Tombol simpan kedua di dalamnya bikin orang mengira ada dua simpanan
+    // yang berbeda, lalu ragu yang mana yang benar-benar menyimpan.
+    check(
+      "kotak besar tidak punya simpanan sendiri",
+      /onUbah=\{setIsi\}/.test(knowledgeAdd) &&
+        !/type="submit"/.test(isiBesar) &&
+        !/formAction/.test(isiBesar),
+    );
+    check(
+      "kotak besar digambar di luar form",
+      knowledgeAdd.indexOf("</form>") < knowledgeAdd.indexOf("<IsiBesar"),
+    );
+    // Ikon tombolnya bukan kaca pembesar: kaca pembesar sudah berarti "cari"
+    // di hampir semua aplikasi, dan dipakai di sini dia menjanjikan pencarian.
+    const ikonFile = baca("apps/web/src/components/Ikon.tsx");
+    check(
+      "ikon perbesar ada dan terdaftar namanya",
+      /\| "perbesar"/.test(ikonFile) && /^  perbesar: \(/m.test(ikonFile),
+    );
+
+    // ─── Huruf kecil di kotak data TIDAK BOLEH sampai ke layar sentuh ───────
+    //
+    // Kotak data sengaja berhuruf kecil supaya banyak baris kelihatan
+    // sekaligus. Tapi iOS MEMPERBESAR HALAMANNYA SENDIRI tiap jari menyentuh
+    // kotak isian yang hurufnya di bawah 16px, dan orangnya harus mengecilkan
+    // lagi tiap kali. Yang menahannya cuma blok pointer:coarse di globals.css,
+    // jadi aturan itu load-bearing, bukan kehati-hatian.
+    const css = baca("apps/web/src/app/globals.css");
+    const blokSentuh = css.slice(css.indexOf("@media (pointer: coarse)"));
+    check(
+      "kotak data berhuruf kecil di desktop",
+      /\.textarea \{\s*@apply input resize-y font-mono text-\[1[0-3](\.\d)?px\]/.test(
+        css,
+      ),
+    );
+    check(
+      "tapi dinaikkan lagi jadi 16px di layar sentuh",
+      /\.textarea,/.test(blokSentuh) && /font-size: 16px;/.test(blokSentuh),
+    );
+
     // Bentuknya sudah dicontohkan, tapi contoh tidak bisa mengajarkan SEBERAPA
     // BANYAK: contoh empat baris diam-diam mengajarkan bahwa empat baris cukup.
     // Pelanggan sungguhan menempelkan 842 baris dan itu justru yang paling

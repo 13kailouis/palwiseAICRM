@@ -50,6 +50,7 @@ export type NamaIkon =
   | "kalender"
   | "centang"
   | "silang"
+  | "perbesar"
   | "berkas"
   | "website"
   | "salin"
@@ -375,6 +376,19 @@ const GAMBAR: Record<NamaIkon, React.ReactNode> = {
     <>
       <path d="M6 6l12 12" />
       <path d="M18 6 6 18" />
+    </>
+  ),
+
+  // Perbesar: dua panah menjauh ke sudut yang berlawanan, masing-masing dengan
+  // siku sudutnya. Dipakai tombol yang membuka kotak isian jadi satu layar
+  // penuh. Sengaja BUKAN kaca pembesar: kaca pembesar sudah berarti "cari" di
+  // hampir semua aplikasi, dan dipakai di sini dia menjanjikan pencarian.
+  perbesar: (
+    <>
+      <path d="M14 4h6v6" />
+      <path d="M20 4l-7 7" />
+      <path d="M10 20H4v-6" />
+      <path d="M4 20l7-7" />
     </>
   ),
 };
