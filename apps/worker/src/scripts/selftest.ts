@@ -8455,7 +8455,29 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /fixed inset-0 z-\[60\]/.test(contohModal) &&
         /h-full w-full flex-col/.test(contohModal) &&
         /sm:max-h-\[86vh\]/.test(contohModal) &&
-        /min-h-0 flex-1 overflow-y-auto/.test(contohModal),
+        /min-h-0 flex-1/.test(contohModal),
+    );
+    // ISINYA BISA DILIHAT DULU. Sebelum ini, memilih bidang langsung menimpa
+    // kolom isian, jadi orang menimpa tulisannya sendiri cuma untuk mencari
+    // tahu isi contohnya apa, lalu menekan Batal, lalu mencoba bidang lain.
+    check(
+      "modal contoh memperlihatkan isinya sebelum dipakai",
+      /<pre/.test(contohModal) &&
+        /\{pilihan\.isi\}/.test(contohModal) &&
+        /Pakai contoh ini/.test(contohModal),
+    );
+    // Yang DILIHAT dan yang DIPAKAI dua hal berbeda. Kalau disatukan lagi,
+    // layar ini kembali jadi pemilih yang menimpa dan pratinjaunya kehilangan
+    // gunanya: menekan nama bidang tidak boleh menyentuh kolom isian.
+    check(
+      "melihat contoh tidak menyentuh kolom isian",
+      /onClick=\{\(\) => setDilihat\(c\.id\)\}/.test(contohModal),
+    );
+    // Dua kolom cuma di layar lebar. Kolom kiri 240px di layar 375px
+    // menyisakan pratinjau selebar 100px.
+    check(
+      "modal contoh jadi satu kolom di HP",
+      /flex-col sm:flex-row/.test(contohModal) && /sm:w-60/.test(contohModal),
     );
     // Esc dan klik latar menutup, dan halaman di belakangnya tidak ikut
     // tergulung selama modalnya terbuka.

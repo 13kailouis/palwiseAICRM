@@ -5,7 +5,7 @@ import { CONTOH_INFO } from "@/lib/contohInfo";
 import { Ikon } from "@/components/Ikon";
 
 /**
- * Pemilih contoh Info bisnis, berbentuk modal.
+ * Pemilih contoh Info bisnis, berbentuk modal berisi pratinjau.
  *
  * KENAPA MODAL, BUKAN KOTAK YANG MEMBUKA DI TEMPAT.
  *
@@ -16,13 +16,29 @@ import { Ikon } from "@/components/Ikon";
  * catatan yang dulu memanjang di dalam daftar Info bisnis: apa pun yang tinggi
  * dan membuka DI DALAM halaman mendorong isi halamannya sendiri keluar layar.
  *
- * Sebagai modal, memilih contoh jadi satu pekerjaan utuh yang punya layarnya
- * sendiri, lalu halaman kembali seperti semula. Dan karena punya ruang
- * sendiri, tiap bidang bisa diberi keterangan isinya, jadi orang memilih
- * sambil tahu apa yang akan masuk ke kolomnya, bukan menebak dari namanya.
+ * KENAPA PRATINJAUNYA DI SINI, BUKAN DI BAWAH FORM.
  *
- * Bentuknya mengikuti modal yang sudah dipakai di daftar Info bisnis: penuh
- * layar di HP, kartu di tengah pada layar lebar, Esc dan klik latar menutup.
+ * Versi keduanya memilih bidang lalu isinya LANGSUNG masuk ke kolom, tanpa
+ * pernah bisa dilihat dulu. Jadi orang menimpa tulisannya sendiri cuma untuk
+ * mencari tahu isi contohnya apa, lalu menekan Batal, lalu mencoba bidang
+ * lain. Itu yang memunculkan pertanyaannya: "contohnya ditaruh di bawah form
+ * saja bagaimana?"
+ *
+ * Menaruhnya di bawah form menyelesaikan satu hal dan merusak tiga. Di layar
+ * 375px contohnya tidak pernah tampil bersamaan dengan kolom isiannya, jadi
+ * orang menggulung bolak-balik, padahal contoh gunanya dilihat SAMBIL
+ * mengetik. Isinya jadi hidup di tiga tempat: modal, panduan, dan halaman ini.
+ * Dan contoh yang cuma bisa dibaca memaksa orang mengetik ulang semuanya,
+ * padahal yang bikin tombol ini berguna justru isinya benar-benar masuk ke
+ * kolomnya lalu tinggal ditimpa baris per baris.
+ *
+ * Jadi pratinjaunya ditaruh di sini, tempat ruangnya memang ada. Pilih bidang,
+ * lihat isinya, baru tekan Pakai. Yang cuma mau melihat bentuknya tinggal
+ * menutup, dan kolomnya tidak pernah tersentuh.
+ *
+ * Dua kolom cuma di layar lebar. Di HP kolom kiri selebar 240px menyisakan
+ * pratinjau selebar 100px, jadi di sana bidangnya jadi deret yang digeser di
+ * atas dan pratinjaunya mengisi sisanya.
  */
 export function ContohModal({
   buka,
@@ -38,8 +54,19 @@ export function ContohModal({
   adaIsi: boolean;
   terpakai: string | null;
 }) {
-  // Bidang yang sedang ditunggu jawabannya sebelum menimpa tulisan orang.
-  const [konfirmasi, setKonfirmasi] = useState<string | null>(null);
+  // Yang sedang DILIHAT belum tentu yang dipakai. Dua hal yang berbeda, dan
+  // pemisahan itu seluruh gunanya layar ini.
+  const [dilihat, setDilihat] = useState<string>(
+    terpakai ?? CONTOH_INFO[0]?.id ?? "",
+  );
+  const [konfirmasi, setKonfirmasi] = useState(false);
+
+  // Waktu modalnya dibuka lagi, yang ditampilkan yang sedang terpakai. Kalau
+  // dia tetap menampilkan bidang terakhir yang cuma DILIHAT, orangnya mengira
+  // itu yang ada di kolomnya.
+  useEffect(() => {
+    if (buka) setDilihat(terpakai ?? CONTOH_INFO[0]?.id ?? "");
+  }, [buka, terpakai]);
 
   useEffect(() => {
     if (!buka) return;
@@ -47,7 +74,7 @@ export function ContohModal({
       if (e.key !== "Escape") return;
       // Esc menutup konfirmasinya dulu, baru modalnya. Tanpa ini satu tekan
       // Esc membuang dua layar sekaligus dan orangnya kehilangan tempatnya.
-      if (konfirmasi) setKonfirmasi(null);
+      if (konfirmasi) setKonfirmasi(false);
       else onTutup();
     };
     document.addEventListener("keydown", esc);
@@ -61,34 +88,36 @@ export function ContohModal({
 
   if (!buka) return null;
 
-  function pilih(id: string) {
-    const c = CONTOH_INFO.find((x) => x.id === id);
-    if (!c) return;
-    onPilih(c.id, c.isi);
-    setKonfirmasi(null);
+  const aktif = CONTOH_INFO.find((c) => c.id === dilihat) ?? CONTOH_INFO[0];
+  if (!aktif) return null;
+
+  const pilihan = aktif;
+
+  function pakai() {
+    onPilih(pilihan.id, pilihan.isi);
+    setKonfirmasi(false);
     onTutup();
   }
 
-  const namaKonfirmasi = CONTOH_INFO.find((c) => c.id === konfirmasi)?.nama;
+  const jumlahBaris = pilihan.isi.split("\n").filter((b) => b.trim()).length;
 
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-ink-950/40 backdrop-blur-sm"
-      onClick={() => (konfirmasi ? setKonfirmasi(null) : onTutup())}
+      onClick={() => (konfirmasi ? setKonfirmasi(false) : onTutup())}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Pilih contoh info bisnis"
         onClick={(e) => e.stopPropagation()}
-        className="relative flex h-full w-full flex-col bg-white sm:h-auto sm:max-h-[86vh] sm:max-w-2xl sm:rounded-2xl sm:shadow-2xl"
+        className="relative flex h-full w-full flex-col bg-white sm:h-[86vh] sm:max-h-[86vh] sm:max-w-4xl sm:rounded-2xl sm:shadow-2xl"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-ink-200 px-5 py-4">
+        <div className="flex items-start justify-between gap-3 border-b border-ink-200 px-5 py-3.5">
           <div className="min-w-0">
             <h2 className="font-semibold text-ink-950">Pilih contoh</h2>
-            <p className="mt-1 text-sm leading-relaxed text-ink-500">
-              Ambil yang paling dekat sama usahamu. Isinya cuma contoh bentuk
-              dan angkanya karangan, jadi timpa dengan datamu sendiri.
+            <p className="mt-0.5 text-sm leading-relaxed text-ink-500">
+              Lihat dulu isinya. Angkanya karangan, yang ditiru bentuknya.
             </p>
           </div>
           <button
@@ -101,58 +130,73 @@ export function ContohModal({
           </button>
         </div>
 
-        {/* Tiap bidang jadi satu baris yang bisa ditekan, bukan kotak kecil
-            berisi nama saja. Keterangan blok di bawah namanya yang bikin orang
-            memilih sambil tahu isinya, dan keterangan itu diturunkan dari
-            contohnya sendiri jadi tidak bisa basi. */}
-        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
-          <div className="grid gap-2 sm:grid-cols-2">
+        <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+          {/* Daftar bidang: kolom kiri di layar lebar, deret yang digeser di
+              HP. Nama dan ikonnya diturunkan dari PRESET, jadi bidang yang ada
+              di layar Asisten selalu ada di sini juga, dengan urutan sama. */}
+          <div className="thin-scroll flex shrink-0 gap-2 overflow-x-auto border-b border-ink-200 px-4 py-3 sm:w-60 sm:flex-col sm:gap-1 sm:overflow-x-visible sm:overflow-y-auto sm:border-b-0 sm:border-r sm:px-3">
             {CONTOH_INFO.map((c) => {
-              const aktif = terpakai === c.id;
+              const ini = c.id === pilihan.id;
               return (
                 <button
                   key={c.id}
                   type="button"
-                  aria-pressed={aktif}
-                  onClick={() => (adaIsi ? setKonfirmasi(c.id) : pilih(c.id))}
-                  className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
-                    aktif
-                      ? "border-brand-600 bg-brand-50"
-                      : "border-ink-200 bg-white hover:border-ink-300 hover:bg-ink-50"
+                  aria-pressed={ini}
+                  onClick={() => setDilihat(c.id)}
+                  className={`tap-aman flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors sm:w-full ${
+                    ini
+                      ? "bg-ink-900 font-medium text-white"
+                      : "text-ink-700 hover:bg-ink-100"
                   }`}
                 >
-                  <span
-                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
-                      aktif
-                        ? "bg-brand-600 text-white"
-                        : "bg-ink-100 text-ink-600"
-                    }`}
-                  >
-                    <Ikon nama={c.ikon} size={17} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-ink-900">
-                      {c.nama}
-                    </span>
-                    {/* TANPA "block", walaupun kelihatannya perlu. line-clamp
-                        butuh display:-webkit-box, dan "block" di sebelahnya
-                        mengembalikan display:block lalu mematikan clamp-nya.
-                        Kerusakannya cuma kelihatan di HP, karena di layar lebar
-                        keterangannya kebetulan sudah muat dua baris. */}
-                    <span className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-ink-500">
-                      {c.blok.join(" · ")}
-                    </span>
-                  </span>
+                  <Ikon
+                    nama={c.ikon}
+                    size={16}
+                    className={ini ? "text-white" : "text-ink-400"}
+                  />
+                  <span className="whitespace-nowrap sm:truncate">{c.nama}</span>
+                  {/* Yang sedang ada di kolom isian ditandai, supaya bedanya
+                      dengan yang cuma sedang dilihat tetap jelas. */}
+                  {terpakai === c.id && (
+                    <Ikon
+                      nama="centang"
+                      size={14}
+                      className={`ml-auto shrink-0 ${
+                        ini ? "text-white" : "text-ink-400"
+                      }`}
+                    />
+                  )}
                 </button>
               );
             })}
           </div>
+
+          {/* Pratinjaunya. Huruf lebar-tetap dan latar gelap, sama seperti di
+              panduan, supaya terbaca sebagai CONTOH yang dilihat, bukan
+              sebagai kolom yang sedang diisi. */}
+          <div className="min-h-0 flex-1 p-3 sm:p-4">
+            <pre className="thin-scroll h-full overflow-auto rounded-xl bg-ink-950 p-4 font-mono text-[12px] leading-[1.6] text-ink-300">
+              {pilihan.isi}
+            </pre>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-ink-200 px-5 py-3">
+          <p className="hidden text-xs text-ink-500 sm:block">
+            {jumlahBaris} baris. Masuk ke kolom isian, lalu tinggal kamu timpa.
+          </p>
+          <button
+            type="button"
+            onClick={() => (adaIsi ? setKonfirmasi(true) : pakai())}
+            className="btn-ink ml-auto"
+          >
+            Pakai contoh ini
+          </button>
         </div>
 
         {/* Menimpa tulisan orang tanpa bertanya itu kehilangan data yang tidak
-            bisa dibatalkan, dan modal justru bikin tombolnya lebih gampang
-            tertekan tidak sengaja. Konfirmasinya SAUDARA dari panel, bukan
-            anak dari tombolnya. */}
+            bisa dibatalkan. Konfirmasinya SAUDARA dari panel, bukan anak dari
+            tombolnya. */}
         {konfirmasi && (
           <div className="absolute inset-0 flex items-end bg-ink-950/30 sm:items-center sm:justify-center sm:rounded-2xl">
             <div className="w-full border-t border-ink-200 bg-white p-5 sm:m-6 sm:w-auto sm:max-w-sm sm:rounded-2xl sm:border sm:shadow-xl">
@@ -160,20 +204,16 @@ export function ContohModal({
                 Ganti yang sudah kamu tulis?
               </p>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-                Isi kolomnya sekarang akan diganti contoh {namaKonfirmasi}.
+                Isi kolomnya sekarang akan diganti contoh {pilihan.nama}.
                 Tulisan yang lama nggak bisa dibalikin.
               </p>
               <div className="mt-4 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => pilih(konfirmasi)}
-                  className="btn-ink flex-1"
-                >
+                <button type="button" onClick={pakai} className="btn-ink flex-1">
                   Ganti
                 </button>
                 <button
                   type="button"
-                  onClick={() => setKonfirmasi(null)}
+                  onClick={() => setKonfirmasi(false)}
                   className="btn-ghost flex-1"
                 >
                   Batal
