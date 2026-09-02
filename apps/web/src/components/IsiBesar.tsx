@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Portal } from "@/components/Portal";
 import { Ikon } from "@/components/Ikon";
+import { setNilaiKotak } from "@/lib/isiKotak";
 
 /**
  * Kotak isi Info bisnis yang dibuka jadi satu layar penuh.
@@ -30,6 +32,7 @@ export function IsiBesar({
   onTutup,
   judul = "Isi info bisnis",
   placeholder,
+  prosa = false,
 }: {
   buka: boolean;
   nilai: string;
@@ -38,6 +41,16 @@ export function IsiBesar({
   /** Judul di kepalanya. Kotak ini dipakai beberapa layar yang berbeda. */
   judul?: string;
   placeholder?: string;
+  /**
+   * Huruf biasa, bukan huruf lebar-tetap.
+   *
+   * Kotak data (daftar harga) memang lebar-tetap supaya angkanya berbaris
+   * lurus. Tapi prompt asisten itu karangan tentang orang, bukan tabel, dan
+   * ditulis berhuruf lebar-tetap dia terbaca seperti berkas pengaturan, tepat
+   * berlawanan dengan kalimat di atasnya yang menyuruh "tulis kayak lagi
+   * ngelatih karyawan baru". Kotak besarnya wajib ikut kotak aslinya.
+   */
+  prosa?: boolean;
 }) {
   const kotak = useRef<HTMLTextAreaElement>(null);
 
@@ -65,62 +78,64 @@ export function IsiBesar({
   const huruf = nilai.length;
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-ink-950/40 backdrop-blur-sm"
-      onClick={onTutup}
-    >
+    <Portal>
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={judul}
-        onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full flex-col bg-white sm:h-[88vh] sm:max-w-5xl sm:rounded-2xl sm:shadow-2xl"
+        className="fixed inset-0 z-[60] flex items-center justify-center bg-ink-950/40 backdrop-blur-sm"
+        onClick={onTutup}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-3.5">
-          <div className="min-w-0">
-            <h2 className="font-semibold text-ink-950">{judul}</h2>
-            {/* Angkanya ada karena daftar panjang itu yang benar dan orang
-                perlu bukti bahwa tempelannya masuk semua. Yang menempel 842
-                baris dari Excel tidak punya cara lain memastikannya. */}
-            <p className="mt-0.5 text-xs text-ink-500">
-              {baris.toLocaleString("id-ID")} baris,{" "}
-              {huruf.toLocaleString("id-ID")} huruf
-            </p>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={judul}
+          onClick={(e) => e.stopPropagation()}
+          className="flex h-full w-full flex-col bg-white sm:h-[88vh] sm:max-w-5xl sm:rounded-2xl sm:shadow-2xl"
+        >
+          <div className="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-3.5">
+            <div className="min-w-0">
+              <h2 className="font-semibold text-ink-950">{judul}</h2>
+              {/* Angkanya ada karena daftar panjang itu yang benar dan orang
+                  perlu bukti bahwa tempelannya masuk semua. Yang menempel 842
+                  baris dari Excel tidak punya cara lain memastikannya. */}
+              <p className="mt-0.5 text-xs text-ink-500">
+                {baris.toLocaleString("id-ID")} baris,{" "}
+                {huruf.toLocaleString("id-ID")} huruf
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onTutup}
+              aria-label="Tutup"
+              className="tap-aman -mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+            >
+              <Ikon nama="silang" size={18} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onTutup}
-            aria-label="Tutup"
-            className="tap-aman -mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-900"
-          >
-            <Ikon nama="silang" size={18} />
-          </button>
-        </div>
 
-        {/* Hurufnya sedikit lebih besar daripada di kotak kecilnya. Di sana
-            kecil supaya muat, di sini ruangnya ada, jadi tidak ada alasan
-            menyuruh orang menyipitkan mata. */}
-        <div className="min-h-0 flex-1 p-3 sm:p-4">
-          <textarea
-            ref={kotak}
-            value={nilai}
-            onChange={(e) => onUbah(e.target.value)}
-            className="textarea h-full w-full resize-none text-[13.5px]"
-            placeholder={placeholder}
-          />
-        </div>
+          {/* Hurufnya sedikit lebih besar daripada di kotak kecilnya. Di sana
+              kecil supaya muat, di sini ruangnya ada, jadi tidak ada alasan
+              menyuruh orang menyipitkan mata. */}
+          <div className="min-h-0 flex-1 p-3 sm:p-4">
+            <textarea
+              ref={kotak}
+              value={nilai}
+              onChange={(e) => onUbah(e.target.value)}
+              className={`${prosa ? "textarea-prosa" : "textarea"} h-full w-full resize-none text-[13.5px]`}
+              placeholder={placeholder}
+            />
+          </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-ink-200 px-5 py-3">
-          <p className="hidden text-xs text-ink-500 sm:block">
-            Yang kamu ketik di sini langsung masuk ke formnya. Tutup lalu tekan
-            Simpan.
-          </p>
-          <button type="button" onClick={onTutup} className="btn-ink ml-auto">
-            Selesai
-          </button>
+          <div className="flex items-center justify-between gap-3 border-t border-ink-200 px-5 py-3">
+            <p className="hidden text-xs text-ink-500 sm:block">
+              Yang kamu ketik di sini langsung masuk ke formnya. Tutup lalu tekan
+              Simpan.
+            </p>
+            <button type="button" onClick={onTutup} className="btn-ink ml-auto">
+              Selesai
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }
 
@@ -143,5 +158,58 @@ export function TombolBesar({ onClick }: { onClick: () => void }) {
     >
       <Ikon nama="perbesar" size={16} />
     </button>
+  );
+}
+
+/**
+ * Varian untuk kotak yang TIDAK dikendalikan React.
+ *
+ * Kotak "Cara kerja dan gaya bicara" di layar Asisten sengaja tak-terkendali:
+ * tingginya menyesuaikan isi lewat ref, dan "Mulai dari contoh" menulis ke
+ * dalamnya langsung lewat DOM. Menjadikannya terkendali berarti membongkar
+ * dua hal yang sudah jalan, jadi jembatannya dibuat di sini saja.
+ *
+ * Nilainya dibaca dari kotak aslinya waktu dibuka, dan tiap ketikan ditulis
+ * balik lewat penyetel yang sama dengan yang dipakai "Mulai dari contoh".
+ * Dengan begitu tinggi kotak aslinya ikut menyesuaikan, dan form mengirimkan
+ * nilai yang benar walaupun kotak besarnya sudah ditutup.
+ */
+export function IsiBesarKotak({
+  buka,
+  targetId,
+  onTutup,
+  judul,
+  prosa = false,
+}: {
+  buka: boolean;
+  /** id kotak aslinya di halaman. */
+  targetId: string;
+  onTutup: () => void;
+  judul?: string;
+  prosa?: boolean;
+}) {
+  const [nilai, setNilai] = useState("");
+
+  useEffect(() => {
+    if (!buka) return;
+    const el = document.getElementById(targetId) as HTMLTextAreaElement | null;
+    setNilai(el?.value ?? "");
+  }, [buka, targetId]);
+
+  return (
+    <IsiBesar
+      buka={buka}
+      nilai={nilai}
+      onUbah={(v) => {
+        setNilai(v);
+        const el = document.getElementById(targetId) as
+          | HTMLTextAreaElement
+          | null;
+        if (el) setNilaiKotak(el, v);
+      }}
+      onTutup={onTutup}
+      judul={judul}
+      prosa={prosa}
+    />
   );
 }

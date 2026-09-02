@@ -8489,7 +8489,6 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "pratinjau contoh menyusut mengikuti modal, bukan mengikuti isinya",
       /min-h-0 min-w-0 flex-1 p-3/.test(contohModal),
     );
-    // Esc dan klik latar menutup, dan halaman di belakangnya tidak ikut
     // tergulung selama modalnya terbuka.
     check(
       "modal contoh bisa ditutup Esc dan klik latar",
@@ -8582,6 +8581,74 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       idKotak.length >= 7 && tanpaNama.length === 0,
       tanpaNama.join(" "),
     );
+
+    // ─── Tiap modal digambar lewat portal ke <body> ─────────────────────────
+    //
+    // position:fixed itu "terhadap layar", TAPI cuma selama tidak ada satu pun
+    // induknya yang punya transform, filter, backdrop-filter, contain, atau
+    // animasi yang menyentuh transform. Begitu ada satu saja, fixed berubah
+    // jadi "terhadap induk itu" dan lapisan gelapnya berhenti menutup seluruh
+    // layar. Ketahuan waktu dua modal yang seharusnya kembar dibandingkan
+    // berdampingan: yang di Info bisnis menutup semua, yang di Asisten
+    // menyisakan kepala halamannya terang di atas, karena formulir Asisten
+    // memasang animasi berurutan ke SETIAP anak langsungnya.
+    //
+    // Yang buruk dari kelas bug ini bukan tampilannya, tapi bahwa dia menular
+    // tanpa pemberitahuan: cukup ada yang menambahkan satu animasi atau satu
+    // hover-angkat di induk mana pun, dan modal yang sudah lama benar ikut
+    // rusak tanpa galat dan tanpa tes yang gagal. Portal memotong seluruh
+    // kelas itu sekaligus, jadi keempatnya wajib lewat sana.
+    const tanpaPortal = [
+      "apps/web/src/components/ContohModal.tsx",
+      "apps/web/src/components/IsiBesar.tsx",
+      "apps/web/src/components/PresetUsaha.tsx",
+      "apps/web/src/components/KnowledgeList.tsx",
+    ].filter((p) => !/<Portal>/.test(baca(p)));
+    check(
+      "tiap modal digambar lewat portal ke body",
+      tanpaPortal.length === 0,
+      tanpaPortal.join(" "),
+    );
+    // Portal-nya baru menggambar sesudah menempel di browser. Menggambar
+    // duluan di server lalu berbeda saat hidrasi bikin React membuang seluruh
+    // pohonnya.
+    check(
+      "portal menunggu sampai menempel di browser",
+      baca("apps/web/src/components/Portal.tsx").includes(
+        "useEffect(() => setSiap(true), [])",
+      ),
+    );
+
+    // Dua layar yang mengerjakan hal yang sama persis tidak boleh terlihat
+    // seperti dua produk. Pratinjau preset sempat berlatar terang sementara
+    // pratinjau Info bisnis berlatar gelap, dan bedanya bikin orang mengira
+    // yang satu kolom isian yang bisa diketik.
+    check(
+      "dua pratinjau contoh berpenampilan sama",
+      /bg-ink-950/.test(presetUsaha) && /bg-ink-950/.test(contohModal),
+    );
+
+    // Prompt asisten itu karangan tentang orang, bukan tabel. Ditulis berhuruf
+    // lebar-tetap dia terbaca seperti berkas pengaturan, berlawanan dengan
+    // kalimat di atasnya yang menyuruh "tulis kayak lagi ngelatih karyawan
+    // baru". Kotak besarnya wajib ikut kotak aslinya.
+    check(
+      "prompt asisten bisa dibuka besar, dan tetap berhuruf biasa",
+      /<IsiBesarKotak/.test(agentForm) &&
+        /targetId="behaviorPrompt"/.test(agentForm) &&
+        /<IsiBesarKotak[\s\S]*?prosa[\s\S]*?\/>/.test(agentForm) &&
+        /prosa \? "textarea-prosa" : "textarea"/.test(isiBesar),
+    );
+    // Penyetel nilai kotak menyiasati cara React menyimpan nilai terakhir.
+    // Siasat sehalus itu tidak boleh punya dua salinan yang bisa berjalan
+    // sendiri-sendiri.
+    check(
+      "penyetel nilai kotak cuma ada satu",
+      /setNilaiKotak/.test(presetUsaha) &&
+        /setNilaiKotak/.test(isiBesar) &&
+        /export function setNilaiKotak/.test(baca("apps/web/src/lib/isiKotak.ts")),
+    );
+    // Esc dan klik latar menutup, dan halaman di belakangnya tidak ikut
 
     // ─── Tidak ada lagi dialog bawaan browser ───────────────────────────────
     //

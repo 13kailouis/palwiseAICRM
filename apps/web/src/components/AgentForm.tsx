@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { IsiBesarKotak, TombolBesar } from "@/components/IsiBesar";
 import Link from "next/link";
 import { type Agent, type Fitur } from "@palwise/db";
 import { saveAgentAction, type FormState } from "@/app/actions/agent";
@@ -213,6 +214,12 @@ export function AgentForm({
   const paketUntuk = (f: Fitur) => paketFitur[f] ?? "Starter";
 
   const [state, formAction] = useActionState(saveAgentAction, {} as FormState);
+  // Prompt asisten itu tulisan terpanjang dan terpenting di seluruh produk,
+  // dan diketik di kolom kiri yang lebarnya dijaga sekitar 700px. Kotaknya
+  // memang tumbuh sendiri jadi tidak ada yang tersembunyi, tapi yang kurang
+  // LEBARNYA: baris aturan yang agak panjang terlipat jadi dua atau tiga, dan
+  // daftar aturan yang tiap barisnya terlipat susah dibaca sebagai daftar.
+  const [promptBesar, setPromptBesar] = useState(false);
   const [officeHours, setOfficeHours] = useState(agent.officeHoursEnabled);
   const [followUp, setFollowUp] = useState(agent.followUpEnabled);
   const [afterSales, setAfterSales] = useState(agent.afterSalesEnabled);
@@ -300,15 +307,25 @@ export function AgentForm({
         </div>
 
         <div>
-          <label className="label" htmlFor="behaviorPrompt">
-            Cara kerja dan gaya bicara
-          </label>
+          <div className="mb-1.5 flex items-end justify-between gap-3">
+            <label className="label mb-0" htmlFor="behaviorPrompt">
+              Cara kerja dan gaya bicara
+            </label>
+            <TombolBesar onClick={() => setPromptBesar(true)} />
+          </div>
           <IsianTumbuh
             id="behaviorPrompt"
             name="behaviorPrompt"
             minRows={12}
             className="textarea-prosa"
             defaultValue={agent.behaviorPrompt}
+          />
+          <IsiBesarKotak
+            buka={promptBesar}
+            targetId="behaviorPrompt"
+            onTutup={() => setPromptBesar(false)}
+            judul="Cara kerja dan gaya bicara"
+            prosa
           />
           {/* Contohnya di balik lambang info, bukan baris teks yang
               memampang dua paragraf sebelum kotaknya diisi.
