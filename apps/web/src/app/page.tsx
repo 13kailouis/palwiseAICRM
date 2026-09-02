@@ -367,22 +367,15 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
     // usahanya.
     j: "Cuma buat jalanin sales kamu, dan nggak pernah dijual atau dipakai ngelatih AI. Isi chatnya bisa dibuka tim Palwise buat benerin masalah dan memperbaiki produk, dan tiap bukaan tercatat. Rinciannya ada di kebijakan privasi.",
   },
-  {
-    t: "Udah dipakai siapa aja?",
-    // Pertanyaan ini WAJIB ada dan wajib dijawab jujur.
-    //
-    // Ini pertanyaan pertama yang muncul di kepala orang yang belum kenal kita,
-    // dan halaman yang tidak menjawabnya membuat dia mengarang jawabannya
-    // sendiri, biasanya ke arah yang paling buruk. Mengarang angka pemakai juga
-    // bukan pilihan: sekali satu angka di halaman ini terbukti karangan, harga
-    // dan janji fiturnya ikut kehilangan kepercayaan, dan harga itu satu-satunya
-    // pembeda kami.
-    //
-    // Letaknya di sini, BUKAN sebagai blok pengumuman di tengah halaman. Itu
-    // bedanya jujur (menjawab kalau ditanya) dan merendahkan diri
-    // (mengumumkan duluan ke orang yang belum sempat mengerti produknya apa).
-    j: "Palwise masih baru dan belum punya daftar pelanggan yang bisa kami pajang. Kami juga nggak mau ngarang angka atau testimoni, karena kalau satu aja ketahuan karangan, kamu nggak akan percaya harga kami juga. Yang bisa kami tawarin lebih enak: buka halaman Coba dulu, tanya dia kayak kamu pelanggan, dan lihat sendiri jawabannya bener atau nggak.",
-  },
+  // Di sini dulu ada "Udah dipakai siapa aja?", yang dijawab dengan mengakui
+  // Palwise belum punya pelanggan. Dibuang atas permintaan pemilik produk.
+  //
+  // ATURANNYA TETAP BERLAKU: tidak menjawabnya boleh, MENGARANG jawabannya
+  // tidak. Jangan pernah menaruh testimoni, logo klien, rating, atau angka
+  // pemakai karangan di halaman ini. Harga adalah satu-satunya pembeda kami,
+  // dan harga cuma laku kalau angkanya dipercaya. Yang menggantikan bagian ini
+  // adalah "Bukti yang nggak bisa dikarang" di bawah: orang disuruh mengetes
+  // sendiri, bukan disuruh percaya orang yang tidak dia kenal.
   {
     t: "Bedanya sama platform lain apa?",
     j: "Harganya, dan itu bukan diskon-diskonan. Chat yang dimulai pelanggan nggak ditagih WhatsApp selama dibalas dalam 24 jam, jadi biaya yang bener-bener keluar cuma buat jalanin AI-nya. Itu yang kami tagih. Yang lain nagih kamu sepertujuh lebih mahal buat pekerjaan yang sama.",
@@ -1344,9 +1337,7 @@ export default async function LandingPage() {
           blok itu bercerita tentang keadaan kami, ditaruh persis di tempat yang
           seharusnya menjawab kekhawatiran pembacanya. Dan yang dikhawatirkan
           orang yang menimbang menyerahkan nomor usahanya bukan berapa umur
-          perusahaan kami, tapi empat hal di bawah ini. Pertanyaan "udah dipakai
-          siapa aja" tetap dijawab jujur, di tanya jawab, ke orang yang memang
-          menanyakannya. Itu bedanya jujur dan merendahkan diri. */}
+          perusahaan kami, tapi empat hal di bawah ini. */}
       <section className="border-y border-ink-200 bg-white">
         <div className={`${KOLOM} ${JARAK}`}>
           <KepalaBagian
