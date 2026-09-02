@@ -130,7 +130,7 @@ export function ContohModal({
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col sm:flex-row">
           {/* Daftar bidang: kolom kiri di layar lebar, deret yang digeser di
               HP. Nama dan ikonnya diturunkan dari PRESET, jadi bidang yang ada
               di layar Asisten selalu ada di sini juga, dengan urutan sama. */}
@@ -174,7 +174,18 @@ export function ContohModal({
           {/* Pratinjaunya. Huruf lebar-tetap dan latar gelap, sama seperti di
               panduan, supaya terbaca sebagai CONTOH yang dilihat, bukan
               sebagai kolom yang sedang diisi. */}
-          <div className="min-h-0 flex-1 p-3 sm:p-4">
+          {/* min-w-0 WAJIB, dan ini pasangan horizontal dari min-h-0.
+              Isi <pre> punya baris yang panjang, jadi lebar alaminya jauh
+              lebih besar daripada modalnya. Anak flex bawaannya
+              min-width:auto, artinya dia MENOLAK menyusut di bawah lebar
+              alami isinya, jadi kotak gelapnya melar keluar dari tepi kanan
+              modal alih-alih menggulung di dalamnya. overflow-auto di <pre>
+              tidak menolong sama sekali, karena yang kelewat lebar kotak
+              pembungkusnya, bukan isinya.
+
+              Cuma kelihatan di layar lebar: di HP susunannya menurun, dan di
+              sana lebar itu sumbu silang yang memang mengikuti wadahnya. */}
+          <div className="min-h-0 min-w-0 flex-1 p-3 sm:p-4">
             <pre className="thin-scroll h-full overflow-auto rounded-xl bg-ink-950 p-4 font-mono text-[12px] leading-[1.6] text-ink-300">
               {pilihan.isi}
             </pre>

@@ -8455,7 +8455,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /fixed inset-0 z-\[60\]/.test(contohModal) &&
         /h-full w-full flex-col/.test(contohModal) &&
         /sm:max-h-\[86vh\]/.test(contohModal) &&
-        /min-h-0 flex-1/.test(contohModal),
+        /min-h-0 min-w-0 flex-1/.test(contohModal),
     );
     // ISINYA BISA DILIHAT DULU. Sebelum ini, memilih bidang langsung menimpa
     // kolom isian, jadi orang menimpa tulisannya sendiri cuma untuk mencari
@@ -8478,6 +8478,16 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     check(
       "modal contoh jadi satu kolom di HP",
       /flex-col sm:flex-row/.test(contohModal) && /sm:w-60/.test(contohModal),
+    );
+    // min-w-0 itu pasangan horizontal dari min-h-0, dan tanpa dia pratinjaunya
+    // MELAR KELUAR dari tepi kanan modal. Baris di dalam contoh panjang, jadi
+    // lebar alami <pre> jauh lebih besar daripada modalnya, dan anak flex
+    // bawaannya min-width:auto: dia menolak menyusut di bawah lebar alami
+    // isinya. overflow-auto di <pre> tidak menolong, karena yang kelewat lebar
+    // kotak pembungkusnya, bukan isinya. Cuma kelihatan di layar lebar.
+    check(
+      "pratinjau contoh menyusut mengikuti modal, bukan mengikuti isinya",
+      /min-h-0 min-w-0 flex-1 p-3/.test(contohModal),
     );
     // Esc dan klik latar menutup, dan halaman di belakangnya tidak ikut
     // tergulung selama modalnya terbuka.
