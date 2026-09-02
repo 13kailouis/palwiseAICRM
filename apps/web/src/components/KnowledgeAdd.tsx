@@ -6,6 +6,7 @@ import { addKnowledgeAction, type KnowledgeState } from "@/app/actions/knowledge
 import { ImportFlow } from "@/components/ImportFlow";
 import { DariAiLain } from "@/components/DariAiLain";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
+import { CONTOH_INFO } from "@/lib/contohInfo";
 import { InfoTip } from "@/components/InfoTip";
 
 type Tab = "text" | "qna" | "file" | "website" | "ai";
@@ -52,52 +53,6 @@ const AMBIL: { id: Tab; label: string; ikon: NamaIkon; saran?: string }[] = [
 ];
 
 
-/**
- * Contoh isi, dipakai tombol "Pakai contoh".
- *
- * Dulu teks ini jadi placeholder textarea. Itu keliru karena tiga hal:
- * placeholder sengaja dibuat pudar supaya tidak tertukar dengan isian, jadi
- * susah dibaca; dia hilang tepat waktu orang mulai mengetik, padahal justru
- * saat itu contohnya paling dibutuhkan; dan kotak kosong yang penuh tulisan
- * kelihatan seperti sudah terisi kalau dilihat sekilas.
- *
- * Sebagai tombol, contohnya benar-benar masuk ke kolomnya, lalu tinggal
- * ditimpa. Itu yang sebenarnya dimau orang waktu melihat contoh.
- *
- * ISINYA DIROMBAK 10 AGUSTUS 2026, karena contoh yang lama mengajarkan bentuk
- * yang tidak bisa dipakai menjawab pertanyaan yang paling sering masuk.
- *
- * Yang lama dua baris produk, tanpa varian, dan TANPA STOK sama sekali. Padahal
- * "ready gak kak?" itu pertanyaan nomor satu di WhatsApp toko Indonesia. Orang
- * yang menekan "Pakai contoh" lalu mengikuti bentuknya menghasilkan catatan
- * yang tidak punya jawabannya, dan asistennya jadi tidak pernah bisa menjawab
- * hal yang paling ditanyakan.
- *
- * Tiga hal yang sekarang sengaja diajarkan lewat bentuknya, bukan lewat
- * penjelasan:
- *
- * 1. Ada kolom stok. Tanpa dicontohkan, hampir tidak ada yang menuliskannya.
- * 2. Varian punya BARIS SENDIRI-SENDIRI, bukan digabung jadi "tersedia ukuran
- *    200gr dan 500gr". Yang digabung tidak bisa dijawab per varian, dan
- *    pelanggan selalu bertanya per varian.
- * 3. Ada satu baris yang stoknya 0. Ini bukan hiasan: asisten cuma boleh
- *    menyatakan sesuatu habis kalau catatannya memang menulis begitu, jadi
- *    pemiliknya perlu tahu caranya menandai barang yang lagi kosong.
- */
-const CONTOH_ISI = [
-  "DAFTAR HARGA DAN STOK",
-  "Arabika Gayo 200gr, Rp 85.000, stok 12",
-  "Arabika Gayo 500gr, Rp 190.000, stok 4",
-  "Robusta Temanggung 200gr, Rp 55.000, stok 0",
-  "Robusta Temanggung 500gr, Rp 125.000, stok 30",
-  "",
-  "PENGIRIMAN",
-  "Dikirim dari Bandung pakai JNE atau J&T.",
-  "Gratis ongkir kalau belanja di atas Rp 300.000.",
-  "",
-  "JAM BUKA",
-  "Senin sampai Sabtu, 09.00 sampai 17.00.",
-].join("\n");
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -118,6 +73,13 @@ export function KnowledgeAdd({
   const [tab, setTab] = useState<Tab>("text");
   // Isi textarea dipegang di sini supaya tombol "Pakai contoh" bisa mengisinya.
   const [isi, setIsi] = useState("");
+  // Deret contoh sengaja tertutup dulu. Kolom isian yang sudah ditemani satu
+  // baris keterangan tidak butuh sepuluh kotak lagi di atasnya sebelum ada
+  // yang meminta.
+  const [contohBuka, setContohBuka] = useState(false);
+  // Yang terakhir dipakai ditandai, supaya orang yang mencoba beberapa contoh
+  // tahu yang mana yang sekarang ada di kolomnya.
+  const [contohDipakai, setContohDipakai] = useState<string | null>(null);
   const [state, formAction] = useActionState(addKnowledgeAction, {} as KnowledgeState);
 
   // Lagi mengambil dari sumber luar (website/berkas/AI lain)? Deret "Ketik
@@ -252,15 +214,76 @@ export function KnowledgeAdd({
                 Isinya
               </label>
               {/* Contohnya benar-benar masuk ke kolomnya, bukan cuma dibayangi
-                  sebagai placeholder yang hilang begitu diketik. */}
+                  sebagai placeholder yang hilang begitu diketik.
+
+                  Sekarang tombolnya MEMBUKA PILIHAN, bukan langsung mengisi.
+                  Contoh tunggal berisi daftar harga kopi mengajarkan dua hal
+                  yang salah sekaligus ke pemilik klinik, bengkel, atau
+                  sekolah: bahwa produk ini untuk toko, dan bahwa catatannya
+                  cukup berisi daftar harga. Padahal yang paling ditanyakan
+                  pasien itu jadwal praktik, dan yang paling ditanyakan calon
+                  murid itu berkas pendaftaran. */}
               <button
                 type="button"
-                onClick={() => setIsi(CONTOH_ISI)}
+                onClick={() => setContohBuka((b) => !b)}
+                aria-expanded={contohBuka}
                 className="text-sm font-medium text-brand-700 hover:underline"
               >
-                Pakai contoh
+                {contohBuka ? "Tutup contoh" : "Pakai contoh"}
               </button>
             </div>
+
+            {/* Deret pilihan bidang usaha. Nama dan ikonnya diturunkan dari
+                PRESET, jadi bidang yang ada di layar Asisten selalu ada di
+                sini juga, dengan urutan yang sama.
+
+                Satu baris yang bisa digeser, bukan grid yang membungkus:
+                sepuluh kotak yang membungkus jadi tiga baris mendorong
+                kolom isiannya jauh ke bawah layar HP, dan yang dicari orang
+                di layar ini kolom isiannya. */}
+            {contohBuka && (
+              <div className="anim-naik mb-2.5 rounded-xl border border-ink-200 bg-ink-50 p-3">
+                <p className="text-xs leading-relaxed text-ink-600">
+                  Pilih yang paling dekat sama usahamu. Isinya cuma contoh
+                  bentuk, angkanya karangan, jadi timpa dengan datamu sendiri.
+                </p>
+                {/* Di HP satu baris yang digeser, di layar lebar dibiarkan
+                    membungkus. Sepuluh nama bidang yang membungkus di layar
+                    360px jadi enam baris dan mendorong kolom isian keluar
+                    layar, padahal kolom isian itu yang dicari orang di sini.
+                    Di layar lebar kebalikannya: yang digeser menyembunyikan
+                    setengah pilihan di balik tepi kotak, dan tidak ada yang
+                    tahu harus menggeser. */}
+                <div className="thin-scroll -mx-3 mt-2.5 flex gap-2 overflow-x-auto px-3 pb-1 sm:flex-wrap sm:overflow-visible">
+                  {CONTOH_INFO.map((c) => {
+                    const aktif = contohDipakai === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        aria-pressed={aktif}
+                        onClick={() => {
+                          setIsi(c.isi);
+                          setContohDipakai(c.id);
+                        }}
+                        className={`tap-aman inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                          aktif
+                            ? "border-brand-600 bg-brand-600 font-medium text-white"
+                            : "border-ink-200 bg-white text-ink-700 hover:border-ink-300"
+                        }`}
+                      >
+                        <Ikon
+                          nama={c.ikon}
+                          size={15}
+                          className={aktif ? "text-white" : "text-ink-400"}
+                        />
+                        <span className="whitespace-nowrap">{c.nama}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <textarea
               id="content"
               name="content"

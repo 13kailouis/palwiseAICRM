@@ -8273,30 +8273,170 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // yang menekan "Pakai contoh" lalu mengikuti bentuknya menghasilkan catatan
     // yang tidak bisa menjawab hal yang paling sering ditanyakan.
     const knowledgeAdd = baca("apps/web/src/components/KnowledgeAdd.tsx");
+    const contohInfo = baca("apps/web/src/lib/contohInfo.ts");
 
-    for (const [nama, isi] of [
-      ["kotak Ketik sendiri", knowledgeAdd],
-      ["panduan", panduan],
-    ] as const) {
+    // Panduan masih memakai contohnya sendiri (toko kopi), dan di sana itu
+    // memang cuma satu gambar bentuk, bukan isi yang ditempel orang. Yang
+    // dijaga tetap sama: ada kolom stok, ada baris yang habis, dan varian
+    // punya barisnya sendiri.
+    check("contoh info bisnis di panduan punya kolom stok", /stok \d/.test(panduan));
+    check("contoh info bisnis di panduan mencontohkan barang yang habis", /stok 0/.test(panduan));
+    check(
+      "contoh info bisnis di panduan memberi varian barisnya sendiri",
+      /200gr/.test(panduan) && /500gr/.test(panduan),
+    );
+
+    // ─── Contoh per bidang usaha ────────────────────────────────────────────
+    //
+    // Sampai 3 September 2026 tombol "Pakai contoh" cuma punya SATU contoh,
+    // isinya toko kopi. Palwise dijual ke hampir semua lini usaha dan
+    // presetnya sudah sepuluh bidang, jadi pemilik klinik yang menekannya
+    // melihat daftar harga kopi lalu menyimpulkan salah satu dari dua hal yang
+    // sama-sama merugikan: produk ini bukan untuk dia, atau catatannya cukup
+    // berisi daftar harga. Padahal yang paling ditanyakan pasiennya jadwal
+    // praktik.
+    //
+    // Yang dijaga di bawah ini SIFAT contohnya, bukan kalimatnya, karena
+    // kalimatnya memang boleh ditulis ulang kapan saja.
+    const idPreset = [...presetFile.matchAll(/^    id: "([a-z]+)",$/gm)].map(
+      (m) => m[1],
+    );
+    check("daftar id preset terbaca untuk diperiksa", idPreset.length >= 6, String(idPreset.length));
+    // Bidang usaha baru yang ditambahkan tanpa contohnya tidak menghasilkan
+    // galat, cuma chip yang diam-diam hilang dari layar. Itu jenis kerusakan
+    // yang paling lama tidak ketahuan.
+    const tanpaContoh = idPreset.filter(
+      (id) => !new RegExp(`^  ${id}: [A-Z_]+,$`, "m").test(contohInfo),
+    );
+    check(
+      "tiap bidang usaha di preset punya contoh Info bisnis",
+      tanpaContoh.length === 0,
+      tanpaContoh.join(" "),
+    );
+
+    // Isi tiap contoh dibaca dari template literal-nya masing-masing.
+    const contohPer: Record<string, string> = {};
+    for (const m of contohInfo.matchAll(/^const ([A-Z_]+) = `([\s\S]*?)`;$/gm)) {
+      contohPer[m[1]] = m[2];
+    }
+    const daftarContoh = Object.entries(contohPer);
+    check("isi tiap contoh terbaca", daftarContoh.length >= 10, String(daftarContoh.length));
+
+    for (const [nama, isi] of daftarContoh) {
+      // Contoh yang cuma tiga baris diam-diam mengajarkan bahwa tiga baris
+      // cukup, lalu pelanggannya menanyakan hal keempat.
       check(
-        `contoh info bisnis di ${nama} punya kolom stok`,
-        /stok \d/.test(isi),
+        `contoh ${nama} cukup lengkap`,
+        isi.split("\n").filter((b) => b.trim()).length >= 25,
+        String(isi.split("\n").filter((b) => b.trim()).length),
       );
-      // Satu baris berstok 0 itu bukan hiasan. Asisten cuma boleh menyatakan
-      // sesuatu habis kalau catatannya memang menulis begitu, jadi pemiliknya
-      // perlu melihat caranya menandai barang yang lagi kosong.
+      check(`contoh ${nama} menulis harga`, /Rp \d/.test(isi));
+      // Blok ini menampung jawaban yang tidak berbentuk daftar harga dan
+      // karena itu tidak punya tempat lain.
+      check(`contoh ${nama} punya blok yang sering ditanya`, /YANG SERING DITANYA/.test(isi));
+      // Tanya berubah jadi transaksi di sini, dan bagian ini hampir tidak
+      // pernah ditulis orang kalau tidak dicontohkan.
       check(
-        `contoh info bisnis di ${nama} mencontohkan barang yang habis`,
-        /stok 0/.test(isi),
+        `contoh ${nama} menerangkan cara pesan atau bayar`,
+        /CARA (PESAN|DAFTAR|BELI|BAYAR)|PEMBAYARAN|CARA KERJA|CARA BAYAR/.test(isi),
       );
-      // Varian harus punya baris sendiri-sendiri. Yang digabung jadi "tersedia
-      // ukuran 200gr dan 500gr" tidak bisa dijawab per varian, dan pelanggan
-      // selalu bertanya per varian.
+      // Isi ini masuk apa adanya ke Info bisnis lalu dibaca asistennya sebagai
+      // FAKTA USAHA. Kalimat perintah untuk pemiliknya ("Tulis tiap varian di
+      // baris sendiri") akan ikut dihafalkan sebagai fakta, jadi petunjuknya
+      // wajib hidup di layar, di luar teks ini.
+      // Polanya MENYAPA PEMILIKNYA, bukan kata kerja di awal baris: "Isi
+      // freon" dan "Ganti sparepart" itu nama layanan bengkel, dan versi
+      // pertama tes ini menuduh keduanya.
+      const perintah = isi
+        .split("\n")
+        .filter((b) =>
+          /\b(usahamu|datamu|tokomu|bisnismu|timpa|contoh di atas|ganti dengan data)\b/i.test(
+            b,
+          ),
+        );
       check(
-        `contoh info bisnis di ${nama} memberi varian barisnya sendiri`,
-        /200gr/.test(isi) && /500gr/.test(isi),
+        `contoh ${nama} tidak menyelipkan perintah ke pemiliknya`,
+        perintah.length === 0,
+        perintah.join(" | "),
       );
     }
+
+    // Asisten cuma boleh menyatakan sesuatu tidak tersedia kalau catatannya
+    // memang menulis begitu, jadi pemiliknya perlu MELIHAT caranya menandai
+    // itu. Bentuknya beda-beda per bidang: stok 0 untuk barang, unit terjual
+    // untuk properti, kelas penuh untuk kursus, jadwal kosong untuk klinik.
+    const takAda =
+      /stok 0|terjual habis|sedang penuh|sudah penuh|sedang kosong|sedang diperbaiki|belum dilayani|jadwalnya kosong/;
+    for (const [nama, isi] of daftarContoh) {
+      // SEKOLAH SENGAJA DIKECUALIKAN. Presetnya melarang keras menyebut sisa
+      // kuota atau sisa kursi, jadi contoh yang mengajarkan cara menandai
+      // "penuh" justru mendorong pemiliknya menulis hal yang asistennya
+      // dilarang mengatakan.
+      if (nama === "SEKOLAH") continue;
+      check(`contoh ${nama} menandai yang sedang tidak ada`, takAda.test(isi));
+    }
+
+    // Varian punya BARIS SENDIRI-SENDIRI. Yang digabung jadi "ada ukuran M, L,
+    // XL" tidak bisa dijawab per ukuran, dan pelanggan selalu bertanya per
+    // ukuran. Diperiksa di contoh barang, tempat pelajaran itu berlaku.
+    const barisVarian = (contohPer.TOKO ?? "")
+      .split("\n")
+      .filter((b) => /^Kaos polos katun, ukuran /.test(b));
+    check(
+      "contoh toko memberi tiap varian barisnya sendiri",
+      barisVarian.length >= 3 &&
+        barisVarian.every((b) => /Rp \d/.test(b) && /stok \d/.test(b)),
+      String(barisVarian.length),
+    );
+
+    // ─── Tiap contoh patuh pada BATASAN preset bidangnya ─────────────────────
+    //
+    // Ini bukan kerapian. Preset klinik melarang asisten memberi saran medis;
+    // kalau contoh isinya memuat anjuran obat, pemiliknya menyimpan catatan
+    // yang menyuruh asistennya melanggar aturannya sendiri, dan yang menang
+    // biasanya catatannya, karena catatan terasa seperti fakta usaha.
+    check(
+      "contoh klinik tidak menyelipkan saran medis",
+      !/\b(dosis|resep|minum obat|obat yang cocok)\b/i.test(contohPer.KLINIK ?? "") &&
+        /dokternya langsung/.test(contohPer.KLINIK ?? ""),
+    );
+    check(
+      "contoh properti menyerahkan KPR ke tim",
+      /diurus tim/.test(contohPer.PROPERTI ?? "") &&
+        !/(pasti|dijamin) disetujui/i.test(contohPer.PROPERTI ?? ""),
+    );
+    check(
+      "contoh servis tidak menebak biaya perbaikan",
+      /tidak bisa dipastikan sebelum/.test(contohPer.SERVIS ?? ""),
+    );
+    check(
+      "contoh agency menandai angkanya sebagai harga mulai",
+      /harga mulai/.test(contohPer.AGENCY ?? ""),
+    );
+    check(
+      "contoh skincare tidak menjanjikan hasil",
+      /tidak menjanjikan waktu tertentu/.test(contohPer.SKINCARE ?? "") &&
+        !/dijamin (hilang|putih|cerah)/i.test(contohPer.SKINCARE ?? ""),
+    );
+    check(
+      "contoh sekolah tidak menyebut sisa kuota",
+      !/sisa (kuota|kursi)|kuota tersisa|tinggal \d+ kursi/i.test(
+        contohPer.SEKOLAH ?? "",
+      ),
+    );
+
+    // Pemilihnya sendiri: nama dan ikon bidang DITURUNKAN dari PRESET, tidak
+    // diketik ulang. Dua daftar bidang usaha di dua berkas sudah pernah
+    // berbeda diam-diam, dan yang mahal bukan bedanya, tapi bidang baru yang
+    // tidak pernah muncul karena tidak ada yang ingat ada berkas kedua.
+    check(
+      "daftar contoh diturunkan dari preset",
+      /PRESET\.filter/.test(contohInfo) && /import \{ PRESET \}/.test(contohInfo),
+    );
+    check(
+      "kotak Ketik sendiri memakai pemilih bidang usaha",
+      /CONTOH_INFO\.map/.test(knowledgeAdd) && /aria-pressed=\{aktif\}/.test(knowledgeAdd),
+    );
 
     // Bentuknya sudah dicontohkan, tapi contoh tidak bisa mengajarkan SEBERAPA
     // BANYAK: contoh empat baris diam-diam mengajarkan bahwa empat baris cukup.
