@@ -5562,6 +5562,24 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "langkah awal di Ringkasan tidak menyebut pemakainya toko",
       !/aturan toko/.test(ringkasan),
     );
+    // Daftar langkah pemasangan punya DUA WAJAH, dan yang di HP bukan sekadar
+    // versi menumpuk. Bentuk kartu tegak yang bagus di layar lebar berubah
+    // jadi tiga kartu tinggi bertumpuk di HP, dan yang dimakan ruang milik
+    // angka-angka di bawahnya. Di HP tiap langkah wajib jadi satu baris
+    // mendatar: lingkaran, judulnya, panah.
+    check(
+      "langkah pemasangan jadi satu baris di HP, kartu sejajar di layar lebar",
+      /flex items-center gap-3 rounded-xl border p-3 transition sm:h-full sm:flex-col/.test(
+        ringkasan,
+      ) && /sm:grid-cols-3/.test(ringkasan),
+    );
+    // Label statusnya disembunyikan di HP karena lingkaran dan coretannya
+    // sudah mengatakan hal yang sama, dan barisnya cuma selebar 360px.
+    check(
+      "label status langkah tidak ikut memakan baris di HP",
+      /hidden text-xs font-medium text-brand-700 sm:inline/.test(ringkasan) &&
+        ringkasan.includes(String.raw`<span className="hidden sm:inline">Lanjutkan</span>`),
+    );
 
     // Preset jenis usaha. Ini jawaban atas "kalau digeneralkan nanti tumpul":
     // mesinnya tetap satu, yang berbeda cuma teks awalnya.

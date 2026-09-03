@@ -177,7 +177,7 @@ export default async function DashboardPage() {
 
       <div className="space-y-6 p-4 sm:p-6">
         {remaining.length > 0 && (
-          <div className="card p-5 sm:p-6">
+          <div className="card p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-ink-900">
@@ -207,19 +207,29 @@ export default async function DashboardPage() {
               />
             </div>
 
-            {/* Menyamping di layar lebar, menumpuk di HP.
-                Tiga langkah berdiri sejajar di desktop biar kelihatan seperti
-                pemasangan app populer, bukan daftar ceklis panjang ke bawah.
-                Yang sedang giliran ditandai "Sekarang" dan diberi tepi biru
-                supaya matanya berhenti di sana lebih dulu. */}
-            <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+            {/* DUA WAJAH, dan yang di HP bukan sekadar versi menumpuk.
+                Di layar lebar tiga langkah berdiri sejajar biar kelihatan
+                seperti pemasangan app populer, bukan daftar ceklis panjang ke
+                bawah. Yang sedang giliran ditandai "Sekarang" dan diberi tepi
+                biru supaya matanya berhenti di sana lebih dulu.
+
+                Di HP bentuk itu berubah jadi tiga KARTU tinggi bertumpuk yang
+                memakan hampir seluruh layar, dan yang dimakan itu ruang milik
+                angka-angka di bawahnya. Jadi di HP tiap langkah dipadatkan
+                jadi SATU BARIS: lingkaran, judulnya, panah. Label statusnya
+                ("Selesai", "Sekarang", "Nanti") disembunyikan karena
+                lingkaran dan coretannya sudah mengatakan hal yang sama, dan
+                kata "Lanjutkan" ikut disembunyikan karena seluruh barisnya
+                memang sudah bisa ditekan. Yang tersisa per langkah tinggal
+                satu baris setinggi lingkarannya. */}
+            <ol className="mt-4 grid gap-2 sm:grid-cols-3 sm:gap-3">
               {steps.map((s, i) => {
                 const berikut = !s.done && steps.slice(0, i).every((x) => x.done);
                 return (
                   <li key={s.label}>
                     <Link
                       href={s.href}
-                      className={`group flex h-full flex-col gap-3 rounded-xl border p-4 transition ${
+                      className={`group flex items-center gap-3 rounded-xl border p-3 transition sm:h-full sm:flex-col sm:items-start sm:gap-3 sm:p-4 ${
                         s.done
                           ? "border-ink-200 bg-ink-50/60"
                           : berikut
@@ -228,7 +238,7 @@ export default async function DashboardPage() {
                       }`}
                       style={{ transitionDuration: "var(--gerak)" }}
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex shrink-0 items-center gap-2.5">
                         <span
                           className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold tabular-nums ${
                             s.done
@@ -241,19 +251,21 @@ export default async function DashboardPage() {
                           {s.done ? <Ikon nama="centang" size={13} /> : i + 1}
                         </span>
                         {s.done ? (
-                          <span className="text-xs font-medium text-brand-700">
+                          <span className="hidden text-xs font-medium text-brand-700 sm:inline">
                             Selesai
                           </span>
                         ) : berikut ? (
-                          <span className="text-xs font-medium text-brand-700">
+                          <span className="hidden text-xs font-medium text-brand-700 sm:inline">
                             Sekarang
                           </span>
                         ) : (
-                          <span className="text-xs text-ink-400">Nanti</span>
+                          <span className="hidden text-xs text-ink-400 sm:inline">
+                            Nanti
+                          </span>
                         )}
                       </div>
                       <p
-                        className={`text-sm ${
+                        className={`min-w-0 flex-1 text-sm sm:flex-none ${
                           s.done
                             ? "text-ink-400 line-through"
                             : "font-medium text-ink-800"
@@ -262,8 +274,8 @@ export default async function DashboardPage() {
                         {s.label}
                       </p>
                       {berikut && (
-                        <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-brand-700">
-                          Lanjutkan
+                        <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-sm font-medium text-brand-700 sm:ml-0 sm:mt-auto">
+                          <span className="hidden sm:inline">Lanjutkan</span>
                           <svg
                             viewBox="0 0 24 24"
                             width="15"
