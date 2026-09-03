@@ -44,6 +44,18 @@ export default function PrivasiPage() {
           yang baru, bukan memberitahu yang lama.
         </li>
         <li>Paket yang kamu pakai dan jumlah balasan yang sudah terpakai.</li>
+        {/* WAJIB disebut, dan ini bukan kehati-hatian berlebihan.
+            Alamat IP itu data pribadi. Sejak rem pendaftaran dipasang, ada
+            satu hal baru yang disimpan di sisi kami, dan halaman ini yang
+            berjanji menyebutkan semuanya. Yang menyimpan sesuatu tanpa
+            menyebutnya di sini membuat seluruh halaman ini berhenti bisa
+            dipercaya, bukan cuma satu barisnya. */}
+        <li>
+          Waktu kamu mendaftar, alamat jaringanmu (alamat IP) kami acak jadi
+          sidik satu arah, lalu sidiknya saja yang kami simpan paling lama 24
+          jam. Gunanya cuma satu: menahan pembuatan akun massal. Alamat aslinya
+          tidak kami simpan dan tidak bisa dikembalikan dari sidiknya.
+        </li>
       </ul>
 
       <h3>Tentang bisnismu</h3>

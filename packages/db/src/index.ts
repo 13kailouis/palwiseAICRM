@@ -66,6 +66,7 @@ export * from "./plans.js";
 export * from "./ajak.js";
 export * from "./reset.js";
 export * from "./remMasuk.js";
+export * from "./remPendaftaran.js";
 export * from "./verifikasi.js";
 export * from "./balasan.js";
 export * from "./jatah.js";

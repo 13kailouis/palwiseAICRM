@@ -6,6 +6,9 @@ import {
   HASH_UMPAN,
   UMUR_TOKEN_MENIT,
   UMUR_VERIFIKASI_JAM,
+  bolehDaftarDariIp,
+  catatPendaftaran,
+  ipDariHeader,
   jendelaSudahLewat,
   mintaResetSandi,
   mintaVerifikasiEmail,
@@ -52,6 +55,20 @@ ALUR
 BATASAN
 - Jangan menjawab pertanyaan yang tidak berkaitan dengan {{BISNIS}}.`;
 
+/**
+ * Lada untuk sidik jari alamat IP di rem pendaftaran.
+ *
+ * Menumpang INTERNAL_TOKEN, bukan rahasia baru, dan itu keputusan. Rahasia
+ * kedua berarti satu lagi yang bisa lupa dipasang waktu deploy, dan lupa
+ * memasangnya di sini gagal DIAM-DIAM: sidiknya tetap terbentuk, remnya tetap
+ * jalan, cuma isinya jadi bisa dibalik siapa pun yang mendapat tabelnya.
+ * INTERNAL_TOKEN sudah punya penjaga sendiri, yaitu worker yang MENOLAK JALAN
+ * di production kalau nilainya masih bawaan.
+ */
+function ladaSidik(): string {
+  return process.env.INTERNAL_TOKEN || "palwise-dev-token";
+}
+
 export async function registerAction(
   _prev: AuthState,
   formData: FormData,
@@ -74,6 +91,22 @@ export async function registerAction(
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return { error: "Email ini sudah pernah dipakai. Masuk saja langsung." };
+  }
+
+  // Rem pendaftaran per alamat IP.
+  //
+  // Diperiksa SESUDAH kolomnya divalidasi, supaya orang yang cuma salah ketik
+  // password tidak dijawab dengan kalimat soal jaringan yang membingungkan.
+  // Dan SEBELUM apa pun ditulis, supaya yang tertahan tidak meninggalkan
+  // workspace yatim.
+  //
+  // Ini rem terakhir sesudah dua yang lain, dan satu-satunya yang benar-benar
+  // menahan pembuatan akun massal. Konfirmasi email tidak menutupnya karena
+  // alamat sekali pakai gratis dan instan.
+  const ipPendaftar = ipDariHeader((await headers()).get("x-forwarded-for"));
+  const rem = await bolehDaftarDariIp(ipPendaftar, ladaSidik());
+  if (!rem.boleh) {
+    return { error: rem.alasan! };
   }
 
   // Kode ajak dicatat sekarang, tapi hadiahnya baru cair kalau nanti dia
@@ -141,6 +174,22 @@ export async function registerAction(
     }
     console.error("Gagal membuat akun:", err);
     return { error: "Pendaftarannya gagal. Coba lagi sebentar lagi ya." };
+  }
+
+  // Dicatat SESUDAH akunnya benar-benar jadi, bukan waktu percobaan.
+  //
+  // Kalau tiap percobaan dihitung, orang yang salah ketik email lalu mengulang
+  // tiga kali menghabiskan jatahnya sendiri, dan yang tertahan justru
+  // satu-satunya orang yang benar-benar mau mendaftar.
+  //
+  // Gagalnya tidak boleh membatalkan pendaftaran yang sudah jadi. Akunnya
+  // sudah ada, dan menolaknya di detik terakhir gara-gara pencatatan rem
+  // adalah cara tercepat kehilangan pengguna baru. Yang hilang cuma satu
+  // hitungan.
+  try {
+    await catatPendaftaran(ipPendaftar, ladaSidik());
+  } catch (err) {
+    console.error("Gagal mencatat rem pendaftaran:", err);
   }
 
   // Tautan konfirmasi dikirim sekarang, bukan menunggu orangnya mencari

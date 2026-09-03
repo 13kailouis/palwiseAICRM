@@ -132,8 +132,11 @@ async function emailSudahDikonfirmasi(workspaceId: string): Promise<boolean> {
  * melihat asistennya menjawab, dan buat produk yang belum punya nama, itu jauh
  * lebih mahal daripada 30 balasan.
  *
- * Ini juga BUKAN pengganti rem pendaftaran. Belum ada batas jumlah akun baru
- * per IP di mana pun, dan itu yang sebenarnya menahan pembuatan akun massal.
+ * Ini juga BUKAN pengganti rem pendaftaran, dan dia memang punya remnya
+ * sendiri: lihat [remPendaftaran] di paket db, yang membatasi jumlah akun baru
+ * per alamat IP. Yang di sini membatasi seberapa jauh satu akun bisa dipakai;
+ * yang di sana membatasi berapa banyak akun yang bisa dibuat. Dua pekerjaan
+ * yang berbeda, dan salah satunya saja tidak cukup.
  */
 export async function ambilJatahRuangCoba(workspaceId: string): Promise<{
   terpakai: number;

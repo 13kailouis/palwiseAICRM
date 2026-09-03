@@ -10,7 +10,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { JATAH_RUANG_COBA_HARIAN, parseJsonArray, prisma } from "@palwise/db";
+import {
+  JATAH_RUANG_COBA_HARIAN,
+  MAKS_DAFTAR_PER_HARI,
+  MAKS_DAFTAR_PER_JAM,
+  bolehDaftarDariIp,
+  catatPendaftaran,
+  ipDariHeader,
+  lewatBatas,
+  parseJsonArray,
+  prisma,
+  sidikIp,
+} from "@palwise/db";
 import {
   chunkText,
   cosineSimilarity,
@@ -2782,6 +2793,131 @@ async function main() {
     vBasi.alasan ?? "ok",
   );
 
+  // Pembaca berkas untuk cek yang memeriksa bentuk kode, bukan perilakunya.
+  const akarUji = path.resolve(fileURLToPath(import.meta.url), "../../../../..");
+  const bacaBerkas = (relatif: string) =>
+    fs.readFileSync(path.join(akarUji, relatif), "utf8");
+
+  // ─── Rem pendaftaran per alamat IP ────────────────────────────────────────
+  //
+  // Ini satu-satunya rem yang benar-benar menahan pembuatan akun massal.
+  // Konfirmasi email tidak menutupnya, karena alamat sekali pakai gratis dan
+  // instan.
+  console.log("\nRem pendaftaran per alamat IP");
+
+  // Yang diambil dari X-Forwarded-For entri PALING BELAKANG. Caddy menambahkan
+  // alamat lawan bicaranya ke ujung daftar, jadi yang mengambil entri pertama
+  // membaca angka yang dikirim orang yang justru mau ditahan, dan remnya bisa
+  // dilewati cukup dengan mengganti satu header tiap pendaftaran.
+  check(
+    "alamat pengunjung diambil dari ujung X-Forwarded-For, bukan awalnya",
+    ipDariHeader("1.1.1.1, 2.2.2.2, 3.3.3.3") === "3.3.3.3" &&
+      ipDariHeader("9.9.9.9") === "9.9.9.9",
+    ipDariHeader("1.1.1.1, 2.2.2.2, 3.3.3.3") ?? "null",
+  );
+  // Header hilang berarti salah pasang, dan remnya MEMBUKA. Menolak semua
+  // pendaftaran karena salah pasang jauh lebih merusak daripada melewatkan
+  // satu pendaftar.
+  check(
+    "header yang hilang tidak menolak siapa pun",
+    ipDariHeader(null) === null &&
+      ipDariHeader("") === null &&
+      ipDariHeader("  ,  ") === null,
+  );
+  check(
+    "tanpa alamat, pendaftaran tetap boleh",
+    (await bolehDaftarDariIp(null, "lada-uji")).boleh,
+  );
+
+  // Sidiknya diberi lada, karena sha256 polos atas IPv4 cuma empat miliar
+  // kemungkinan dan bisa dibalik siapa pun yang mendapat isi tabelnya.
+  check(
+    "sidik alamat ikut berubah kalau ladanya berbeda",
+    sidikIp("1.2.3.4", "lada-a") !== sidikIp("1.2.3.4", "lada-b") &&
+      sidikIp("1.2.3.4", "lada-a") === sidikIp("1.2.3.4", "lada-a"),
+  );
+  check(
+    "alamat aslinya tidak tersimpan di dalam sidiknya",
+    !sidikIp("1.2.3.4", "lada-uji").includes("1.2.3.4"),
+  );
+
+  // Aturannya murni, jadi bisa diuji tanpa database.
+  check(
+    "batas per jam dan per hari dua-duanya menahan",
+    !lewatBatas(MAKS_DAFTAR_PER_JAM - 1, 0) &&
+      lewatBatas(MAKS_DAFTAR_PER_JAM, 0) &&
+      lewatBatas(0, MAKS_DAFTAR_PER_HARI),
+  );
+
+  // Sekarang yang lewat database. Alamat uji sengaja yang tidak mungkin
+  // dipakai siapa pun.
+  const ipUji = "203.0.113.77";
+  const ladaUji = "lada-selftest";
+  await prisma.remPendaftaran.deleteMany({
+    where: { sidik: sidikIp(ipUji, ladaUji) },
+  });
+
+  check(
+    "alamat baru boleh mendaftar",
+    (await bolehDaftarDariIp(ipUji, ladaUji)).boleh,
+  );
+
+  for (let i = 0; i < MAKS_DAFTAR_PER_JAM; i++) {
+    await catatPendaftaran(ipUji, ladaUji);
+  }
+  const remKena = await bolehDaftarDariIp(ipUji, ladaUji);
+  check(
+    `pendaftaran ke-${MAKS_DAFTAR_PER_JAM + 1} dari alamat yang sama ditahan`,
+    !remKena.boleh,
+  );
+  // Kalimatnya tidak menuduh dan memberi jalan keluar. Yang paling mungkin
+  // membacanya orang sungguhan yang kebetulan satu alamat IP dengan orang lain
+  // lewat CGNAT operatornya, dan menuduh dia robot berarti kehilangan dia.
+  check(
+    "kalimat penolakannya memberi jalan keluar, bukan tuduhan",
+    !!remKena.alasan &&
+      /email kami/.test(remKena.alasan) &&
+      !/robot|bot|curang|spam/i.test(remKena.alasan),
+    remKena.alasan ?? "",
+  );
+
+  // Alamat lain tidak ikut kena. Kedengarannya sepele, tapi kalau sidiknya
+  // salah dihitung semua orang berbagi satu hitungan dan seluruh pendaftaran
+  // berhenti begitu lima orang pertama masuk.
+  check(
+    "alamat lain tidak ikut tertahan",
+    (await bolehDaftarDariIp("198.51.100.9", ladaUji)).boleh,
+  );
+
+  // Barisnya dibuang sendiri sesudah lewat sehari, supaya tabel ini tidak
+  // pernah jadi catatan riwayat siapa mendaftar dari mana.
+  await prisma.remPendaftaran.updateMany({
+    where: { sidik: sidikIp(ipUji, ladaUji) },
+    data: { createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) },
+  });
+  await catatPendaftaran("198.51.100.10", ladaUji);
+  const sisaLama = await prisma.remPendaftaran.count({
+    where: { sidik: sidikIp(ipUji, ladaUji) },
+  });
+  check(
+    "catatan yang lewat sehari dibuang sendiri",
+    sisaLama === 0,
+    `${sisaLama} tersisa`,
+  );
+
+  // Alamat IP itu data pribadi, dan halaman privasi berjanji menyebutkan
+  // SEMUA yang disimpan. Yang menyimpan sesuatu tanpa menyebutnya di sana
+  // membuat seluruh halaman itu berhenti bisa dipercaya, bukan cuma satu
+  // barisnya.
+  const privasiTs = bacaBerkas("apps/web/src/app/privasi/page.tsx");
+  check(
+    "halaman privasi menyebut sidik alamat jaringan yang disimpan",
+    /alamat IP/.test(privasiTs) &&
+      privasiTs.includes("paling lama 24"),
+  );
+
+  await prisma.remPendaftaran.deleteMany({});
+
   // ─── Jatah ruang coba sebelum email dikonfirmasi ───────────────────────────
   //
   // Sebelum dikonfirmasi jatahnya SEKALI SEUMUR AKUN, bukan 30 per hari.
@@ -2842,7 +2978,6 @@ async function main() {
   // lagi" untuk akun yang belum konfirmasi itu janji yang tidak akan ditepati,
   // dan orangnya menunggu satu hari cuma untuk menemukan tidak ada yang
   // berubah.
-  const akarUji = path.resolve(fileURLToPath(import.meta.url), "../../../../..");
   // Keadaan pemiliknya dikembalikan seperti semula. Tes konfirmasi email di
   // bawah meminta token berkali-kali untuk menguji remnya, dan permintaan itu
   // DITOLAK kalau alamatnya sudah terkonfirmasi, jadi tanpa baris ini tes
@@ -2852,21 +2987,27 @@ async function main() {
     data: { emailVerifiedAt: null },
   });
 
-  const bacaBerkas = (relatif: string) =>
-    fs.readFileSync(path.join(akarUji, relatif), "utf8");
   const percakapanTs = bacaBerkas("apps/worker/src/core/conversation.ts");
   check(
     "kalimat jatah habis ikut bentuk jatahnya",
     /jatah\.belumKonfirmasi/.test(percakapanTs) &&
       /Konfirmasi emailmu dulu/.test(percakapanTs),
   );
-  // Ini BUKAN pengganti rem pendaftaran, dan catatan itu ditulis di kodenya
-  // supaya tidak ada yang mengira lubangnya sudah tertutup semua.
+  // Dua rem yang berbeda pekerjaan, dan salah satunya saja tidak cukup: yang
+  // di quota.ts membatasi seberapa jauh SATU akun bisa dipakai, yang di
+  // remPendaftaran.ts membatasi BERAPA BANYAK akun yang bisa dibuat. Kodenya
+  // saling menunjuk supaya yang membaca salah satunya tidak mengira lubangnya
+  // sudah tertutup semua.
   check(
-    "kode mencatat bahwa rem pendaftaran masih belum ada",
-    /BUKAN pengganti rem pendaftaran/.test(
-      bacaBerkas("apps/worker/src/core/quota.ts"),
-    ),
+    "dua rem itu saling menunjuk di kodenya",
+    /remPendaftaran/.test(bacaBerkas("apps/worker/src/core/quota.ts")) &&
+      // Frasanya sengaja yang PASTI tidak terpotong lipatan baris komentar.
+      // Versi pertama memakai "ruang coba direm bentuknya", dan di berkasnya
+      // kalimat itu terbelah dua baris, jadi tesnya merah menuduh kode yang
+      // sebenarnya benar. Ini jebakan yang sudah berkali-kali kejadian.
+      bacaBerkas("packages/db/src/remPendaftaran.ts").includes(
+        "sekali seumur akun sebelum email dikonfirmasi",
+      ),
   );
 
   const vTersimpan = await prisma.emailVerification.findMany({

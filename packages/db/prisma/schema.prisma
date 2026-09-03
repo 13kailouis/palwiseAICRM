@@ -262,6 +262,31 @@ model PasswordReset {
 /// Konfirmasi alamat email.
 ///
 /// Sama seperti PasswordReset, yang disimpan cuma sidik jari tokennya.
+/// Rem pendaftaran per alamat IP.
+///
+/// Yang ditahan di sini pembuatan akun massal, dan itu lubang yang TIDAK
+/// ditutup oleh konfirmasi email: alamat sekali pakai gratis dan instan, jadi
+/// verifikasi email cuma polisi tidur buat yang memang niat.
+///
+/// YANG DISIMPAN SIDIK JARINYA, BUKAN ALAMAT IP-nya. Alamat IP itu data
+/// pribadi, dan menyimpannya berarti menambah satu hal lagi yang harus
+/// dijelaskan di halaman privasi dan dijaga selamanya, padahal yang benar-benar
+/// dibutuhkan cuma "apakah dua pendaftaran ini datang dari tempat yang sama".
+/// Sidiknya diberi lada rahasia server, karena sha256 polos atas IPv4 cuma
+/// empat miliar kemungkinan dan bisa dibalik siapa pun yang mendapat isi tabel
+/// ini.
+///
+/// Barisnya dibuang sendiri begitu lewat jendela terpanjang, jadi tabel ini
+/// tidak pernah jadi catatan riwayat siapa mendaftar dari mana.
+model RemPendaftaran {
+  id        String   @id @default(cuid())
+  /// sha256(alamat ip + lada rahasia). Tidak bisa dikembalikan jadi alamat.
+  sidik     String
+  createdAt DateTime @default(now())
+
+  @@index([sidik, createdAt])
+}
+
 model EmailVerification {
   id        String    @id @default(cuid())
   tokenHash String    @unique
