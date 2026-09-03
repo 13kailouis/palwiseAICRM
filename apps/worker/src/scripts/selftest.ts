@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseJsonArray, prisma } from "@palwise/db";
+import { JATAH_RUANG_COBA_HARIAN, parseJsonArray, prisma } from "@palwise/db";
 import {
   chunkText,
   cosineSimilarity,
@@ -65,7 +65,12 @@ import {
 } from "../jobs/followup.js";
 import { extractMessage } from "../wa/extract.js";
 import { kabariPelangganSekali, periksaDanKabari } from "../core/kabarKuota.js";
-import { getQuota, kembalikanKredit, pesanKredit } from "../core/quota.js";
+import {
+  ambilJatahRuangCoba,
+  getQuota,
+  kembalikanKredit,
+  pesanKredit,
+} from "../core/quota.js";
 import {
   AWALAN_RUANG_COBA,
   PLANS,
@@ -2775,6 +2780,93 @@ async function main() {
     "tautan konfirmasi lewat waktu ditolak",
     !vBasi.ok && vBasi.alasan === "kedaluwarsa",
     vBasi.alasan ?? "ok",
+  );
+
+  // ─── Jatah ruang coba sebelum email dikonfirmasi ───────────────────────────
+  //
+  // Sebelum dikonfirmasi jatahnya SEKALI SEUMUR AKUN, bukan 30 per hari.
+  // Angkanya sama, yang berubah bentuknya.
+  //
+  // Dari dua jalur pakai AI di paket gratis, balasan WhatsApp sudah direm
+  // kenyataan: tiap akun wajib men-scan QR dengan nomor sungguhan, dan satu
+  // akun gratis cuma boleh satu nomor. Ruang coba tidak punya rem seperti itu
+  // sama sekali, dan justru dia yang jatahnya lahir lagi tiap hari. Bentuk
+  // harian itu yang bikin akun sampah layak dibuat, bukan besar jatahnya.
+  console.log("\nJatah ruang coba sebelum email dikonfirmasi");
+
+  const duaHariLalu = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+  const setelJatah = (used: number, reset: Date) =>
+    prisma.workspace.update({
+      where: { id: workspace.id },
+      data: { playgroundUsed: used, playgroundResetAt: reset },
+    });
+
+  await prisma.user.update({
+    where: { id: pemilik.id },
+    data: { role: "owner", emailVerifiedAt: null },
+  });
+  await setelJatah(JATAH_RUANG_COBA_HARIAN, duaHariLalu);
+  const jatahBelum = await ambilJatahRuangCoba(workspace.id);
+  check(
+    "jatah ruang coba tidak lahir lagi sebelum email dikonfirmasi",
+    jatahBelum.habis && jatahBelum.belumKonfirmasi,
+    `terpakai ${jatahBelum.terpakai}, belumKonfirmasi ${jatahBelum.belumKonfirmasi}`,
+  );
+
+  await prisma.user.update({
+    where: { id: pemilik.id },
+    data: { emailVerifiedAt: new Date() },
+  });
+  await setelJatah(JATAH_RUANG_COBA_HARIAN, duaHariLalu);
+  const jatahSudah = await ambilJatahRuangCoba(workspace.id);
+  check(
+    "sesudah dikonfirmasi, jatahnya penuh lagi tiap hari",
+    !jatahSudah.habis &&
+      jatahSudah.terpakai === 0 &&
+      !jatahSudah.belumKonfirmasi,
+    `terpakai ${jatahSudah.terpakai}`,
+  );
+
+  // Yang belum lewat sehari tetap tidak dinolkan, walau sudah dikonfirmasi.
+  // Tanpa cek ini, "jatah harian" gampang berubah jadi "jatah tak terbatas"
+  // tanpa ada yang sadar.
+  await setelJatah(5, new Date());
+  const jatahHariSama = await ambilJatahRuangCoba(workspace.id);
+  check(
+    "jatah di hari yang sama tidak ikut dinolkan",
+    jatahHariSama.terpakai === 5,
+    `terpakai ${jatahHariSama.terpakai}`,
+  );
+
+  // Kalimat waktu jatahnya habis WAJIB ikut bentuk jatahnya. "Besok penuh
+  // lagi" untuk akun yang belum konfirmasi itu janji yang tidak akan ditepati,
+  // dan orangnya menunggu satu hari cuma untuk menemukan tidak ada yang
+  // berubah.
+  const akarUji = path.resolve(fileURLToPath(import.meta.url), "../../../../..");
+  // Keadaan pemiliknya dikembalikan seperti semula. Tes konfirmasi email di
+  // bawah meminta token berkali-kali untuk menguji remnya, dan permintaan itu
+  // DITOLAK kalau alamatnya sudah terkonfirmasi, jadi tanpa baris ini tes
+  // berikutnya gagal menuduh rem yang sebenarnya sehat.
+  await prisma.user.update({
+    where: { id: pemilik.id },
+    data: { emailVerifiedAt: null },
+  });
+
+  const bacaBerkas = (relatif: string) =>
+    fs.readFileSync(path.join(akarUji, relatif), "utf8");
+  const percakapanTs = bacaBerkas("apps/worker/src/core/conversation.ts");
+  check(
+    "kalimat jatah habis ikut bentuk jatahnya",
+    /jatah\.belumKonfirmasi/.test(percakapanTs) &&
+      /Konfirmasi emailmu dulu/.test(percakapanTs),
+  );
+  // Ini BUKAN pengganti rem pendaftaran, dan catatan itu ditulis di kodenya
+  // supaya tidak ada yang mengira lubangnya sudah tertutup semua.
+  check(
+    "kode mencatat bahwa rem pendaftaran masih belum ada",
+    /BUKAN pengganti rem pendaftaran/.test(
+      bacaBerkas("apps/worker/src/core/quota.ts"),
+    ),
   );
 
   const vTersimpan = await prisma.emailVerification.findMany({

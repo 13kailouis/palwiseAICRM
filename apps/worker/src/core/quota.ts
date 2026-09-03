@@ -89,21 +89,64 @@ export async function kembalikanKredit(workspaceId: string): Promise<void> {
 }
 
 /**
- * Jatah ruang coba, dihitung harian dan terpisah dari kuota balasan pelanggan.
+ * Apakah workspace ini emailnya sudah dikonfirmasi.
+ *
+ * Yang diperiksa PEMILIKNYA, bukan siapa pun yang kebetulan ada di dalamnya:
+ * cuma pemilik yang alamatnya jadi kunci cadangan akun, dan cuma dia yang bisa
+ * mengkonfirmasi. Workspace tanpa pemilik (tidak seharusnya ada) dihitung
+ * belum, karena menebak ke arah yang lebih longgar berarti lubangnya terbuka
+ * justru di keadaan yang paling aneh.
+ */
+async function emailSudahDikonfirmasi(workspaceId: string): Promise<boolean> {
+  const pemilik = await prisma.user.findFirst({
+    where: { workspaceId, role: "owner" },
+    select: { emailVerifiedAt: true },
+  });
+  return !!pemilik?.emailVerifiedAt;
+}
+
+/**
+ * Jatah ruang coba, terpisah dari kuota balasan pelanggan.
  *
  * Dulu menguji di halaman "Coba dulu" ikut memotong kuota utama. Untuk pengguna
  * paket gratis itu fatal: jatahnya habis buat menguji, dan asistennya tidak
  * pernah sempat membuktikan diri ke pelanggan sungguhan.
+ *
+ * SEBELUM EMAILNYA DIKONFIRMASI, JATAHNYA TIDAK LAHIR LAGI TIAP HARI.
+ *
+ * Angkanya sama, yang berubah bentuknya: 30 sekali seumur akun, bukan 30 per
+ * hari. Sesudah dikonfirmasi, jatah hariannya jalan seperti biasa.
+ *
+ * Alasannya bukan menyaring pendaftar. Dari dua jalur pakai AI di paket gratis,
+ * balasan WhatsApp sudah direm kenyataan: tiap akun wajib men-scan QR dengan
+ * nomor WhatsApp sungguhan, dan satu akun gratis cuma boleh satu nomor. Mau
+ * seratus akun pun tetap butuh seratus nomor. Ruang coba tidak punya rem
+ * seperti itu sama sekali, dan justru dia yang jatahnya LAHIR LAGI TIAP HARI.
+ * Bentuk harian itu yang bikin akun sampah layak dibuat, bukan besar jatahnya:
+ * satu akun sampah berarti 30 balasan gratis per hari, selamanya.
+ *
+ * YANG SENGAJA TIDAK DILAKUKAN: memblokir AI-nya sampai email dikonfirmasi.
+ * Email sekali pakai gratis dan instan, jadi tembok itu polisi tidur buat yang
+ * niat curang, tapi dinding betulan buat pemilik warung yang emailnya nyasar ke
+ * spam. Yang hilang di situ orang yang berhenti di menit pertama tanpa pernah
+ * melihat asistennya menjawab, dan buat produk yang belum punya nama, itu jauh
+ * lebih mahal daripada 30 balasan.
+ *
+ * Ini juga BUKAN pengganti rem pendaftaran. Belum ada batas jumlah akun baru
+ * per IP di mana pun, dan itu yang sebenarnya menahan pembuatan akun massal.
  */
 export async function ambilJatahRuangCoba(workspaceId: string): Promise<{
   terpakai: number;
   batas: number;
   habis: boolean;
+  /** Jatahnya masih bentuk sekali-seumur-akun, belum harian. */
+  belumKonfirmasi: boolean;
 }> {
   let ws = await prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId } });
+  const terkonfirmasi = await emailSudahDikonfirmasi(workspaceId);
 
   const sehari = 24 * 60 * 60 * 1000;
-  if (Date.now() - ws.playgroundResetAt.getTime() >= sehari) {
+  if (terkonfirmasi && Date.now() - ws.playgroundResetAt.getTime() >= sehari) {
     ws = await prisma.workspace.update({
       where: { id: workspaceId },
       data: { playgroundUsed: 0, playgroundResetAt: new Date() },
@@ -114,6 +157,7 @@ export async function ambilJatahRuangCoba(workspaceId: string): Promise<{
     terpakai: ws.playgroundUsed,
     batas: JATAH_RUANG_COBA_HARIAN,
     habis: ws.playgroundUsed >= JATAH_RUANG_COBA_HARIAN,
+    belumKonfirmasi: !terkonfirmasi,
   };
 }
 

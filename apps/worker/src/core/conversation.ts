@@ -1165,10 +1165,17 @@ export async function runAgentOnConversation(params: {
   if (params.ruangCoba) {
     const jatah = await ambilJatahRuangCoba(conversation.workspaceId);
     if (!(await pesanJatahRuangCoba(conversation.workspaceId))) {
+      // Kalimatnya HARUS ikut bentuk jatahnya. Sebelum email dikonfirmasi
+      // jatahnya sekali seumur akun, jadi "besok penuh lagi" jadi janji yang
+      // tidak akan ditepati, dan orangnya menunggu satu hari untuk menemukan
+      // tidak ada yang berubah. Yang belum konfirmasi diberi tahu jalan
+      // keluarnya sekalian, karena tanpa itu dia cuma tahu buntu.
       return {
         status: "skipped",
         code: "playground_limit",
-        reason: `Jatah mencoba hari ini sudah habis (${jatah.batas} kali). Besok penuh lagi. Kuota balasan ke pelanggan tidak terpakai sama sekali.`,
+        reason: jatah.belumKonfirmasi
+          ? `Jatah mencoba sudah habis (${jatah.batas} kali). Konfirmasi emailmu dulu lewat halaman Akun, nanti jatahnya penuh lagi tiap hari. Kuota balasan ke pelanggan tidak terpakai sama sekali.`
+          : `Jatah mencoba hari ini sudah habis (${jatah.batas} kali). Besok penuh lagi. Kuota balasan ke pelanggan tidak terpakai sama sekali.`,
       };
     }
   } else if (!(await pesanKredit(conversation.workspaceId))) {
