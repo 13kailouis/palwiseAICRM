@@ -5575,6 +5575,19 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     );
     // Label statusnya disembunyikan di HP karena lingkaran dan coretannya
     // sudah mengatakan hal yang sama, dan barisnya cuma selebar 360px.
+    // Kalimat penjelas dan bilah kemajuan juga cuma di layar lebar. Judulnya
+    // sendiri sudah menyuruh, dan bilahnya mengatakan hal yang persis sama
+    // dengan "2/3 selesai" di sebelahnya, cuma dalam bentuk gambar. Yang
+    // dipertahankan di HP angkanya, bukan gambarnya: angka memberi tahu SISA
+    // berapa, gambar cuma memberi kesan kira-kira.
+    check(
+      "kepala daftar langkah dipangkas di HP, angkanya tetap",
+      /mt-1 hidden text-sm text-ink-500 sm:block/.test(ringkasan) &&
+        /mt-4 hidden h-1.5 overflow-hidden rounded-full bg-ink-100 sm:block/.test(
+          ringkasan,
+        ) &&
+        ringkasan.includes(String.raw`/{steps.length} selesai`),
+    );
     check(
       "label status langkah tidak ikut memakan baris di HP",
       /hidden text-xs font-medium text-brand-700 sm:inline/.test(ringkasan) &&

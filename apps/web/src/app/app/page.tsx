@@ -183,7 +183,15 @@ export default async function DashboardPage() {
                 <h2 className="font-semibold text-ink-900">
                   Tinggal {remaining.length} langkah lagi
                 </h2>
-                <p className="mt-1 text-sm text-ink-500">
+                {/* Kalimat ini cuma di layar lebar.
+                    Judulnya sendiri sudah menyuruh: "Tinggal 1 langkah lagi"
+                    tidak butuh satu kalimat lagi untuk bilang kerjakan dulu.
+                    Di layar 360px kalimat itu jadi dua baris penuh tepat di
+                    tempat yang paling mahal, yaitu di atas langkah-langkahnya
+                    sendiri. Di layar lebar dia tidak mengorbankan apa pun,
+                    dan buat yang baru pertama masuk dia menjelaskan kenapa
+                    kotak ini ada. */}
+                <p className="mt-1 hidden text-sm text-ink-500 sm:block">
                   Selesaikan ini dulu supaya chat pelanggan bisa mulai dibalas
                   otomatis.
                 </p>
@@ -196,8 +204,15 @@ export default async function DashboardPage() {
               </span>
             </div>
 
-            {/* Bilah kemajuan: berapa banyak yang sudah beres, sekali lihat. */}
-            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-ink-100">
+            {/* Bilah kemajuan, dan juga cuma di layar lebar.
+                Dia mengatakan hal yang PERSIS SAMA dengan "2/3 selesai" yang
+                berdiri di sebelah judulnya, cuma dalam bentuk gambar. Dua
+                penanda untuk satu keadaan itu boros di mana pun, dan di HP
+                yang dibayar bukan cuma tingginya sendiri tapi juga jarak
+                atasnya. Yang dipertahankan angkanya, bukan gambarnya, karena
+                angka memberi tahu SISA berapa dan gambar cuma memberi kesan
+                kira-kira. */}
+            <div className="mt-4 hidden h-1.5 overflow-hidden rounded-full bg-ink-100 sm:block">
               <div
                 className="h-full rounded-full bg-brand-500"
                 style={{
@@ -222,7 +237,7 @@ export default async function DashboardPage() {
                 kata "Lanjutkan" ikut disembunyikan karena seluruh barisnya
                 memang sudah bisa ditekan. Yang tersisa per langkah tinggal
                 satu baris setinggi lingkarannya. */}
-            <ol className="mt-4 grid gap-2 sm:grid-cols-3 sm:gap-3">
+            <ol className="mt-3 grid gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-3">
               {steps.map((s, i) => {
                 const berikut = !s.done && steps.slice(0, i).every((x) => x.done);
                 return (
