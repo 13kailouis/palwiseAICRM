@@ -5975,9 +5975,22 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // kecil. Isinya benar, tapi tidak ada pemilik toko yang peduli laporan
     // keuangan kita. Yang dia tanyakan cuma "kalau segini murah, apa yang
     // dikurangin", jadi judulnya harus menjawab itu.
+    // Diuji MAKSUDNYA, bukan kalimatnya.
+    //
+    // Dulu ini satu bagian penuh berlatar hitam berjudul "Murah bukan berarti
+    // ada yang dikurangin", dengan tabel pembanding dan catatan kaki, sekitar
+    // 120 kata. Bagian itu dibuang 4 September 2026 waktu halaman dipangkas,
+    // dan JAWABANNYA tetap wajib ada: untuk barang yang harganya sepertujuh
+    // sebelah, keberatan yang otomatis muncul bukan "mahal" tapi "pasti ada
+    // yang jelek". Halaman harga yang tidak menjawab itu meninggalkan
+    // pembacanya menjawab sendiri, dan dia menjawab ke arah yang paling buruk.
+    //
+    // Sekarang jawabannya satu baris di bagian harga. Yang dijaga: pertanyaan
+    // itu masih diajukan dan masih dijawab, di bagian harga, bukan di mana pun.
+    const bagianHarga = depan.slice(depan.indexOf('id="harga"'));
     check(
-      "bagian harga menjawab kekhawatiran pembaca, bukan menjelaskan biaya kami",
-      /Murah bukan berarti ada yang dikurangin/.test(depan),
+      "bagian harga menjawab kekhawatiran 'apa yang dikurangin'",
+      /[Kk]ok bisa semurah ini/.test(bagianHarga),
     );
     // Tombol harus ada di TENGAH halaman juga. Orang yang sudah yakin di bagian
     // sorotan tidak boleh dipaksa menggulir melewati sepuluh fitur, daftar
@@ -6062,10 +6075,16 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // seolah-olah bug. Yang harus dijaga bukan susunan katanya, tapi bahwa
     // kehilangan yang dia rasakan benar-benar disebut, dan disebutnya di daftar
     // "Sekarang", bukan di hero.
+    //
+    // 4 September 2026: daftar CARA_LAMA dibuang seluruhnya waktu halaman
+    // dipangkas, jadi patokannya pindah ke JUDULNYA. Itu justru lebih benar
+    // daripada sebelumnya. Daftar sepuluh kalimat yang mengulang kalimat yang
+    // baru dibaca dua layar di atasnya tidak pernah jadi tempat yang tepat
+    // untuk memikul rasa sakit pembacanya; yang memikulnya judul halaman, dan
+    // judul itu yang benar-benar dibaca semua orang.
     check(
       "halaman depan tetap menyebut kehilangan yang dirasakan pembacanya",
-      /const CARA_LAMA = \[/.test(depan) &&
-        /beli (di sebelah|di tempat lain)/.test(depan),
+      /beli (di sebelah|di tempat lain)/.test(judulDepan),
     );
     // Hero cuma boleh punya SATU paragraf antara judul dan tombolnya.
     // Dicari SETELAH judulnya. Tautan "/daftar" yang pertama ada di kepala
@@ -6211,22 +6230,20 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // benar-benar ada, dan bahwa tidak ada lagi yang memaksa layar digeser ke
     // samping.
 
-    // Tabel tiga kolom butuh 560px. Di layar 375px dia harus digeser ke
-    // samping, dan begitu digeser, kolom nama barisnya ikut hilang: yang
-    // tertinggal dua angka tanpa keterangan apa pun. Jadi tabelnya wajib
-    // disembunyikan di HP, bukan cuma dibungkus overflow.
+    // Tabel pembandingnya sendiri sudah TIDAK ADA sejak 4 September 2026.
+    //
+    // Dulu tabel tiga kolom yang butuh 560px, plus versi kartu khusus HP, plus
+    // catatan kaki: satu bagian penuh untuk tiga baris angka. Dua dari tiga
+    // barisnya sekarang sudah dibaca orangnya di layar PERTAMA lewat strip
+    // harga di hero, dan baris ketiganya (scan QR lawan daftar ke Meta) sudah
+    // disebut di hero dan di bagian tiga langkah.
+    //
+    // Yang dijaga sekarang: perbandingan harganya tetap ada, dan bentuknya
+    // tidak boleh kembali jadi tabel berlebar tetap yang memaksa layar HP
+    // digeser ke samping. Itu jebakan yang sudah pernah kena sekali.
     check(
-      "tabel perbandingan tidak dipaksakan ke layar HP",
-      /className="mt-8 hidden overflow-x-auto sm:block"/.test(depan) &&
-        /min-w-\[560px\]/.test(depan),
-    );
-    // Isinya sama persis, cuma ditumpuk: nama barisnya di atas, angka kami,
-    // lalu angka mereka. Dua-duanya membaca daftar COMPARISON yang sama, jadi
-    // versi HP dan versi laptop tidak bisa menyebut angka yang berbeda.
-    check(
-      "perbandingan tetap ada di HP dalam bentuk kartu",
-      (depan.match(/COMPARISON\.map/g) ?? []).length === 2 &&
-        /<ul className="mt-6 space-y-3 sm:hidden">/.test(depan),
+      "perbandingan harga tetap ada, dan bukan tabel yang memaksa geser samping",
+      /formatIDR\(RIVAL_PRICE\)/.test(depan) && !/min-w-\[560px\]/.test(depan),
     );
     // Tombol daftar yang nempel di dasar layar. Halaman ini belasan layar
     // panjangnya di HP, dan tanpa ini orang yang sudah yakin di tengah halaman
@@ -9532,13 +9549,32 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
         /formatIDR\(RIVAL_PRICE\)/.test(heroPenuh),
       "harga tetap tempat kami menang hari ini, dan angka yang dibaca mengalahkan kata 'sepertujuh'",
     );
-    // Angka pembanding yang tidak bisa dicek itu persis jenis omongan yang
-    // bikin halaman jualan berhenti dipercaya, dan yang kami jual justru
-    // kepercayaan pada angka. Sumbernya wajib ikut disebut di tempat angkanya
-    // dipajang, bukan cuma di tabel sepuluh layar di bawahnya.
+    // NAMA PESAINGNYA TIDAK BOLEH ADA DI LAYAR, dan ini keputusan pemilik
+    // produk pada 4 September 2026.
+    //
+    // Alasannya bukan takut. Halaman jualan yang menyebut nama pesaingnya ikut
+    // mengiklankan nama itu ke calon pembeli yang tadinya belum pernah
+    // dengar. Sebagian dari mereka akan mencarinya, dan yang mereka temukan
+    // halaman dengan testimoni dan angka pemakai yang kita tidak punya.
+    //
+    // Yang TETAP wajib: angkanya angka sungguhan, disebut sebagai daftar harga
+    // publik supaya pembaca tahu ini bisa dicek, dan sumbernya tercatat di
+    // kode. Diperiksa di berkas mentah, karena di situlah komentar sumbernya
+    // ditulis, dan diperiksa di teks tampil, karena di situlah namanya
+    // dilarang.
     check(
-      "angka sebelah di hero menyebut sumbernya",
-      /Cekat\.AI/.test(heroPenuh),
+      "nama pesaing tidak dipajang di halaman jualan",
+      !/Cekat/i.test(jualanTampil),
+      "halaman kita jangan ikut masarin nama orang",
+    );
+    check(
+      "sumber angka pembanding tetap tercatat di kode",
+      /Cekat\.AI/.test(jualan) && /RIVAL_PRICE/.test(jualan),
+      "angka yang tidak bisa dibuktikan berhenti jadi pembeda",
+    );
+    check(
+      "angka sebelah di hero disebut sebagai harga publik, bukan angka kosong",
+      /daftar harga\s+publik/.test(heroPenuh),
     );
     // Dua angka yang disandingkan WAJIB sesatuan, atau keterangannya yang
     // menjelaskan bedanya. Rp 199.000 dapat 3.000 balasan dan yang sebelah
@@ -9563,9 +9599,43 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "bagian bukti benar-benar ada dan tidak mendarat di balik kepala halaman",
       /id="bukti"[\s\S]{0,120}scroll-mt-16/.test(jualan),
     );
+    // Gambar ini yang paling menjual di seluruh halaman: satu pertanyaan yang
+    // sama, dijawab dua cara, dan bedanya kelihatan tanpa dijelaskan.
+    //
+    // 4 September 2026 keempat sorotan digabung jadi satu bagian bertab, jadi
+    // gambarnya sekarang dipanggil dengan key dan paragrafnya sudah dibuang.
+    // Yang dijaga tetap sama: gambarnya ada, dan janjinya masih tertulis.
     check(
       "ada sorotan yang menunjukkan satu pesan dijawab dua cara",
-      /<MockupRasa \/>/.test(jualan) && /nunggu 20 menit/.test(jualan),
+      /<MockupRasa\b/.test(jualan) && /nunggu lama/.test(jualan),
+    );
+    // Keempat gambar produk wajib tetap terpakai. Waktu empat bagian digabung
+    // jadi tab, yang paling gampang terjadi salah satu panelnya kelupaan dan
+    // tidak ada satu pun galat yang memberi tahu: halamannya tetap jalan,
+    // cuma satu tab isinya kosong.
+    for (const gambar of [
+      "MockupRasa",
+      "MockupInfoBisnis",
+      "MockupJanji",
+      "MockupSapaLagi",
+      "MockupDashboard",
+    ]) {
+      check(
+        `gambar ${gambar} masih dipakai di halaman jualan`,
+        new RegExp(`<${gambar}\\b`).test(jualan),
+      );
+    }
+    // Jumlah tab dan jumlah panel WAJIB sama. Kalau tabnya lima dan panelnya
+    // empat, tab terakhir membuka panel kosong, dan itu juga tidak melempar
+    // galat apa pun.
+    const isiTab = (jualan.match(/^\s{4}tab: "/gm) ?? []).length;
+    const panelTab = (
+      jualan.slice(jualan.indexOf("<SorotanTab")).match(/key="/g) ?? []
+    ).length;
+    check(
+      "tiap tab sorotan punya panelnya sendiri",
+      isiTab > 0 && isiTab === panelTab,
+      `${isiTab} tab, ${panelTab} panel`,
     );
 
     // ── Bagian "kok bisa semurah ini" tidak boleh menjanjikan yang tidak ada ──
@@ -9606,9 +9676,15 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       pemanggilAi.every((isi) => !/\b(planId|paket|plan\.)\w*/i.test(isi)),
       "halaman jualan menjanjikan AI yang sama di semua paket",
     );
+    // Dicari di teks yang spasinya sudah dirapatkan, dan ini jebakan yang
+    // berulang di berkas ini. Kalimatnya hidup di dalam JSX, jadi editor
+    // memenggalnya di mana saja sesuai lebar baris: "sama\n persis di semua
+    // paket". Uji yang mencari frasa mentah lalu menuduh copy yang justru
+    // sudah benar, dan orang berikutnya menyangka copy-nya yang salah.
+    const jualanRapat = jualanTampil.replace(/\s+/g, " ");
     check(
       "yang diklaim sama antar paket cuma AI-nya",
-      /sama persis di semua paket/.test(jualanTampil),
+      /sama persis di semua paket/.test(jualanRapat),
     );
 
     // ── Janji yang sama tidak boleh diulang sampai halamannya jadi panjang ──
