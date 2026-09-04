@@ -147,19 +147,42 @@ export function MockupDashboard() {
             </span>
           </div>
 
-          <div className="flex-1 space-y-2 bg-ink-50 px-3.5 py-3">
-            <div className="flex justify-start">
+          {/* PERCAKAPANNYA MENGETIK SENDIRI, DAN ITU BUKAN HIASAN.
+              Pertanyaan masuk, titik-titik mengetik, balasannya keluar, lalu
+              orangnya bilang ambil dua. Yang dijual halaman ini cuma satu hal,
+              chatnya dibalas, dan gambar diam cuma bisa menunjukkan chat yang
+              SUDAH dibalas: itu dibaca sebagai tangkapan layar. Aturan
+              waktunya ada di globals.css, satu putaran 12 detik.
+
+              Tingginya dikunci pakai min-h supaya kotaknya tidak kembang kempis
+              tiap putaran. Angkanya setinggi percakapan lengkap, jadi tidak ada
+              yang bergeser waktu gelembungnya muncul satu-satu. */}
+          <div className="flex-1 space-y-2 bg-ink-50 px-3.5 py-3 min-h-[124px] sm:min-h-[132px]">
+            <div className="demo-gel-1 flex justify-start">
               <div className="max-w-[85%] rounded-xl rounded-bl-sm border border-ink-200 bg-white px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-800">
                 Kalau kirim ke Bandung ongkirnya berapa ya
               </div>
             </div>
-            <div className="flex justify-end">
-              <div className="max-w-[85%] rounded-xl rounded-br-sm bg-[#d9fdd3] px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-900">
-                Kami kirimnya dari Bandung kak, jadi buat area Bandung bisa COD.
-                Di atas Rp 300.000 gratis ongkir.
+            {/* Titik-titik mengetik ditumpuk DI ATAS gelembung balasannya,
+                bukan disisipkan sebagai baris sendiri. Baris sendiri berarti
+                dia mengambil tempat lalu melepasnya, dan seluruh percakapan
+                melompat tepat waktu mata orangnya ada di situ. */}
+            <div className="relative">
+              <div className="demo-ketik absolute inset-x-0 top-0 flex justify-end">
+                <div className="titik-ketik flex items-center gap-1 rounded-xl rounded-br-sm bg-[#d9fdd3] px-3 py-2.5 text-ink-500">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+              <div className="demo-gel-2 flex justify-end">
+                <div className="max-w-[85%] rounded-xl rounded-br-sm bg-[#d9fdd3] px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-900">
+                  Kami kirimnya dari Bandung kak, jadi buat area Bandung bisa
+                  COD. Di atas Rp 300.000 gratis ongkir.
+                </div>
               </div>
             </div>
-            <div className="flex justify-start">
+            <div className="demo-gel-3 flex justify-start">
               <div className="max-w-[85%] rounded-xl rounded-bl-sm border border-ink-200 bg-white px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-800">
                 Oke deh, saya ambil 2 ya
               </div>

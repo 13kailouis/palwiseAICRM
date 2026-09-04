@@ -9490,15 +9490,107 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       tanyaPerasaan > 0 && /t: "AI-nya beneran punya perasaan\?",\s*\n\s*j: "Nggak\./.test(jualan),
       "penyangkalan itu yang menghilangkan satu-satunya alasan orang takut",
     );
+    // Diuji MAKSUDNYA, bukan kalimatnya, dan ini alasan kenapa berubah.
+    //
+    // Sampai 4 September 2026 tesnya mencari satu kalimat lencana kata per
+    // kata: "Ngerti kapan pelanggan lagi kesel · sepertujuh harga sebelah".
+    // Yang harus dijaga sebenarnya bukan kalimat itu, tapi bahwa DUA pembeda
+    // kami sama-sama ada di layar pertama: yang bukan angka (dia membaca nada
+    // pelanggan) dan yang angka (harganya).
+    //
+    // Harganya sekarang tidak lagi jadi tulisan 12px di dalam lencana, tapi
+    // ANGKA SEBENARNYA tepat di bawah tombol, disandingkan dengan angka
+    // sebelah. Itu perbaikan, bukan pelanggaran: harga adalah seluruh tesis
+    // produk ini, dan sebelumnya angkanya baru muncul di layar kesebelas.
+    //
+    // Batas heronya dihitung dari <h1> sampai gambar produknya, jadi yang
+    // diperiksa benar-benar yang terlihat di layar pertama.
+    //
+    // Dipotong dari `jualanTampil`, yang komentarnya sudah dibuang, dan ini
+    // KEEMPAT kalinya pola yang sama menjebak di berkas ini. Komentar di
+    // halaman jualan berisi kalimat-kalimat yang SENGAJA tidak dipakai beserta
+    // alasannya, jadi memeriksa potongan mentahnya berarti menghukum
+    // penjelasan yang justru wajib ada. Contoh nyatanya di bawah: heronya
+    // dilarang menjanjikan "tanpa daftar", dan kalimat larangannya sendiri
+    // tertulis sebagai komentar tepat di sebelah tombolnya.
+    //
+    // Mulainya dari `latar-kisi`, kisi tipis latar belakang hero yang cuma ada
+    // di sana, BUKAN dari <h1>. Lencana pembedanya berada di ATAS judul, jadi
+    // potongan yang mulai dari <h1> melewatkan justru yang mau diperiksa.
+    const heroPenuh = jualanTampil.slice(
+      jualanTampil.indexOf("latar-kisi"),
+      jualanTampil.indexOf("<MockupDashboard"),
+    );
     check(
-      "lencana hero menyebut pembeda baru TANPA membuang harganya",
-      /Ngerti kapan pelanggan lagi kesel · sepertujuh harga sebelah/.test(jualan),
-      "harga tetap tempat kami menang hari ini",
+      "hero menyebut pembeda yang bukan angka",
+      /lagi kesel/.test(heroPenuh),
+      "membaca nada pelanggan itu pembeda yang tidak bisa disamakan lawan dengan menurunkan harga",
+    );
+    check(
+      "harga sudah jadi angka di layar pertama, bukan bisikan di lencana",
+      /formatIDR\(PLANS\.starter\.pricePerMonth\)/.test(heroPenuh) &&
+        /formatIDR\(RIVAL_PRICE\)/.test(heroPenuh),
+      "harga tetap tempat kami menang hari ini, dan angka yang dibaca mengalahkan kata 'sepertujuh'",
+    );
+    // Angka pembanding yang tidak bisa dicek itu persis jenis omongan yang
+    // bikin halaman jualan berhenti dipercaya, dan yang kami jual justru
+    // kepercayaan pada angka. Sumbernya wajib ikut disebut di tempat angkanya
+    // dipajang, bukan cuma di tabel sepuluh layar di bawahnya.
+    check(
+      "angka sebelah di hero menyebut sumbernya",
+      /Cekat\.AI/.test(heroPenuh),
+    );
+    // Dua angka yang disandingkan WAJIB sesatuan, atau keterangannya yang
+    // menjelaskan bedanya. Rp 199.000 dapat 3.000 balasan dan yang sebelah
+    // 15.000, jadi menyandingkan dua angka bulanan begitu saja membandingkan
+    // dua barang yang berbeda. Yang membuatnya jujur: kata "mulai" di kedua
+    // sisi, plus harga per balasan yang memang sebanding.
+    check(
+      "perbandingan harga di hero tidak menyandingkan dua barang berbeda",
+      /mulai/i.test(heroPenuh) && /per balasan/.test(heroPenuh),
+    );
+    // Tombol kedua hero mengarah ke BUKTI, bukan ke cara masangnya. Orang yang
+    // belum yakin barangnya bisa belum punya pertanyaan "gimana masangnya".
+    //
+    // Dan kalimatnya tidak boleh berbunyi "tanpa daftar": halaman Coba dulu
+    // ada di dalam dashboard, jadi akunnya tetap harus dibuat. Gratis dan
+    // tanpa kartu kredit itu benar; tanpa daftar tidak.
+    check(
+      "tombol kedua hero mengarah ke bukti, dan tidak menjanjikan tanpa daftar",
+      /href="#bukti"/.test(heroPenuh) && !/tanpa daftar/i.test(heroPenuh),
+    );
+    check(
+      "bagian bukti benar-benar ada dan tidak mendarat di balik kepala halaman",
+      /id="bukti"[\s\S]{0,120}scroll-mt-16/.test(jualan),
     );
     check(
       "ada sorotan yang menunjukkan satu pesan dijawab dua cara",
       /<MockupRasa \/>/.test(jualan) && /nunggu 20 menit/.test(jualan),
     );
+
+    // ── Janji yang sama tidak boleh diulang sampai halamannya jadi panjang ──
+    //
+    // Ini bukan soal selera menulis, ini yang bikin halaman ini 18 layar penuh
+    // di HP. Diukur 4 September 2026: janji "kamu bisa ambil alih" muncul
+    // EMPAT kali (tombol di gambar hero, daftar fitur, langkah pemasangan,
+    // daftar jaminan), dan "dilarang ngarang" TIGA kali. Orang yang mau beli
+    // sudah yakin di kali pertama; kali ketiga dan keempat cuma menunda tombol,
+    // dan tombol yang tertunda tidak ditekan.
+    //
+    // Batasnya dua, bukan satu. Satu janji boleh muncul di tempat dia dijual
+    // (daftar fitur) DAN di tempat dia ditagih (daftar jaminan), karena dua
+    // tempat itu menjawab pertanyaan yang berbeda. Yang dilarang yang ketiga.
+    for (const [janji, pola] of [
+      ["ambil alih", /ambil alih/gi],
+      ["dilarang ngarang", /(dilarang|nggak bisa|nggak boleh) ngarang/gi],
+    ] as const) {
+      const berapa = (jualanTampil.match(pola) ?? []).length;
+      check(
+        `janji "${janji}" tidak diulang lebih dari dua kali di halaman jualan`,
+        berapa <= 2,
+        `${berapa} kali`,
+      );
+    }
 
     const mockup = fs.readFileSync(
       path.join(akarRasa, "apps/web/src/components/Mockup.tsx"),

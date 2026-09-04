@@ -453,6 +453,109 @@ body {
   animation-delay: 0.32s;
 }
 
+/* Kotak masuk di hero yang mengetik sendiri.
+ *
+ * Ini satu-satunya gerak berulang di seluruh produk, dan dia dibolehkan karena
+ * bukan hiasan. Yang dijual halaman ini satu hal: chatnya dibalas. Gambar diam
+ * cuma bisa menunjukkan chat yang SUDAH dibalas, dan itu dibaca sebagai
+ * tangkapan layar. Yang bergerak menunjukkan dia SEDANG membalas, dan itu yang
+ * mau dibuktikan di layar pertama.
+ *
+ * Semuanya di atas satu putaran 12 detik, dan hampir separuhnya cuma diam
+ * memegang keadaan selesai. Jadi yang datang di tengah putaran tetap melihat
+ * percakapan lengkap, bukan potongan yang membingungkan.
+ *
+ * Yang digerakkan CUMA opacity dan transform, dua hal yang digambar kartu
+ * grafis tanpa menghitung ulang tata letak. Semua gelembungnya sudah memakan
+ * ruangnya sejak awal, jadi tidak ada satu pun yang bergeser waktu dia muncul.
+ *
+ * Titik-titik "sedang mengetik" mulai dari opacity 0 di aturan biasanya, BUKAN
+ * dari keyframe-nya. Waktu orangnya minta gerak dikurangi, animasinya
+ * dipangkas jadi 0,01 ms di dasar berkas ini, dan yang tersisa aturan
+ * biasanya. Kalau nol-nya cuma ada di keyframe, yang dia lihat kotak masuk
+ * dengan titik-titik mengetik yang menggantung selamanya. */
+@keyframes demo-gel-1 {
+  0%,
+  3% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  7%,
+  90% {
+    opacity: 1;
+    transform: none;
+  }
+  95%,
+  100% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes demo-gel-2 {
+  0%,
+  29% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  33%,
+  90% {
+    opacity: 1;
+    transform: none;
+  }
+  95%,
+  100% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes demo-gel-3 {
+  0%,
+  47% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  51%,
+  90% {
+    opacity: 1;
+    transform: none;
+  }
+  95%,
+  100% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes demo-ketik {
+  0%,
+  12% {
+    opacity: 0;
+  }
+  16%,
+  26% {
+    opacity: 1;
+  }
+  30%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.demo-gel-1,
+.demo-gel-2,
+.demo-gel-3 {
+  animation: demo-gel-1 12s var(--lengkung-masuk) infinite;
+}
+.demo-gel-2 {
+  animation-name: demo-gel-2;
+}
+.demo-gel-3 {
+  animation-name: demo-gel-3;
+}
+.demo-ketik {
+  opacity: 0;
+  animation: demo-ketik 12s var(--lengkung-masuk) infinite;
+}
+
 /* Berurutan, bukan barengan.
  *
  * Kalau enam kartu muncul pada saat yang sama, mata tidak tahu harus mulai
