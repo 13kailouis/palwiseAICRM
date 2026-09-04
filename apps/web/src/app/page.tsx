@@ -1574,45 +1574,77 @@ export default async function LandingPage() {
       {/* ─── Tanya jawab ───────────────────────────────────────────────────── */}
       <section id="tanya" className="scroll-mt-16 border-t border-ink-200 bg-white sm:scroll-mt-20">
         <div className={`${KOLOM} ${JARAK}`}>
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)] lg:gap-16">
-            <div>
-              <KepalaBagian
-                kicker="Tanya jawab"
-                judul="Yang biasanya ditanyain"
-                hp="Termasuk yang jawabannya kurang enak didenger."
-                lebar="Termasuk yang jawabannya kurang enak didenger. Mending kamu tahu sekarang daripada kecewa setelah bayar."
-              />
-              <p className="mt-6 hidden text-sm leading-relaxed text-ink-600 lg:block">
-                Nggak nemu jawabannya?{" "}
-                <a
-                  href={`mailto:${IDENTITAS.email}`}
-                  className="font-medium text-brand-700 underline underline-offset-4"
-                >
-                  {IDENTITAS.email}
-                </a>
-              </p>
-            </div>
+          {/* SATU KOLOM, BUKAN DUA.
+              Bentuk sebelumnya dua kolom: judul di kiri, daftar pertanyaan di
+              kanan. Diukur di layar 1440px, kotak kirinya 550px tinggi dan
+              isinya cuma 241px, jadi 56% kolom kiri itu udara. Penyakitnya
+              persis sama dengan petak fitur yang baru saja dibongkar, cuma
+              lebih susah dilihat karena udaranya di samping, bukan di dalam
+              kartu.
 
-            {/* Panel lipat itu bentuk yang paling cocok buat HP: sembilan
-                pertanyaan cuma memakan sembilan baris sampai ada yang dibuka.
-                Yang perlu ditambah cuma luas sentuhnya, karena baris setinggi
-                teksnya saja lebih sempit daripada ujung jari. */}
-            <div className="divide-y divide-ink-200 border-y border-ink-200">
-              {TANYA_JAWAB.map((qa) => (
-                <details key={qa.t} className="group py-1 sm:py-2">
-                  <summary className="tap-aman flex w-full cursor-pointer list-none items-center justify-between gap-4 py-3.5 font-medium text-ink-950 transition hover:text-ink-600">
-                    <span className="min-w-0">{qa.t}</span>
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-ink-200 text-base leading-none text-ink-500 transition group-open:rotate-45">
-                      +
-                    </span>
-                  </summary>
-                  <p className="mb-4 max-w-2xl text-[15px] leading-relaxed text-ink-600">
-                    {qa.j}
-                  </p>
-                </details>
-              ))}
-            </div>
+              Kolom kanannya juga cuma 652px dari 1088px yang tersedia, jadi
+              daftar pertanyaannya sempit tanpa alasan sementara separuh
+              halamannya kosong.
+
+              Sekarang judulnya di tengah seperti bagian lain, daftarnya di
+              bawahnya dibatasi max-w-3xl supaya barisnya tetap enak dibaca. */}
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="kicker">Tanya jawab</p>
+            <h2 className="judul-bagian mt-3">Yang biasanya ditanyain</h2>
+            <Dua
+              hp="Termasuk yang jawabannya kurang enak didenger."
+              lebar="Termasuk yang jawabannya kurang enak didenger. Mending kamu tahu sekarang daripada kecewa setelah bayar."
+              className="teks-bagian mx-auto text-center"
+            />
           </div>
+
+          {/* Panel lipat itu bentuk yang paling cocok buat HP: delapan
+              pertanyaan cuma memakan delapan baris sampai ada yang dibuka.
+              Yang perlu ditambah cuma luas sentuhnya, karena baris setinggi
+              teksnya saja lebih sempit daripada ujung jari. */}
+          <div className="mx-auto mt-9 max-w-3xl divide-y divide-ink-200 border-y border-ink-200 sm:mt-12">
+            {TANYA_JAWAB.map((qa) => (
+              <details key={qa.t} className="group py-1 sm:py-2">
+                <summary className="tap-aman flex w-full cursor-pointer list-none items-center justify-between gap-4 py-3.5 text-left font-medium text-ink-950 transition hover:text-ink-600">
+                  <span className="min-w-0">{qa.t}</span>
+                  {/* IKON YANG DIGAMBAR, BUKAN HURUF "+".
+                      Sebelumnya tanda tambahnya benar-benar huruf plus yang
+                      diketik di dalam lingkaran. Hurufnya ikut berubah tebal
+                      dan tinggi mengikuti font, jadi dia tidak pernah benar
+                      -benar duduk di tengah lingkarannya, dan besarnya berbeda
+                      dari semua ikon lain di halaman ini.
+
+                      Yang dipakai ikon silang yang sudah ada, diputar 45
+                      derajat waktu tertutup sehingga terbaca sebagai tambah.
+                      Waktu dibuka putarannya dilepas dan dia kembali jadi
+                      silang, yang artinya tutup. Satu ikon, dua arti, dan
+                      dua-duanya arti yang benar. */}
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-ink-200 text-ink-500 transition group-hover:border-ink-300 group-hover:text-ink-900">
+                    <span className="rotate-45 transition-transform group-open:rotate-0">
+                      <Ikon nama="silang" size={14} />
+                    </span>
+                  </span>
+                </summary>
+                <p className="mb-4 text-[15px] leading-relaxed text-ink-600">
+                  {qa.j}
+                </p>
+              </details>
+            ))}
+          </div>
+
+          {/* Baris ini dulu HANYA digambar di layar lebar (hidden lg:block),
+              terselip di kolom kiri yang kosong. Artinya orang yang paling
+              mungkin membutuhkannya, yang membaca dari HP dan tidak menemukan
+              jawabannya, tidak pernah melihat jalan keluarnya sama sekali. */}
+          <p className="mt-8 text-center text-sm leading-relaxed text-ink-600">
+            Nggak nemu jawabannya?{" "}
+            <a
+              href={`mailto:${IDENTITAS.email}`}
+              className="font-medium text-brand-700 underline underline-offset-4"
+            >
+              {IDENTITAS.email}
+            </a>
+          </p>
         </div>
       </section>
 
