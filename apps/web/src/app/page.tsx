@@ -1137,31 +1137,63 @@ export default async function LandingPage() {
             </h2>
           </div>
 
-          <ul className="mt-9 grid grid-cols-2 gap-2.5 sm:mt-12 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
-            {FEATURES.map((f) => {
-              // Nama paketnya diturunkan dari plans.ts. Kalau suatu hari sebuah
-              // fitur dipindah ke paket lain, baris ini ikut berubah sendiri.
-              const perlu = f.fitur ? paketFitur[f.fitur] : null;
-              return (
-                <li
-                  key={f.title}
-                  className="rounded-xl border border-ink-200 bg-white p-3.5 sm:p-4"
-                >
-                  <span className="text-ink-900">
-                    <Ikon nama={f.ikon} size={18} />
-                  </span>
-                  <span className="mt-2.5 block text-[13px] font-medium leading-snug text-ink-900 sm:text-sm">
-                    {f.title}
-                  </span>
-                  {perlu && (
-                    <span className="mt-1.5 block text-[10.5px] font-medium text-ink-500 sm:text-xs">
-                      Mulai paket {perlu}
+          {/* DAFTAR BERGARIS, BUKAN DUA BELAS KOTAK.
+              Bentuk sebelumnya dua belas kartu berbingkai, masing-masing berisi
+              satu ikon kecil di pojok dan satu judul. Karena judulnya ada yang
+              satu baris dan ada yang dua, tiap kotak menyisakan ruang kosong
+              yang berbeda-beda di bawah tulisannya, dan dua belas kotak yang
+              isinya sebagian besar kosong terbaca sebagai halaman yang belum
+              jadi. Diukur di layar lebar: sekitar 480px tinggi, dan lebih dari
+              separuhnya udara.
+
+              Sekarang satu kotak berisi dua belas baris, dipisah garis rambut.
+              Ikonnya duduk di pelat kecil di kiri, judulnya sebaris, penanda
+              paketnya jadi keping di kanan. Tidak ada ruang kosong yang bisa
+              berbeda-beda, karena tiap baris setinggi isinya sendiri.
+
+              Garisnya dipasang per baris, bukan lewat divide-y. Di petak dua
+              kolom, divide-y ikut menggambar garis di atas kolom kanan baris
+              pertama, dan hasilnya satu sisi terlihat lebih tebal. */}
+          <div className="mt-9 overflow-hidden rounded-2xl border border-ink-200 bg-white sm:mt-12">
+            <ul className="grid sm:grid-cols-2">
+              {FEATURES.map((f, i) => {
+                // Nama paketnya diturunkan dari plans.ts. Kalau suatu hari
+                // sebuah fitur dipindah ke paket lain, baris ini ikut berubah
+                // sendiri.
+                const perlu = f.fitur ? paketFitur[f.fitur] : null;
+                return (
+                  <li
+                    key={f.title}
+                    /* Barisnya lebih rapat di HP, dan itu wajib.
+                       Di layar lebar daftar ini dua kolom, jadi dua belas baris
+                       cuma enam baris tinggi. Di HP dia satu kolom, jadi dua
+                       belas baris beneran dua belas, dan dengan ukuran yang
+                       sama seperti di laptop bagian ini justru jadi lebih
+                       tinggi daripada petak kartu yang digantikannya. Pelat
+                       ikonnya mengecil dan jaraknya dirapatkan sampai
+                       tingginya kembali sepadan. */
+                    className={`flex items-center gap-3 border-ink-100 px-4 py-2.5 sm:px-5 sm:py-4 ${
+                      i > 0 ? "border-t" : ""
+                    } ${i === 1 ? "sm:border-t-0" : ""} ${
+                      i % 2 === 1 ? "sm:border-l" : ""
+                    }`}
+                  >
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-ink-50 text-ink-900 sm:h-9 sm:w-9">
+                      <Ikon nama={f.ikon} size={18} />
                     </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                    <span className="min-w-0 flex-1 text-[14px] font-medium leading-snug text-ink-900 sm:text-[15px]">
+                      {f.title}
+                    </span>
+                    {perlu && (
+                      <span className="shrink-0 rounded-full bg-ink-100 px-2 py-1 text-[10.5px] font-medium leading-none text-ink-600">
+                        Mulai paket {perlu}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
           {/* Bidang usaha: satu baris keping, digeser ke samping.
               Sembilan kartu bergambar itu satu layar penuh untuk pekerjaan
@@ -1391,39 +1423,87 @@ export default async function LandingPage() {
               dengan judulnya. */}
           <div className="thin-scroll -mx-5 mt-9 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:mt-12 sm:grid sm:snap-none sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 sm:grid-cols-2 lg:grid-cols-4">
             {SEMUA_PAKET.map((plan) => (
+              /* KARTU YANG DISARANKAN JADI HITAM PENUH, bukan putih bergaris.
+                 Sebelum ini keempat kartunya putih semua, dan yang disarankan
+                 cuma dibedakan garis tepi hitam setebal 1px plus bayangan
+                 tipis. Di layar HP, tempat kartunya digeser satu-satu, beda
+                 setipis itu praktis tidak ada: orangnya melihat empat kartu
+                 yang sama dan harus membaca keempatnya untuk memutuskan.
+
+                 Halaman harga yang tidak menyarankan apa pun memindahkan
+                 seluruh pekerjaan memilih ke pembacanya, dan sebagian orang
+                 menyelesaikan pekerjaan itu dengan menutup tab. Satu bidang
+                 hitam di antara tiga putih menjawabnya sebelum dibaca.
+
+                 Hitam, bukan biru. Biru disimpan untuk tombol yang
+                 menyelesaikan tujuan halaman, dan satu bidang biru sebesar ini
+                 akan bersaing dengan tombol daftar di bagian lain. */
               <div
                 key={plan.id}
-                className={`card relative flex w-[82%] shrink-0 snap-start flex-col p-5 sm:w-auto sm:p-6 ${
+                className={`relative flex w-[82%] shrink-0 snap-start flex-col rounded-xl border p-5 sm:w-auto sm:p-6 ${
                   plan.highlight
-                    ? "border-ink-950 bg-white ring-1 ring-ink-950 sm:shadow-[0_12px_32px_-16px_rgba(15,15,15,0.28)]"
-                    : ""
+                    ? "border-ink-950 bg-ink-950 sm:shadow-[0_16px_40px_-20px_rgba(15,15,15,0.45)]"
+                    : "border-ink-200 bg-white"
                 }`}
               >
-                <div className="flex h-7 items-center justify-between gap-2">
-                  <h3 className="font-semibold text-ink-950">{plan.name}</h3>
+                {/* Nama paketnya kecil dan huruf besar semua, bukan judul
+                    tebal. Yang harus dibaca duluan angkanya, dan nama paket
+                    setebal harga bikin mata harus memilih dua kali. */}
+                <div className="flex min-h-[24px] items-center justify-between gap-2">
+                  <h3
+                    className={`text-[12px] font-semibold uppercase tracking-[0.08em] ${
+                      plan.highlight ? "text-ink-400" : "text-ink-500"
+                    }`}
+                  >
+                    {plan.name}
+                  </h3>
                   {plan.highlight && (
-                    <span className="badge bg-ink-950 text-white">
+                    <span className="badge bg-white text-ink-950">
                       Paling laris
                     </span>
                   )}
                 </div>
 
-                <p className="mt-4 flex h-10 items-baseline text-[30px] font-bold tracking-[-0.03em] text-ink-950">
+                {/* min-h, bukan h. Tingginya tetap seragam supaya empat
+                    tombolnya sejajar, tapi tulisan yang kepanjangan tidak
+                    terpotong diam-diam. */}
+                <p
+                  className={`mt-3.5 flex min-h-[38px] items-baseline text-[30px] font-bold tracking-[-0.03em] ${
+                    plan.highlight ? "text-white" : "text-ink-950"
+                  }`}
+                >
                   {plan.pricePerMonth === 0 ? "Gratis" : formatIDR(plan.pricePerMonth)}
                   {plan.pricePerMonth > 0 && (
-                    <span className="text-base font-normal text-ink-500">/bln</span>
+                    <span
+                      className={`text-base font-normal ${
+                        plan.highlight ? "text-ink-400" : "text-ink-500"
+                      }`}
+                    >
+                      /bln
+                    </span>
                   )}
                 </p>
-                <p className="mt-1 h-10 text-sm leading-snug text-ink-500">
+                <p
+                  className={`mt-1 min-h-[40px] text-sm leading-snug ${
+                    plan.highlight ? "text-ink-400" : "text-ink-500"
+                  }`}
+                >
                   {plan.aiCredits.toLocaleString("id-ID")} balasan
                   {plan.pricePerMonth > 0
                     ? `, jatuhnya ${formatIDR(pricePerReply(plan))} per balasan`
                     : " per bulan, selamanya"}
                 </p>
 
+                {/* Di kartu hitam tombolnya putih penuh. btn-ghost di atas
+                    latar hitam cuma menggambar garis abu di atas hitam, dan
+                    tombol yang paling ingin diklik jadi yang paling samar. */}
                 <Link
                   href={keApp("/daftar")}
-                  className={`mt-5 w-full ${plan.highlight ? "btn-ink" : "btn-ghost"}`}
+                  className={`mt-5 w-full ${
+                    plan.highlight
+                      ? "btn bg-white text-ink-950 hover:bg-ink-100"
+                      : "btn-ghost"
+                  }`}
                 >
                   {plan.pricePerMonth === 0 ? "Mulai gratis" : `Pilih ${plan.name}`}
                 </Link>
@@ -1442,12 +1522,24 @@ export default async function LandingPage() {
                     kecuali dipaksa dengan flex-1. Di atas, keempatnya sejajar
                     tanpa dipaksa, dan orang yang sudah memutuskan tidak perlu
                     membaca sepuluh baris dulu untuk menemukannya. */}
-                <ul className="mt-5 flex-1 space-y-2.5 border-t border-ink-100 pt-5 text-sm text-ink-700">
+                <ul
+                  className={`mt-5 flex-1 space-y-2.5 border-t pt-5 text-sm ${
+                    plan.highlight
+                      ? "border-ink-800 text-ink-300"
+                      : "border-ink-100 text-ink-700"
+                  }`}
+                >
                   {plan.features.map((f) => (
                     <li key={f} className="flex gap-2.5">
                       {/* Hitam, bukan biru. Ini keterangan isi paket, bukan
-                          sesuatu yang bisa diklik atau yang sedang dipilih. */}
-                      <span className="mt-0.5 shrink-0 text-ink-900">
+                          sesuatu yang bisa diklik atau yang sedang dipilih.
+                          Di kartu hitam dibalik jadi putih, dengan alasan yang
+                          sama: kontras tertinggi terhadap latarnya. */}
+                      <span
+                        className={`mt-0.5 shrink-0 ${
+                          plan.highlight ? "text-white" : "text-ink-900"
+                        }`}
+                      >
                         <Ikon nama="centang" size={15} />
                       </span>
                       <span>{f}</span>
