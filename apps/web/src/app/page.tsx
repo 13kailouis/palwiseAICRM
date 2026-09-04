@@ -1296,78 +1296,85 @@ export default async function LandingPage() {
               {PLANS.free.aiCredits} balasan gratis, tanpa kartu kredit.
             </p>
           </div>
-          {/* ─── Manusianya, bukan cuma produknya ───────────────────────────
+          {/* ─── Manusianya, SATU BARIS ─────────────────────────────────────
               Kalau produk, harga, dan mutunya mirip, orang membeli dari orang
               yang dia kenal. Palwise belum punya nama besar dan belum punya
-              testimoni, jadi satu-satunya kedekatan yang bisa ditawarkan adalah
+              testimoni, jadi satu-satunya kedekatan yang bisa ditawarkan
               kenyataan bahwa di baliknya ada orang yang bisa dihubungi.
 
               KECILNYA DIJUAL SEBAGAI AKSES, BUKAN SEBAGAI PERMINTAAN MAAF.
-              Versi lama berbunyi "Palwise dikerjakan sendirian, bukan sama tim
-              besar". Kalimat itu menyebut apa yang KURANG dari kami, dan
-              menaruhnya di halaman jualan berarti menawarkan alasan untuk ragu
-              yang tidak diminta siapa pun. Pembaca juga tidak pernah bertanya
-              berapa orang di balik produknya. Yang benar-benar dia pikirkan cuma
-              "kalau nanti macet, ada yang bantuin nggak?"
+              Versi paling lama berbunyi "Palwise dikerjakan sendirian, bukan
+              sama tim besar". Kalimat itu menyebut apa yang KURANG dari kami,
+              dan menaruhnya di halaman jualan berarti menawarkan alasan untuk
+              ragu yang tidak diminta siapa pun. Yang benar-benar dipikirkan
+              pembacanya cuma "kalau nanti macet, ada yang bantuin nggak?"
 
-              Tanda tangannya cuma digambar kalau namanya benar-benar diisi. Nama
-              orang tidak boleh dikarang, dan catatan bertanda tangan nama palsu
-              lebih merusak daripada tidak ada catatan sama sekali. Pola yang
-              sama dengan waBantuan. */}
+              BENTUKNYA TURUN JADI SATU BARIS pada 4 September 2026. Sebelumnya
+              kartu besar dua kolom dengan penanda, judul dua baris, kalimat
+              kedua, garis pemisah, avatar, nama, dan email: sekitar 230px
+              untuk satu kalimat. Letaknya tepat sebelum bagian harga, tempat
+              paling mahal di seluruh halaman untuk memasang polisi tidur.
+
+              Isinya TIDAK dikurangi apa pun yang menjual. Yang dibuang cuma
+              kalimat keduanya, yang mengulang kalimat pertama dengan kata
+              lain. Nama dan wajah aksesnya justru dipertahankan, karena itu
+              seluruh gunanya blok ini: tanpa nama dia cuma jadi alamat email
+              bantuan, dan itu sudah ada di kaki halaman.
+
+              Tanda tangannya cuma digambar kalau namanya benar-benar diisi.
+              Nama orang tidak boleh dikarang, dan catatan bertanda tangan nama
+              palsu lebih merusak daripada tidak ada catatan sama sekali. Pola
+              yang sama dengan waBantuan. */}
           {!IDENTITAS.namaPendiri.startsWith("BELUM DIISI") && (
-            <div className="mt-10 flex flex-col gap-6 rounded-2xl border border-ink-200 bg-ink-50 p-6 sm:mt-14 sm:flex-row sm:items-center sm:gap-10 sm:p-8">
-              <div className="min-w-0 flex-1">
-                <p className="kicker">Yang ngerjain</p>
-                {/* Kalimat penutupnya ikut jalur yang benar-benar ada.
-                    "Tinggal chat" waktu tombol chatnya tidak digambar itu janji
-                    yang jalannya sudah ditutup, dan orang yang mencari jalan itu
-                    lalu tidak menemukannya menyimpulkan hal yang lebih buruk
-                    daripada kalau dari awal cuma ditawari email. */}
-                <p className="mt-3 text-[17px] font-medium leading-relaxed text-ink-900 sm:text-lg">
-                  Yang bales pertanyaan kamu orang yang bikin Palwise-nya
-                  langsung, bukan nomor antrean tiket.
-                </p>
-                <p className="mt-2 text-[15px] leading-relaxed text-ink-600">
-                  Ada yang error, aneh, atau kamu butuh dibantuin pasang,{" "}
-                  {tautanBantuanWa() ? "tinggal chat." : "tinggal email."}
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-3 border-t border-ink-200 pt-5 sm:border-l sm:border-t-0 sm:pl-10 sm:pt-0">
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink-950 text-sm font-semibold text-white">
+            <div className="mt-10 flex flex-col items-start gap-3 rounded-xl border border-ink-200 bg-ink-50 px-4 py-4 sm:mt-14 sm:flex-row sm:items-center sm:gap-4 sm:px-6">
+              <div className="flex shrink-0 items-center gap-2.5">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink-950 text-[13px] font-semibold text-white">
                   {IDENTITAS.namaPendiri.slice(0, 1)}
                 </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-ink-950">
-                    {IDENTITAS.namaPendiri}
-                  </p>
-                  {tautanBantuanWa(
-                    "Halo, saya mau tanya soal Palwise untuk usaha saya.",
-                  ) ? (
-                    <a
-                      href={
-                        tautanBantuanWa(
-                          "Halo, saya mau tanya soal Palwise untuk usaha saya.",
-                        )!
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-0.5 inline-flex items-center gap-1.5 text-sm text-ink-600 underline underline-offset-4 hover:text-ink-900"
-                    >
-                      <Ikon nama="whatsapp" size={15} />
-                      Chat langsung
-                    </a>
-                  ) : (
-                    <a
-                      href={`mailto:${IDENTITAS.email}`}
-                      className="mt-0.5 inline-flex items-center gap-1.5 text-sm text-ink-600 underline underline-offset-4 hover:text-ink-900"
-                    >
-                      <Ikon nama="info" size={15} />
-                      {IDENTITAS.email}
-                    </a>
-                  )}
-                </div>
+                <p className="text-sm font-semibold text-ink-950 sm:hidden">
+                  {IDENTITAS.namaPendiri}
+                </p>
               </div>
+
+              {/* Kalimat penutupnya ikut jalur yang benar-benar ada.
+                  "Tinggal chat" waktu tombol chatnya tidak digambar itu janji
+                  yang jalannya sudah ditutup, dan orang yang mencari jalan itu
+                  lalu tidak menemukannya menyimpulkan hal yang lebih buruk
+                  daripada kalau dari awal cuma ditawari email. */}
+              <p className="min-w-0 flex-1 text-[14.5px] leading-relaxed text-ink-700">
+                <span className="hidden font-semibold text-ink-950 sm:inline">
+                  {IDENTITAS.namaPendiri}
+                  {" · "}
+                </span>
+                Yang bales pertanyaan kamu orang yang bikin Palwise-nya
+                langsung, bukan nomor antrean tiket.
+              </p>
+
+              {tautanBantuanWa(
+                "Halo, saya mau tanya soal Palwise untuk usaha saya.",
+              ) ? (
+                <a
+                  href={
+                    tautanBantuanWa(
+                      "Halo, saya mau tanya soal Palwise untuk usaha saya.",
+                    )!
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex shrink-0 items-center gap-1.5 text-sm text-ink-600 underline underline-offset-4 hover:text-ink-900"
+                >
+                  <Ikon nama="whatsapp" size={15} />
+                  Chat langsung
+                </a>
+              ) : (
+                <a
+                  href={`mailto:${IDENTITAS.email}`}
+                  className="inline-flex shrink-0 items-center gap-1.5 text-sm text-ink-600 underline underline-offset-4 hover:text-ink-900"
+                >
+                  <Ikon nama="amplop" size={15} />
+                  {IDENTITAS.email}
+                </a>
+              )}
             </div>
           )}
         </div>

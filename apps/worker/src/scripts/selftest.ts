@@ -6203,14 +6203,22 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "tombol tanya lewat WhatsApp menunggu nomornya benar-benar ada",
       /tautanBantuanWa\(/.test(depan),
     );
-    // Menunggu nomornya saja tidak cukup: catatan pendirinya berbunyi "tinggal
-    // chat", dan kalimat itu dulu tetap terpasang waktu tombol chatnya tidak
-    // digambar. Janji yang jalannya sudah ditutup lebih merusak daripada tidak
-    // menjanjikan apa-apa, karena orang mencarinya dulu baru menyerah. Jadi
-    // waktu nomornya kosong, kalimat DAN tautannya sama-sama pindah ke email.
+    // Menunggu nomornya saja tidak cukup: catatan pendirinya dulu berbunyi
+    // "tinggal chat", dan kalimat itu tetap terpasang waktu tombol chatnya
+    // tidak digambar. Janji yang jalannya sudah ditutup lebih merusak daripada
+    // tidak menjanjikan apa-apa, karena orang mencarinya dulu baru menyerah.
+    //
+    // 4 September 2026 blok pendirinya dipendekkan jadi satu baris, dan
+    // kalimat "tinggal email" ikut dibuang karena dia mengulang kalimat di
+    // sebelahnya. Yang dijaga BUKAN kalimat itu, tapi sifatnya: waktu nomor
+    // WhatsApp-nya kosong, harus tetap ada jalan keluar yang benar-benar
+    // bisa dipakai, dan alamatnya sendiri yang jadi tulisannya. Itu bahkan
+    // lebih baik daripada kalimat, karena tidak bisa berbohong soal jalur yang
+    // tidak ada.
     check(
       "catatan pendiri tetap punya jalan keluar waktu nomornya kosong",
-      /tinggal email/.test(depan) && /mailto:\$\{IDENTITAS.email}/.test(depan),
+      /mailto:\$\{IDENTITAS.email}/.test(depan) &&
+        /\{IDENTITAS\.email\}\s*\n?\s*<\/a>/.test(depan),
     );
     // <br /> yang dipaksakan di layar 375px bertabrakan dengan pemenggalan
     // alami browser, dan judulnya terlihat berantakan justru di perangkat
