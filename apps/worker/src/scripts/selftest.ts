@@ -9568,6 +9568,49 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /<MockupRasa \/>/.test(jualan) && /nunggu 20 menit/.test(jualan),
     );
 
+    // ── Bagian "kok bisa semurah ini" tidak boleh menjanjikan yang tidak ada ──
+    //
+    // Bunyi lamanya "asistennya sama, jatah balasannya sama, fiturnya sama".
+    // Maksud aslinya membandingkan antar paket Palwise, dan dibaca begitu dia
+    // benar. Tapi sejak strip harga dipasang di hero pada 4 September 2026,
+    // kalimat itu duduk beberapa layar di bawah dua angka yang disandingkan
+    // dengan angka sebelah, dan di posisi itu dia terbaca sebagai perbandingan
+    // ke sebelah. Dibaca begitu dia bohong: paket termurah kami 3.000 balasan,
+    // yang sebelah 15.000.
+    check(
+      "bagian kok-bisa-murah tidak mengklaim jatah balasannya sama",
+      !/jatah balasan(nya)?[, ]+(yang )?sama/i.test(jualanTampil),
+      "Rp 199.000 dapat 3.000 balasan, yang sebelah 15.000",
+    );
+    // "Fiturnya sama" dilarang ke dua arah. Antar paket fiturnya memang TIDAK
+    // sama (kirimMedia mulai Starter, sapaOtomatis dan jamKerja mulai Growth),
+    // dan dibanding sebelah kami tidak punya cara membuktikannya.
+    check(
+      "bagian kok-bisa-murah tidak mengklaim fiturnya sama",
+      !/fitur(nya)?[, ]+(yang )?sama/i.test(jualanTampil),
+      "kirimMedia mulai Starter, sapaOtomatis dan jamKerja mulai Growth",
+    );
+    // Yang BOLEH diklaim cuma satu, dan cuma karena kode benar-benar
+    // menegakkannya: modelnya dibaca dari satu tetapan env dan tidak pernah
+    // dipilih berdasarkan paket, jadi AI yang menjawab pelanggan orang yang
+    // bayar paket termahal dan yang tidak bayar sama sekali memang sama persis.
+    //
+    // Kalau suatu hari model diturunkan untuk paket murah demi menghemat, yang
+    // pertama harus berubah kalimat di halaman jualan, bukan diam-diam.
+    const pemanggilAi = [
+      "apps/worker/src/ai/gemini.ts",
+      "apps/worker/src/ai/provider.ts",
+    ].map((f) => fs.readFileSync(path.join(akarRasa, f), "utf8"));
+    check(
+      "model AI tidak pernah dipilih berdasarkan paket",
+      pemanggilAi.every((isi) => !/\b(planId|paket|plan\.)\w*/i.test(isi)),
+      "halaman jualan menjanjikan AI yang sama di semua paket",
+    );
+    check(
+      "yang diklaim sama antar paket cuma AI-nya",
+      /sama persis di semua paket/.test(jualanTampil),
+    );
+
     // ── Janji yang sama tidak boleh diulang sampai halamannya jadi panjang ──
     //
     // Ini bukan soal selera menulis, ini yang bikin halaman ini 18 layar penuh

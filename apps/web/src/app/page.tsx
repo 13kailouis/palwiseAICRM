@@ -1236,8 +1236,35 @@ export default async function LandingPage() {
             terang
             kicker="Kok bisa semurah ini"
             judul="Murah bukan berarti ada yang dikurangin"
-            hp="Asistennya sama, jatah balasannya sama, fiturnya sama. Bedanya: chat yang dimulai pelanggan nggak ditagih WhatsApp, dan kami nggak nagih kamu buat hal yang nggak ada biayanya."
-            lebar="Kamu dapat asisten yang sama, jatah balasan yang sama, dan semua fiturnya. Bedanya cuma satu: chat yang dimulai pelanggan nggak ditagih WhatsApp sepeser pun selama dibalas dalam 24 jam, dan kami nggak nagih kamu buat hal yang nggak ada biayanya."
+            /* KALIMAT INI DIPERJELAS 4 SEPTEMBER 2026, DAN INI SEBABNYA.
+
+                Bunyi lamanya "asistennya sama, jatah balasannya sama, fiturnya
+                sama". Maksud aslinya membandingkan antar paket Palwise, dan
+                dibaca begitu dia benar. Tapi sejak strip harga dipasang di
+                hero, kalimat ini duduk beberapa layar di bawah dua angka yang
+                disandingkan dengan angka sebelah, dan di posisi itu "jatah
+                balasannya sama" terbaca sebagai "jatah kami sama dengan
+                sebelah". Dibaca begitu dia BOHONG: Rp 199.000 dapat 3.000
+                balasan, yang sebelah 15.000.
+
+                "Fiturnya sama" juga dibuang, dua-duanya arah. Antar paket
+                fiturnya memang TIDAK sama (kirimMedia mulai Starter,
+                sapaOtomatis dan jamKerja mulai Growth), dan dibanding sebelah
+                kami tidak punya cara membuktikannya.
+
+                Yang disisakan satu klaim yang benar-benar ditegakkan kode:
+                modelnya satu, dibaca dari env, dan tidak pernah dipilih
+                berdasarkan paket. Jadi AI yang menjawab pelanggan orang yang
+                bayar Rp 999.000 dan yang tidak bayar sama sekali memang sama
+                persis. Itu justru jawaban paling kuat untuk "apa yang
+                dikurangin", karena yang paling ditakutkan orang bukan jatahnya
+                dikurangi tapi AI-nya diturunkan diam-diam.
+
+                YANG DILARANG: mengembalikan klaim jatah atau fitur yang sama,
+                dan menurunkan model untuk paket murah tanpa mengubah kalimat
+                ini duluan. Selftest menjaga dua-duanya. */
+            hp="AI yang bales pelanggan kamu sama persis di semua paket, termasuk yang gratis. Yang bikin murah bukan AI-nya diturunin, tapi chat yang dimulai pelanggan nggak ditagih WhatsApp, jadi kami cuma nagih ongkos AI-nya."
+            lebar="AI yang bales pelanggan kamu sama persis di semua paket, termasuk yang gratis. Yang beda cuma jatah balasan dan beberapa tambahan. Jadi yang bikin murah bukan AI-nya diturunin: chat yang dimulai pelanggan nggak ditagih WhatsApp sepeser pun selama dibalas dalam 24 jam, dan kami nggak nagih kamu buat hal yang nggak ada biayanya."
           />
 
           {/* DI HP TABELNYA DIBONGKAR JADI KARTU.
