@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { addChannelAction, type ChannelState } from "@/app/actions/channel";
 
@@ -21,12 +21,17 @@ export function AddChannel({
   used,
   max,
   planName,
+  onAdded,
 }: {
   used: number;
   max: number;
   planName: string;
+  onAdded?: () => void;
 }) {
   const [state, formAction] = useActionState(addChannelAction, {} as ChannelState);
+  const onAddedRef = useRef(onAdded);
+  onAddedRef.current = onAdded;
+  useEffect(() => { if (state?.message && !state.error) onAddedRef.current?.(); }, [state]);
   const full = used >= max;
 
   return (

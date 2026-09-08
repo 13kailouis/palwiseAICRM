@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@palwise/db";
+import { prisma, SAPAAN_PASANG, sapaanPemasangan } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
+import { bacaPemasangan } from "@/lib/pemasangan";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,9 @@ export async function GET(
     return NextResponse.json({ error: "Tidak ditemukan" }, { status: 404 });
   }
 
+  // Refresh an untouched legacy greeting without rewriting conversation history.
+  const sapaan = sesi.mode === "pasang" && !sesi.pesan.some(p => p.peran === "pemilik")
+    ? sapaanPemasangan(await bacaPemasangan(user.workspaceId)) : null;
   return NextResponse.json({
     id: sesi.id,
     judul: sesi.judul,
@@ -30,7 +34,7 @@ export async function GET(
     pesan: sesi.pesan.map((p) => ({
       id: p.id,
       peran: p.peran,
-      teks: p.teks,
+      teks: sapaan && p.teks === SAPAAN_PASANG ? sapaan : p.teks,
       alat: JSON.parse(p.alat || "[]") as string[],
       usul: p.usul ? JSON.parse(p.usul) : null,
       usulStatus: p.usulStatus,

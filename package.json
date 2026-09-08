@@ -31,6 +31,7 @@
     "uji:bayar": "tsx apps/worker/src/scripts/ujiBayar.ts",
     "uji:model": "tsx apps/worker/src/scripts/ujiModel.ts",
     "uji:rasa": "tsx apps/worker/src/scripts/ujiRasa.ts",
+    "uji:tanya": "tsx apps/worker/src/scripts/ujiTanya.ts",
     "contoh:rasa": "tsx apps/worker/src/scripts/contohRasa.ts",
     "ukur:rasa": "tsx apps/worker/src/scripts/ukurRasa.ts",
     "models": "tsx apps/worker/src/scripts/models.ts"

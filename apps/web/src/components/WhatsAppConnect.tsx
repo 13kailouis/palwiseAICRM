@@ -37,6 +37,8 @@ export function WhatsAppConnect({
   initialPhone,
   agentSlot,
   deleteSlot,
+  dalamChat = false,
+  onStatusChange,
 }: {
   channelId: string;
   channelName: string;
@@ -44,6 +46,8 @@ export function WhatsAppConnect({
   initialPhone: string | null;
   agentSlot?: React.ReactNode;
   deleteSlot?: React.ReactNode;
+  dalamChat?: boolean;
+  onStatusChange?: (connected: boolean) => void;
 }) {
   const router = useRouter();
   const [state, setState] = useState<Status>({
@@ -57,6 +61,11 @@ export function WhatsAppConnect({
   const [notice, setNotice] = useState<string | null>(null);
   const [konfirmCabut, setKonfirmCabut] = useState(false);
   const prevStatus = useRef(initialStatus);
+  const statusCallback = useRef(onStatusChange);
+  statusCallback.current = onStatusChange;
+  const refreshBusy = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const refresh = useCallback(async () => {
     // Tab yang tersembunyi tidak perlu ditanyai sama sekali.
@@ -65,24 +74,31 @@ export function WhatsAppConnect({
     // pemeriksaan ini, tiap tab seperti itu tetap mengirim permintaan terus
     // menerus ke server yang juga menjalankan seluruh mesin WhatsApp dan AI,
     // untuk layar yang tidak sedang dilihat siapa pun.
-    if (typeof document !== "undefined" && document.hidden) return;
+    if ((typeof document !== "undefined" && document.hidden) || refreshBusy.current) return;
+    refreshBusy.current = true;
 
     try {
       const res = await fetch(`/api/channels/${channelId}/status`, {
         cache: "no-store",
       });
-      if (!res.ok) return;
+      if (!res.ok) throw new Error("Status WhatsApp belum bisa dimuat.");
       const data: Status = await res.json();
+      if (!mounted.current) return;
       setState(data);
+      statusCallback.current?.(data.status === "connected" && data.workerUp);
 
       if (data.status === "connected" && prevStatus.current !== "connected") {
-        router.refresh();
+        if (!dalamChat) router.refresh();
       }
       prevStatus.current = data.status;
     } catch {
-      // biarkan, coba lagi di putaran berikutnya
+      if (!mounted.current) return;
+      setState(s => ({ ...s, qrDataUrl: null, workerUp: false }));
+      statusCallback.current?.(false);
+    } finally {
+      refreshBusy.current = false;
     }
-  }, [channelId, router]);
+  }, [channelId, router, dalamChat]);
 
   // Rapat cuma waktu ada yang memang sedang berubah.
   //
@@ -121,7 +137,7 @@ export function WhatsAppConnect({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) setNotice(data?.error ?? "Ada yang tidak beres.");
       await refresh();
-      router.refresh();
+      if (!dalamChat) router.refresh();
     } catch {
       setNotice("Tidak bisa menghubungi server.");
     } finally {
@@ -130,8 +146,45 @@ export function WhatsAppConnect({
   }
 
   const connected = state.status === "connected";
-  const showingQr = state.status === "qr" && state.qrDataUrl;
+  const showingQr = state.workerUp && state.status === "qr" && state.qrDataUrl;
   const badge = LABEL[state.status] ?? LABEL.disconnected;
+
+  if (dalamChat) return <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white">
+    <div className="flex items-center gap-3 border-b border-ink-100 bg-ink-50 px-4 py-3">
+      <Ikon nama="whatsapp" size={21} />
+      <div className="min-w-0 flex-1"><h3 className="truncate text-sm font-semibold">{channelName}</h3><p className="mt-0.5 text-xs text-ink-500">{state.workerUp ? badge.text : "Koneksi belum bisa diperiksa"}</p></div>
+      {connected && state.workerUp && <Ikon nama="centang" size={19} className="text-brand-600" />}
+    </div>
+    <div className="p-4 sm:p-5">
+      {connected && state.workerUp ? <div role="status">
+        <p className="text-sm font-semibold">WhatsApp sudah tersambung</p>
+        {state.phoneNumber && <p className="mt-1 text-sm text-ink-600">{state.phoneNumber}</p>}
+        <p className="mt-2 text-xs leading-relaxed text-ink-500">Kamu bisa lanjut ngobrol di sini. Pengaturan nomor dan asisten tetap tersedia di halaman Nomor WhatsApp.</p>
+      </div> : <>
+        <div className="grid items-start gap-5 sm:grid-cols-[200px_minmax(0,1fr)]">
+          <div className="mx-auto grid aspect-square w-[200px] max-w-full place-items-center rounded-xl border border-ink-200 bg-white">
+            {showingQr ? <img src={state.qrDataUrl!} width={200} height={200} alt="Kode QR untuk menautkan WhatsApp ke Palwise" className="h-full w-full rounded-xl p-2" /> :
+              <div className="flex flex-col items-center gap-3 px-5 text-center text-xs leading-relaxed text-ink-500"><Ikon nama="qr" size={38} /><span>{busy || (state.status === "connecting" && state.workerUp) ? "Menyiapkan QR WhatsApp..." : "Tekan Tampilkan QR untuk mulai menyambungkan."}</span></div>}
+          </div>
+          <div><p className="text-sm font-semibold">Tautkan dari WhatsApp kamu</p>
+            <ol className="mt-3 list-decimal space-y-2 pl-4 text-xs leading-relaxed text-ink-600">
+              <li>Buka WhatsApp di HP yang nomornya mau disambungkan.</li>
+              <li>Pilih <strong>Perangkat tertaut</strong>, lalu <strong>Tautkan perangkat</strong>. Di iPhone, buka Pengaturan terlebih dahulu.</li>
+              <li>Scan QR yang muncul di kartu ini.</li>
+            </ol>
+            <p className="mt-3 text-[11px] leading-relaxed text-ink-500">Sedang memakai HP yang sama? Buka obrolan ini di komputer atau perangkat lain untuk menampilkan QR, lalu scan dari HP WhatsApp kamu.</p>
+          </div>
+        </div>
+        {(notice || state.error || !state.workerUp) && <p role="alert" className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-xs leading-relaxed text-red-800">{notice || (!state.workerUp ? "Koneksi WhatsApp belum bisa dihubungi. Coba lagi sebentar ya." : state.error)}</p>}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" className="btn-primary min-h-11" disabled={busy || (state.status === "connecting" && state.workerUp)} onClick={() => post("start")}>{busy ? "Menyiapkan QR..." : showingQr ? "Perbarui QR" : "Tampilkan QR"}</button>
+          {(state.status === "qr" || state.status === "connecting") && <button type="button" className="btn-ghost min-h-11" disabled={busy} onClick={() => post("stop")}>Batal menyambungkan</button>}
+        </div>
+        <p className="mt-3 text-[11px] text-ink-500">QR diperbarui otomatis selama kartu ini terbuka.</p>
+      </>}
+      <a href="/app/whatsapp" className="mt-4 inline-flex min-h-9 items-center gap-2 text-xs text-brand-700 hover:underline">Kelola nomor WhatsApp <span aria-hidden="true">↗</span></a>
+    </div>
+  </div>;
 
   return (
     <div className="card overflow-hidden">

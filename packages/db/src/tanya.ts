@@ -27,3 +27,35 @@ export const SAPAAN_PASANG =
 /** Judul tetap untuk utas pemasangan. Dia tidak diambil dari pesan pertama,
  *  karena di utas ini yang bicara duluan Palwise, bukan pemiliknya. */
 export const JUDUL_PASANG = "Pasang asisten";
+
+export interface KeadaanPemasangan {
+  caraBicara: boolean;
+  info: boolean;
+  jumlahInfo: number;
+  nomor: boolean;
+}
+
+/** The greeting follows saved progress, including setup done outside chat. */
+export function sapaanPemasangan(keadaan: KeadaanPemasangan): string {
+  if (keadaan.caraBicara && keadaan.info) {
+    return keadaan.nomor
+      ? "Asisten, info bisnis, dan nomor WhatsApp kamu sudah terpasang. Mau cek cara bicaranya atau perbarui info bisnis?"
+      : "Cara bicara asisten dan info bisnis kamu sudah terisi. Tinggal sambungkan nomor WhatsApp.\n\nKartu WhatsApp ada di bawah obrolan ini. Tekan Tampilkan QR, lalu scan lewat menu Perangkat tertaut di WhatsApp.";
+  }
+  if (keadaan.info) return "Info bisnis kamu sudah tersimpan. Kita lanjut menyiapkan cara bicara asistennya. Kamu ingin gaya yang santai atau lebih formal?";
+  if (keadaan.caraBicara) return "Cara bicara asisten kamu sudah terisi. Sekarang kita lengkapi info bisnis supaya jawabannya sesuai usahamu.\n\nKamu bisa kirim daftar produk atau layanan beserta harganya di sini.";
+  if (keadaan.nomor) return "Nomor WhatsApp kamu sudah tersambung. Kita lanjut menyiapkan asistennya. Usahamu menjual produk atau layanan apa?";
+  return SAPAAN_PASANG;
+}
+
+/** Recognize device linking, while leaving product/payment QR requests alone. */
+export function mintaSambunganWhatsApp(teks: string): boolean {
+  const isi = teks.toLowerCase().replace(/whats\s*app/g, "whatsapp");
+  if (/\b(qris|bayar|pembayaran|transfer|rekening|menu|katalog|produk)\b/.test(isi)) return false;
+  const whatsapp = /\b(whatsapp|wa)\b/.test(isi);
+  const qr = /\b(qr(?:\s*code)?(?:nya)?|kode\s*qr)\b/.test(isi);
+  const taut = /perangkat\s*(tertaut|tert[au]ut)|tautkan\s*perangkat/.test(isi);
+  const sambung = /\b(sambung\w*|hubung\w*|connect\w*|taut\w*|scan|pindai|login)\b/.test(isi);
+  const minta = /\b(tampil\w*|muncul\w*|beri\w*|minta|mana|lihat|buat\w*|kirim\w*|scan|pindai)\b/.test(isi);
+  return taut || (whatsapp && (qr || sambung)) || (qr && minta);
+}

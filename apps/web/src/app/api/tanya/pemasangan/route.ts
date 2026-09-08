@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
+import { bacaPemasangan } from "@/lib/pemasangan";
 
 export const dynamic = "force-dynamic";
 
@@ -14,21 +14,5 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const user = await requireUser();
-  const workspaceId = user.workspaceId;
-
-  const [agent, channel] = await Promise.all([
-    prisma.agent.findFirst({ where: { workspaceId }, orderBy: { createdAt: "asc" } }),
-    prisma.channel.findFirst({ where: { workspaceId, status: "connected" } }),
-  ]);
-
-  const infoSiap = agent
-    ? await prisma.knowledgeSource.count({ where: { agentId: agent.id, status: "ready" } })
-    : 0;
-
-  return NextResponse.json({
-    caraBicara: !!agent?.behaviorPrompt,
-    info: infoSiap > 0,
-    jumlahInfo: infoSiap,
-    nomor: !!channel,
-  });
+  return NextResponse.json(await bacaPemasangan(user.workspaceId));
 }

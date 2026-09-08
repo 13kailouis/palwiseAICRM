@@ -14,6 +14,7 @@ data/
 
 # Folder build sementara untuk verifikasi, lihat NEXT_DIST_DIR di next.config.mjs
 .next-uji/
+.next-tanya/
 
 # Dibuat ulang oleh Next.js tiap "next dev" dan "next build", dan isinya ikut
 # NEXT_DIST_DIR. Di laptop build pakai .next-uji, di VPS pakai .next, jadi

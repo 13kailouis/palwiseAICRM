@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { JUDUL_PASANG, SAPAAN_PASANG, prisma } from "@palwise/db";
+import { JUDUL_PASANG, sapaanPemasangan, prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
+import { bacaPemasangan } from "@/lib/pemasangan";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
   // tidak boleh memakan jatah sebelum orangnya mengetik apa pun.
   if (mode === "pasang") {
     await prisma.pesanTanya.create({
-      data: { sesiId: sesi.id, peran: "palwise", teks: SAPAAN_PASANG },
+      data: { sesiId: sesi.id, peran: "palwise", teks: sapaanPemasangan(await bacaPemasangan(user.workspaceId)) },
     });
   }
 

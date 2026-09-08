@@ -53,7 +53,8 @@ export async function GET(
     ? (live.runtimeStatus ??
       (channel.status === "logged_out" ? "logged_out" : "disconnected"))
     : channel.status;
-  const qr = live?.qr ?? channel.lastQr;
+  // Never show a persisted, expired QR when the live connection is unavailable.
+  const qr = live?.qr ?? null;
 
   let qrDataUrl: string | null = null;
   if (status === "qr" && qr) {
@@ -70,5 +71,5 @@ export async function GET(
     phoneNumber: live?.phoneNumber ?? channel.phoneNumber,
     error: live?.error ?? channel.lastError,
     workerUp: !!live,
-  });
+  }, { headers: { "Cache-Control": "no-store, private" } });
 }

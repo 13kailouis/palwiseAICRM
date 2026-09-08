@@ -43,6 +43,9 @@ export function BarAtas({ namaWorkspace: _namaWorkspace }: { namaWorkspace: stri
     };
   }, [sekunder]);
 
+  // Tanya owns its compact mobile header, including the way back to the app.
+  if (pathname.startsWith("/app/tanya")) return null;
+
   if (sekunder) {
     const judul = judulHalaman(pathname);
     return (

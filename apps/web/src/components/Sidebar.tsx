@@ -49,7 +49,10 @@ export function Sidebar({
   masukanBelumDibaca?: number;
 }) {
   const pathname = usePathname();
-  const [ciut, setCiut] = useState(false);
+  const [pilihanCiut, setCiut] = useState(false);
+  const [tanyaLebar, setTanyaLebar] = useState(false);
+  const ruangTanya = pathname.startsWith("/app/tanya");
+  const ciut = ruangTanya ? !tanyaLebar : pilihanCiut;
 
   // Dibaca sesudah render pertama, bukan saat render, supaya HTML server dan
   // klien sama (default lebar) dan tidak ada peringatan hydration. Kedipan satu
@@ -63,6 +66,10 @@ export function Sidebar({
   }, []);
 
   function togel() {
+    if (ruangTanya) {
+      setTanyaLebar(v => !v);
+      return;
+    }
     setCiut((v) => {
       const baru = !v;
       try {

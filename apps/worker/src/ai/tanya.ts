@@ -521,6 +521,13 @@ export const ALAT: Alat[] = [
   },
 
   {
+    nama: "sambungkan_whatsapp",
+    untuk: "Tampilkan kartu QR untuk menautkan nomor WhatsApp pemilik lewat Perangkat tertaut langsung di chat. Bukan gambar galeri atau QR pembayaran.",
+    async jalankan() {
+      return "Kartu sambungan WhatsApp ditampilkan di bawah obrolan. Pemilik memilih nomor lalu menekan Tampilkan QR, dan memindai dari WhatsApp > Perangkat tertaut > Tautkan perangkat. Status dan QR diambil langsung oleh kartu. Jangan mengaku nomor sudah tersambung; kartu memeriksa statusnya. Jangan mencari QR ini di daftar_gambar. Kalau memakai HP yang sama, tampilkan chat ini di komputer atau perangkat lain lalu scan dari HP WhatsApp.";
+    },
+  },
+  {
     nama: "keadaan_pemasangan",
     untuk: "Tiga langkah pemasangan: cara bicara, Info bisnis, nomor WhatsApp. Mana yang sudah, mana yang belum.",
     async jalankan({ workspaceId, agentId }) {
@@ -535,10 +542,7 @@ export const ALAT: Alat[] = [
       return [
         `1. Cara bicara asisten: ${agent?.behaviorPrompt?.trim() ? "SUDAH diisi" : "BELUM diisi"}`,
         `2. Info bisnis: ${jumlahInfo > 0 ? `SUDAH, ${jumlahInfo} catatan terhafal` : "BELUM ada satu pun"}`,
-        // Nomor WhatsApp TIDAK bisa dikerjakan dari sini, dan itu harus jelas
-        // buat modelnya. Menyambungkan nomor butuh memindai kode QR dengan
-        // HP-nya, dan tidak ada kalimat mana pun yang bisa menggantikan itu.
-        `3. Nomor WhatsApp: ${channel ? "SUDAH tersambung" : "BELUM tersambung. Ini harus dikerjakan sendiri oleh pemiliknya di halaman Nomor WhatsApp, dengan memindai kode QR pakai HP. Kamu tidak bisa mengerjakannya."}`,
+        `3. Nomor WhatsApp: ${channel ? "Tercatat tersambung; kartu WhatsApp memeriksa status koneksi langsung." : "BELUM tersambung. Jalankan sambungkan_whatsapp untuk membuka kartu QR di chat ini. Pemilik tetap harus menekan Tampilkan QR dan memindainya lewat Perangkat tertaut di HP sendiri."}`,
       ].join("\n");
     },
   },
@@ -562,6 +566,7 @@ export type ModeTanya = "perintah" | "pasang";
  *  tanpa membuat isinya kelihatan seperti setelan yang boleh diubah dari luar. */
 export const ALAT_PASANG_UJI: ReadonlySet<string> = new Set([
   "keadaan_pemasangan",
+  "sambungkan_whatsapp",
   "lihat_asisten",
   "daftar_info",
   "lihat_info",
@@ -616,7 +621,10 @@ function aturanBersama(): string {
 Kamu TIDAK BOLEH menyebut angka, nama, tanggal, atau isi catatan yang tidak datang dari hasil alat di percakapan ini, atau dari yang diketik pemiliknya sendiri. Kalau belum punya, panggil alatnya dulu. Menebak itu kesalahan terparah yang bisa kamu buat di sini.
 
 MENYIMPAN SESUATU
-Kamu tidak pernah menyimpan sendiri. Kamu menyusun usul, dan pemiliknya yang menekan tombol Simpan. Untuk mengubah catatan yang sudah ada, kamu WAJIB menjalankan lihat_info dulu dan menulis ulang SELURUH isinya, bukan potongannya, karena yang tersimpan menggantikan yang lama.`;
+Kamu tidak pernah menyimpan sendiri. Kamu menyusun usul, dan pemiliknya yang menekan tombol Simpan. Untuk mengubah catatan yang sudah ada, kamu WAJIB menjalankan lihat_info dulu dan menulis ulang SELURUH isinya, bukan potongannya, karena yang tersimpan menggantikan yang lama.
+
+MENYAMBUNGKAN WHATSAPP
+Kalau pemilik meminta QR, scan WhatsApp, atau Perangkat tertaut, pakai sambungkan_whatsapp. QR penautan BUKAN gambar yang disimpan di galeri; jangan pakai daftar_gambar atau mengarang kode QR. Kartu akan menampilkan QR dan status langsung di chat, tanpa harus pindah halaman. Pemilik yang menekan Tampilkan QR lalu memindai dari WhatsApp di HP-nya.`;
 }
 
 function promptPerintah(namaUsaha: string): string {
@@ -656,7 +664,7 @@ YANG TIDAK BISA KAMU LAKUKAN, dan katakan apa adanya kalau diminta: menghapus ap
  * sisanya hilang selamanya.
  */
 function promptPasang(namaUsaha: string): string {
-  return `Kamu Palwise, dan kamu sedang MEMANDU pemilik usaha "${namaUsaha}" memasang asistennya untuk pertama kali. Yang bicara denganmu pemiliknya sendiri.
+  return `Kamu Palwise, dan kamu sedang MEMANDU pemilik usaha "${namaUsaha}" melengkapi pemasangan asistennya. Yang bicara denganmu pemiliknya sendiri.
 
 ${sekarangIndonesia()}
 
@@ -667,12 +675,13 @@ CARA MEMANDU
 - Kalau jawabannya pendek atau samar, tanya balik satu hal yang paling penting, jangan langsung menyimpan tebakan.
 
 URUTAN YANG KAMU KEJAR
+Mulai dari STATUS PEMASANGAN SAAT INI yang disertakan, bukan selalu dari langkah pertama. Pengaturan bisa sudah diisi di halaman lain. Jangan mengulang pertanyaan jenis usaha, target pelanggan, atau gaya bicara kalau cara bicara dan Info bisnis sudah diisi. Baca lihat_asisten atau daftar_info bila perlu konteksnya. Jika tinggal nomor WhatsApp, langsung jalankan sambungkan_whatsapp. Pengguna boleh memilih menyambungkan nomor kapan saja tanpa mengulang wawancara.
 1. Usahanya jualan apa, dan siapa yang biasanya beli.
 2. Cara bicaranya mau seperti apa (santai atau sopan, panggil "kak" atau "bapak/ibu"), dan hal apa yang asisten TIDAK BOLEH janjikan sendiri, misalnya diskon atau tanggal kirim.
    Sesudah dua hal ini kamu tahu, langsung usulkan ubah_asisten. Jangan menunggu sampai semuanya lengkap: pemiliknya perlu melihat sesuatu jadi lebih dulu, supaya dia mau melanjutkan.
 3. Sesudah itu, kumpulkan Info bisnis satu topik per catatan: harga dan daftar barang atau layanan, cara pesan dan cara bayar, pengiriman atau lokasi dan jam buka, aturan retur atau pembatalan.
    Tiap kali satu topik sudah cukup jelas, usulkan tambah_info untuk topik itu saja. Jangan menumpuk empat topik jadi satu catatan.
-4. Kalau ketiga langkah di keadaan_pemasangan sudah beres kecuali nomor WhatsApp, bilang bahwa tinggal menyambungkan nomornya di halaman Nomor WhatsApp dengan memindai kode QR pakai HP, dan itu memang harus dia sendiri yang lakukan.
+4. Kalau cara bicara dan Info bisnis sudah beres, jalankan sambungkan_whatsapp untuk menampilkan kartu QR di chat ini. Kalau semuanya sudah beres, sampaikan bahwa pemasangan selesai dan tanyakan apakah ada yang ingin diperbarui.
 
 ${aturanBersama()}
 
@@ -689,7 +698,7 @@ ${daftarAlatUntukPrompt("pasang")}
 
 ${bentukJawaban("pasang")}
 
-Di utas ini kamu TIDAK bisa mengirim pesan ke pelanggan, tidak bisa menyambungkan nomor WhatsApp, dan tidak bisa menghapus apa pun.`;
+Di utas ini kamu TIDAK bisa mengirim pesan ke pelanggan atau menghapus apa pun. Kamu bisa menampilkan kartu sambungan WhatsApp; pemilik sendiri yang mengizinkan penautannya lewat scan QR.`;
 }
 
 function systemPrompt(namaUsaha: string, mode: ModeTanya): string {
@@ -733,7 +742,11 @@ export async function jalankanTanya({
 
   const ctx: Konteks = { workspaceId, agentId: agent?.id ?? null };
   const llm = getLlm();
-  const system = systemPrompt(ws.name, mode);
+  let system = systemPrompt(ws.name, mode);
+  if (mode === "pasang") {
+    const pemasangan = ALAT.find(a => a.nama === "keadaan_pemasangan")!;
+    system += "\n\nSTATUS PEMASANGAN SAAT INI (dibaca dari data tersimpan, utamakan ini daripada sapaan lama):\n" + await pemasangan.jalankan(ctx, {});
+  }
   // Peta alatnya ikut disaring per mode. Prompt yang tidak menyebut sebuah alat
   // saja tidak cukup: model tetap bisa menyebut nama alat yang dia ingat dari
   // mode lain, dan yang menahannya harus kode, bukan kalimat.

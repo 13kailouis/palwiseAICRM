@@ -55,7 +55,7 @@ export default async function AppLayout({
     : 0;
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="app-shell flex h-screen overflow-hidden">
       <GarisMuat />
 
       <Sidebar

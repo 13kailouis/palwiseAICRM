@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@palwise/db";
+import { mintaSambunganWhatsApp, prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
 import { callWorker } from "@/lib/worker";
 
@@ -27,6 +27,23 @@ export async function POST(req: Request) {
   });
   if (!sesi) {
     return NextResponse.json({ error: "Utasnya tidak ketemu" }, { status: 404 });
+  }
+
+  // Device linking is a first-party control, not an image search or an LLM task.
+  // Persist only the card marker; short-lived QR credentials are fetched live.
+  if (mintaSambunganWhatsApp(pesan)) {
+    const hasil = await prisma.$transaction(async tx => {
+      const pemilik = await tx.pesanTanya.create({ data: { sesiId: sesi.id, peran: "pemilik", teks: pesan } });
+      const jawaban = await tx.pesanTanya.create({ data: {
+        sesiId: sesi.id, peran: "palwise",
+        teks: "Bisa, sambungkan WhatsApp langsung lewat kartu di bawah. Pilih nomornya lalu tekan Tampilkan QR. Setelah QR muncul, scan lewat WhatsApp > Perangkat tertaut > Tautkan perangkat.",
+        alat: JSON.stringify(["sambungkan_whatsapp"]),
+      } });
+      const utas = await tx.sesiTanya.findUniqueOrThrow({ where: { id: sesi.id } });
+      await tx.sesiTanya.update({ where: { id: sesi.id }, data: { updatedAt: new Date(), ...(utas.judul ? {} : { judul: pesan.slice(0, 70) }) } });
+      return [pemilik, jawaban];
+    });
+    return NextResponse.json({ pesan: hasil.map(p => ({ ...p, alat: JSON.parse(p.alat), usul: null })) });
   }
 
   try {

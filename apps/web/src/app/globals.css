@@ -38,6 +38,17 @@ body {
   height: 100%;
 }
 
+/* A chat scrolls its messages, never the page behind its composer. */
+html[data-tanya="1"] .isi-utama {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+@media (max-width: 1023px) {
+  html[data-tanya="1"] .app-shell {
+    height: var(--tanya-viewport, 100dvh);
+  }
+}
+
 /* Layar dorongan ala app di HP.
  *
  * Halaman yang dibuka dari tombol Menu (Info bisnis, Gambar, Nomor WhatsApp,

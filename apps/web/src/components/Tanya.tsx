@@ -4,43 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Ikon } from "@/components/Ikon";
 import { Logo } from "@/components/Logo";
+import Link from "next/link";
+import { TanyaIcon } from "@/components/TanyaIcon";
+import styles from "./Tanya.module.css";
+import { WhatsAppDalamChat } from "@/components/WhatsAppDalamChat";
 
-/**
- * Ruang perintah.
- *
- * ══ Kenapa halaman ini TIDAK berbentuk seperti Kotak masuk ══
- *
- * Palwise punya tiga tempat yang isinya obrolan: Kotak masuk (pelanggan asli),
- * Coba dulu (kamu pura-pura jadi pelanggan), dan ini (kamu bicara ke Palwise).
- * Kalau ketiganya kelihatan mirip, cepat atau lambat ada yang mengetik perintah
- * di jendela pelanggan sungguhan, dan perintah itu terkirim apa adanya.
- *
- * Jadi bedanya dibuat di BENTUK, bukan di tulisan kecil.
- *
- * Jawaban Palwise TIDAK pakai gelembung: dia teks biasa di atas kertas putih
- * dengan logo kecil di sebelahnya, seperti ChatGPT atau Claude. Yang
- * bergelembung cuma yang kamu ketik. Di Kotak masuk justru sebaliknya,
- * semuanya bergelembung.
- *
- * ══ Aturan ruang di layar ══
- *
- * Halaman ini setinggi layar dan isinya satu kolom obrolan, jadi tiap piksel
- * yang dipakai kepala halaman diambil dari ruang baca. Aturannya:
- *
- * - Kepala CUMA SATU BARIS. Judul, kemajuan, dan tombolnya berbagi baris itu.
- *   Versi sebelumnya menumpuk judul, satu kalimat penjelasan, dan pita kemajuan
- *   jadi tiga baris setinggi 130px, untuk keterangan yang dibaca sekali seumur
- *   hidup.
- * - Tidak ada kalimat yang menjelaskan halaman ini di kepala. Yang perlu
- *   dijelaskan ditaruh di layar kosong, tempat orang memang sedang mencari tahu
- *   harus apa, dan hilang sendiri begitu obrolannya jalan.
- * - Rel riwayat itu DAFTAR, bukan panel bertombol besar. Tombol hitam "Perintah
- *   baru" selebar rel dulu berdiri di atasnya, dan itu menjawab pertanyaan yang
- *   tidak pernah ditanyakan siapa pun: orang yang membuka halaman ini mau
- *   mengetik, bukan mau membuat wadah dulu. Tombol sebesar itu justru bikin dia
- *   mengira ada langkah yang harus dikerjakan sebelum boleh mengetik. Sekarang
- *   "mulai baru" tinggal ikon kecil, dan yang memenuhi rel cuma riwayatnya.
- */
+/** A dedicated AI workspace, with a searchable history and a responsive composer. */
 
 // ── Bentuk data ───────────────────────────────────────────────────────────────
 
@@ -103,10 +72,10 @@ interface Pemasangan {
  * mengetik dengan bahasa sendiri memang boleh.
  */
 const CONTOH = [
-  { ikon: "chat", label: "Hari ini ada berapa yang chat?" },
-  { ikon: "kendali", label: "Ada yang komplen nggak?" },
-  { ikon: "kalender", label: "Siapa yang janji ketemu hari ini?" },
-  { ikon: "kirim", label: "Chat Budi, tanyain jadi order apa nggak" },
+  { ikon: "ringkasan", judul: "Lihat kabar bisnis", detail: "Ringkas chat yang masuk hari ini", label: "Ringkas chat yang masuk hari ini. Ada berapa dan apa saja yang perlu aku perhatikan?" },
+  { ikon: "pelanggan", judul: "Cek pelanggan", detail: "Temukan yang butuh perhatian", label: "Ada pelanggan yang komplen atau belum dibalas?" },
+  { ikon: "kalender", judul: "Atur hari ini", detail: "Lihat jadwal dan janji pelanggan", label: "Siapa yang janji ketemu hari ini?" },
+  { ikon: "kirim", judul: "Bantu follow up", detail: "Siapkan pesan untuk pelanggan", label: "Bantu aku menyiapkan pesan follow up untuk pelanggan." },
 ] as const;
 
 /**
@@ -140,6 +109,12 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
   const [sibuk, setSibuk] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
   const [riwayatBuka, setRiwayatBuka] = useState(false);
+  const [riwayatCiut, setRiwayatCiut] = useState(false);
+  const [memuat, setMemuat] = useState(true);
+  const [mengubah, setMengubah] = useState(false);
+  const [jauhDariBawah, setJauhDariBawah] = useState(false);
+  const [ideBuka, setIdeBuka] = useState(false);
+  const [whatsappBuka, setWhatsappBuka] = useState(false);
   const [jatah, setJatah] = useState<{
     terpakai: number;
     batas: number;
@@ -149,18 +124,59 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
 
   const gulirRef = useRef<HTMLDivElement>(null);
   const isianRef = useRef<HTMLTextAreaElement>(null);
+  const sedangMemuatRef = useRef(0);
+  const operasiRef = useRef(false);
+  const ikutiRef = useRef(true);
+
+  function keBawah() {
+    const el = gulirRef.current;
+    el?.scrollTo({ top: el.scrollHeight, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    ikutiRef.current = true;
+    setJauhDariBawah(false);
+  }
 
   // Gulir kotaknya sendiri, bukan seluruh halaman. `scrollIntoView` menggulir
   // semua induk yang bisa digulir sampai elemennya kelihatan, dan itu bikin
   // kepala halaman ikut terdorong keluar tiap ada jawaban baru.
   useEffect(() => {
     const el = gulirRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [pesan.length, sibuk]);
+    if (el && ikutiRef.current) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+  }, [pesan.length, sibuk, memuat, whatsappBuka]);
+
+  useEffect(() => {
+    const el = gulirRef.current;
+    const isi = el?.firstElementChild;
+    if (!el || !isi) return;
+    const observer = new ResizeObserver(() => {
+      if (ikutiRef.current) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(isi);
+    return () => observer.disconnect();
+  }, [memuat, whatsappBuka]);
+
+  // Keep the composer inside the visible viewport when a phone keyboard opens.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const el = document.documentElement;
+    el.dataset.tanya = "1";
+    const ukur = () => {
+      el.style.setProperty("--tanya-viewport", `${viewport?.height ?? window.innerHeight}px`);
+      if (viewport && window.innerHeight - viewport.height > 140 && viewport.scale === 1) el.dataset.tanyaKeyboard = "1";
+      else delete el.dataset.tanyaKeyboard;
+    };
+    ukur();
+    viewport?.addEventListener("resize", ukur);
+    return () => {
+      delete el.dataset.tanya;
+      delete el.dataset.tanyaKeyboard;
+      el.style.removeProperty("--tanya-viewport");
+      viewport?.removeEventListener("resize", ukur);
+    };
+  }, []);
 
   const muatDaftar = useCallback(async () => {
     const res = await fetch("/api/tanya/sesi");
-    if (!res.ok) return [] as Sesi[];
+    if (!res.ok) throw new Error("Riwayat belum bisa dimuat. Coba lagi ya.");
     const data = await res.json();
     setDaftar(data.sesi ?? []);
     return (data.sesi ?? []) as Sesi[];
@@ -168,23 +184,29 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
 
   const muatPemasangan = useCallback(async () => {
     const res = await fetch("/api/tanya/pemasangan");
-    if (res.ok) setPasang(await res.json());
+    if (!res.ok) throw new Error("Progres pemasangan belum bisa dimuat.");
+    const keadaan: Pemasangan = await res.json();
+    setPasang(keadaan);
+    return keadaan;
   }, []);
 
   const muatUtas = useCallback(
     async (id: string) => {
+      const permintaan = ++sedangMemuatRef.current;
       const res = await fetch(`/api/tanya/sesi/${id}`);
-      if (!res.ok) {
-        setPesan([]);
-        return;
-      }
+      if (!res.ok) throw new Error("Obrolan belum bisa dibuka. Coba lagi ya.");
       const data = await res.json();
+      if (permintaan !== sedangMemuatRef.current) return;
       setPesan(data.pesan ?? []);
       setMode(data.mode ?? "perintah");
+      setWhatsappBuka((data.pesan ?? []).some((p: Pesan) => p.alat.includes("sambungkan_whatsapp")));
       // Pitanya cuma dipakai utas pemasangan, jadi cuma di situ dia diambil.
       // Satu kueri tambahan di tiap perpindahan utas biasa itu ongkos yang
       // dibayar semua orang untuk sesuatu yang tidak pernah mereka lihat.
-      if (data.mode === "pasang") await muatPemasangan();
+      if (data.mode === "pasang") {
+        const keadaan = await muatPemasangan();
+        if (keadaan.caraBicara && keadaan.info && !keadaan.nomor) setWhatsappBuka(true);
+      }
       else setPasang(null);
     },
     [muatPemasangan],
@@ -195,6 +217,7 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
   useEffect(() => {
     let batal = false;
     (async () => {
+      try {
       const list = await muatDaftar();
       if (batal) return;
 
@@ -208,11 +231,17 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
       } else {
         const res = await fetch("/api/tanya/sesi", { method: "POST" });
         const data = await res.json();
+        if (!res.ok || !data?.id) throw new Error("Obrolan belum bisa dibuat.");
         if (!batal && data?.id) {
           setSesiId(data.id);
           setPesan([]);
           await muatDaftar();
         }
+      }
+      } catch (error) {
+        if (!batal) setGalat(error instanceof Error ? error.message : "Tidak bisa menghubungi server.");
+      } finally {
+        if (!batal) setMemuat(false);
       }
     })();
     return () => {
@@ -222,7 +251,16 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function bukaUtas(id: string) {
+  async function bukaUtas(id: string, pertahankanDraft = false) {
+    if (operasiRef.current || sibuk || mengubah) return;
+    operasiRef.current = true;
+    setMemuat(true);
+    sedangMemuatRef.current++;
+    ikutiRef.current = true;
+    setJauhDariBawah(false);
+    if (!pertahankanDraft) setDraft("");
+    setIdeBuka(false);
+    try {
     setSesiId(id);
     setRiwayatBuka(false);
     setGalat(null);
@@ -230,37 +268,81 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
     // Alamatnya ikut berubah supaya utas ini bisa di-bookmark dan tombol
     // kembali browser bekerja seperti yang orang harapkan.
     router.replace(`/app/tanya?s=${id}`, { scroll: false });
+    } catch (error) {
+      setPesan([]);
+      setGalat(error instanceof Error ? error.message : "Tidak bisa menghubungi server.");
+    } finally {
+      operasiRef.current = false;
+      setMemuat(false);
+    }
   }
 
   async function utasBaru() {
+    if (operasiRef.current || sibuk || mengubah) return;
+    operasiRef.current = true;
+    setMemuat(true);
     setGalat(null);
+    try {
     const res = await fetch("/api/tanya/sesi", { method: "POST" });
     const data = await res.json();
+    if (!res.ok || !data?.id) throw new Error("Obrolan baru belum bisa dibuat.");
     if (data?.id) {
       setSesiId(data.id);
       setPesan([]);
       setMode("perintah");
       setPasang(null);
+      setWhatsappBuka(false);
+      setDraft("");
+      setIdeBuka(false);
+      setJauhDariBawah(false);
+      ikutiRef.current = true;
       setRiwayatBuka(false);
       await muatDaftar();
       router.replace(`/app/tanya?s=${data.id}`, { scroll: false });
       isianRef.current?.focus();
     }
+    } catch (error) {
+      setGalat(error instanceof Error ? error.message : "Tidak bisa menghubungi server.");
+    } finally {
+      operasiRef.current = false;
+      setMemuat(false);
+    }
   }
 
   async function hapusUtas(id: string) {
-    await fetch(`/api/tanya/sesi/${id}`, { method: "DELETE" });
+    if (operasiRef.current || sibuk || mengubah) return;
+    operasiRef.current = true;
+    setMengubah(true);
+    setGalat(null);
+    try {
+    const res = await fetch(`/api/tanya/sesi/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Obrolan belum berhasil dihapus.");
     const list = await muatDaftar();
+    operasiRef.current = false;
+    setMengubah(false);
     if (id === sesiId) {
       const berikut = list[0]?.id;
+      // Navigation owns its own busy guard after deletion completes.
+      setSesiId(null);
+      setPesan([]);
       if (berikut) await bukaUtas(berikut);
       else await utasBaru();
+    }
+    } catch (error) {
+      setGalat(error instanceof Error ? error.message : "Tidak bisa menghubungi server.");
+    } finally {
+      operasiRef.current = false;
+      setMengubah(false);
     }
   }
 
   async function kirim(teks: string) {
     const isi = teks.trim();
-    if (!isi || sibuk || !sesiId) return;
+    if (!isi || sibuk || memuat || operasiRef.current || !sesiId) return;
+    operasiRef.current = true;
+    ikutiRef.current = true;
+    setJauhDariBawah(false);
+    setIdeBuka(false);
 
     setGalat(null);
     setDraft("");
@@ -292,7 +374,7 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
         // teksnya dikembalikan ke kotak ketik. Membiarkannya menggantung di
         // layar bikin orang mengira perintahnya sudah masuk.
         setPesan((p) => p.filter((x) => x.id !== sementara.id));
-        setDraft(isi);
+        setDraft(sekarang => sekarang.trim() ? `${isi}\n\n${sekarang}` : isi);
         setGalat(data?.error ?? "Gagal menjalankan perintah.");
         return;
       }
@@ -301,15 +383,17 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
         ...p.filter((x) => x.id !== sementara.id),
         ...(data.pesan ?? []),
       ]);
+      if ((data.pesan ?? []).some((p: Pesan) => p.alat?.includes("sambungkan_whatsapp"))) setWhatsappBuka(true);
       if (data.jatah)
         setJatah({ terpakai: data.jatah.terpakai, batas: data.jatah.batas });
-      await muatDaftar();
-      if (mode === "pasang") await muatPemasangan();
+      // A history refresh failure must not restore an already delivered draft.
+      await Promise.allSettled([muatDaftar(), ...(mode === "pasang" ? [muatPemasangan()] : [])]);
     } catch {
       setPesan((p) => p.filter((x) => x.id !== sementara.id));
-      setDraft(isi);
+      setDraft(sekarang => sekarang.trim() ? `${isi}\n\n${sekarang}` : isi);
       setGalat("Tidak bisa menghubungi server.");
     } finally {
+      operasiRef.current = false;
       setSibuk(false);
     }
   }
@@ -322,7 +406,11 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
     pesanId: string,
     opsi: { batal?: boolean; ambilAlih?: boolean },
   ): Promise<string | null> {
+    if (operasiRef.current) return "Tunggu proses sebelumnya selesai dulu ya.";
+    operasiRef.current = true;
+    setMengubah(true);
     setGalat(null);
+    try {
     const res = await fetch("/api/tanya/lakukan", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -341,136 +429,96 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
     // Dibaca ulang dari server, bukan ditebak di layar. Statusnya ditentukan
     // apakah WhatsApp-nya benar-benar menerima, dan itu cuma diketahui worker.
     if (sesiId) await muatUtas(sesiId);
-    if (mode === "pasang") await muatPemasangan();
+    if (mode === "pasang") {
+      const keadaan = await muatPemasangan();
+      if (keadaan.caraBicara && keadaan.info && !keadaan.nomor) setWhatsappBuka(true);
+    }
     return kabar;
+    } catch {
+      const kabar = "Status tindakan belum bisa diperiksa. Muat ulang obrolan sebelum mencoba lagi.";
+      setGalat(kabar);
+      return kabar;
+    } finally {
+      operasiRef.current = false;
+      setMengubah(false);
+    }
   }
 
-  const kosong = pesan.length === 0;
+  const kosong = pesan.length === 0 && !whatsappBuka;
   // Giliran pertama pemasangan: baru sapaan Palwise, pemiliknya belum menjawab.
   const barusanMulai =
     mode === "pasang" &&
+    !!pasang && !pasang.caraBicara && !pasang.info && !pasang.nomor &&
     pesan.length > 0 &&
     !pesan.some((p) => p.peran === "pemilik");
   const judulSekarang = daftar.find((s) => s.id === sesiId)?.judul;
 
+  const terkunci = sibuk || memuat || mengubah;
+
+  function pilihIde(teks: string) {
+    setDraft(teks);
+    setIdeBuka(false);
+    isianRef.current?.focus();
+  }
+
   return (
-    <div className="flex h-full min-h-0">
-      <RelRiwayat
-        daftar={daftar}
-        sesiId={sesiId}
-        buka={riwayatBuka}
-        tutup={() => setRiwayatBuka(false)}
-        pilih={bukaUtas}
-        hapus={hapusUtas}
-        baru={utasBaru}
-      />
-
-      <div className="flex min-w-0 flex-1 flex-col bg-white">
-        {/* SATU BARIS. Judul, kemajuan, dan tombolnya berbagi tempat, karena
-            tiap baris di sini diambil dari ruang baca obrolannya. */}
-        <header className="flex shrink-0 items-center gap-2 border-b border-ink-200 px-2 py-2 sm:px-4">
-          <button
-            type="button"
-            onClick={() => setRiwayatBuka(true)}
-            className="tap-aman grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-500 transition hover:bg-ink-100 lg:hidden"
-            aria-label="Riwayat"
-          >
-            <Ikon nama="jam" size={17} />
-          </button>
-
-          <p className="min-w-0 shrink truncate text-sm font-medium text-ink-900">
-            {judulSekarang || (mode === "pasang" ? "Pasang asisten" : "Tanya")}
-          </p>
-
-          {mode === "pasang" && <Langkah keadaan={pasang} />}
-
-          <button
-            type="button"
-            onClick={utasBaru}
-            title="Mulai obrolan baru"
-            className="tap-aman ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-500 transition hover:bg-ink-100 hover:text-ink-900"
-            aria-label="Mulai obrolan baru"
-          >
-            <IkonTambah />
-          </button>
+    <div className={styles.shell}>
+      <RelRiwayat daftar={daftar} sesiId={sesiId} buka={riwayatBuka} ciut={riwayatCiut}
+        tutup={() => setRiwayatBuka(false)} ciutkan={() => setRiwayatCiut(true)}
+        pilih={bukaUtas} hapus={hapusUtas} baru={utasBaru} terkunci={terkunci} />
+      <section className={styles.main} aria-label="Tanya Palwise" inert={riwayatBuka}>
+        <header className={styles.header}>
+          <Link href="/app" className={styles.iconButton + " " + styles.mobileBack} aria-label="Kembali ke ringkasan" title="Kembali ke ringkasan"><TanyaIcon nama="kembali" /></Link>
+          <button type="button" className={styles.iconButton} title="Buka atau tutup riwayat" aria-label="Buka atau tutup riwayat" aria-controls="riwayat-tanya"
+            onClick={() => { if (window.matchMedia("(min-width: 1024px)").matches) setRiwayatCiut(!riwayatCiut); else setRiwayatBuka(true); }}><TanyaIcon nama="panel" /></button>
+          <div className={styles.identity}>
+            <Logo ukuran={28} />
+            <div className={styles.identityText}>
+              <p className={styles.identityTitle}>Palwise <span className={styles.aiBadge}>AI</span></p>
+              <p className={styles.subtitle}>{mode === "pasang" ? "Siapkan asisten bisnismu" : judulSekarang || "Teman kerja untuk bisnismu"}</p>
+            </div>
+          </div>
+          <div className={styles.headerActions}>
+            <button type="button" onClick={utasBaru} disabled={terkunci} className={styles.newChat} aria-label="Obrolan baru" title="Obrolan baru"><TanyaIcon nama="baru" size={17} /><span>Obrolan baru</span></button>
+          </div>
         </header>
-
-        <div
-          ref={gulirRef}
-          className="thin-scroll min-h-0 flex-1 overflow-y-auto"
-        >
-          <div className="mx-auto w-full max-w-2xl px-4 py-5 sm:px-6">
-            {kosong ? (
-              <Sambutan pilih={kirim} />
-            ) : (
-              <div className="space-y-5">
-                {pesan.map((p) =>
-                  p.peran === "pemilik" ? (
-                    <DariPemilik key={p.id} teks={p.teks} />
-                  ) : (
-                    <DariPalwise
-                      key={p.id}
-                      pesan={p}
-                      jalankan={(opsi) => jalankanUsul(p.id, opsi)}
-                    />
-                  ),
-                )}
-              </div>
-            )}
-
-            {/* Jawaban siap tekan, cuma di giliran pertama pemasangan. */}
-            {barusanMulai && !sibuk && (
-              <div className="anim-naik mt-3 flex flex-wrap gap-1.5 sm:pl-8">
-                {JENIS_USAHA.map((j) => (
-                  <button
-                    key={j.label}
-                    type="button"
-                    onClick={() => kirim(`Jualan ${j.label.toLowerCase()}`)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 px-2.5 py-1.5 text-[13px] text-ink-700 transition hover:border-ink-400 hover:bg-ink-50"
-                    style={{ transitionDuration: "var(--gerak-cepat)" }}
-                  >
-                    <Ikon nama={j.ikon} size={14} className="text-ink-400" />
-                    {j.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {sibuk && (
-              <div className="mt-5 flex items-center gap-2.5">
-                <TandaPalwise />
-                <span
-                  className="titik-ketik flex items-center gap-1 text-ink-300"
-                  aria-label="Palwise sedang mengerjakan"
-                >
-                  <span />
-                  <span />
-                  <span />
-                </span>
-              </div>
-            )}
+        {mode === "pasang" && <div className="border-b border-ink-100 px-5 py-2"><Langkah keadaan={pasang} sambungkan={() => { ikutiRef.current = true; setWhatsappBuka(true); }} /></div>}
+        <div className={styles.workspace + (kosong && !memuat ? " " + styles.workspaceEmpty : "")}>
+          <div className={styles.conversationArea}>
+            <div ref={gulirRef} className={styles.scrollArea} onScroll={(event) => {
+              const el = event.currentTarget;
+              const jauh = el.scrollHeight - el.scrollTop - el.clientHeight > 120;
+              ikutiRef.current = !jauh;
+              setJauhDariBawah(jauh);
+            }}>
+              {memuat ? <div className={styles.loading} role="status"><span className={styles.spinner} />Menyiapkan obrolan...</div> :
+                <div className={styles.thread}>
+                  {kosong ? <Sambutan /> : <div className={styles.messages} role="log" aria-label="Percakapan dengan Palwise" aria-live="polite" aria-relevant="additions">
+                    {pesan.map((p) => p.peran === "pemilik" ? <DariPemilik key={p.id} teks={p.teks} /> :
+                      <DariPalwise key={p.id} pesan={p} jalankan={(opsi) => jalankanUsul(p.id, opsi)} />)}
+                  </div>}
+                  {barusanMulai && !sibuk && <div className="mt-5 flex flex-wrap gap-2">
+                    {JENIS_USAHA.map((j) => <button key={j.label} type="button" disabled={terkunci} onClick={() => kirim(`Jualan ${j.label.toLowerCase()}`)}
+                      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-ink-200 px-3 py-2 text-xs text-ink-700 transition hover:bg-ink-50 disabled:opacity-40"><Ikon nama={j.ikon} size={16} />{j.label}</button>)}
+                  </div>}
+                  {sibuk && <div className={styles.thinking} role="status"><TandaPalwise /><span className={styles.spinner} /><span>Palwise sedang menyiapkan jawaban...</span></div>}
+                  {whatsappBuka && <WhatsAppDalamChat key={sesiId} tutup={() => setWhatsappBuka(false)} tersambung={(connected) => {
+                    setPasang(keadaan => keadaan && keadaan.nomor !== connected ? { ...keadaan, nomor: connected } : keadaan);
+                  }} />}
+                </div>}
+            </div>
+            {!kosong && jauhDariBawah && <button type="button" onClick={keBawah} className={styles.jump} aria-label="Ke pesan terbaru" title="Ke pesan terbaru"><TanyaIcon nama="bawah" size={18} /></button>}
           </div>
+          <Pengetik isianRef={isianRef} draft={draft} setDraft={setDraft} sibuk={sibuk} terkunci={terkunci || !sesiId} kirim={kirim}
+            jatah={jatah} kosong={kosong && !memuat} ideBuka={ideBuka} togelIde={() => setIdeBuka(!ideBuka)} pilihIde={pilihIde}
+            bukaWhatsapp={() => { ikutiRef.current = true; setWhatsappBuka(true); }}
+            galat={galat} cobaLagi={() => { if (sesiId) void bukaUtas(sesiId, true); else void utasBaru(); }} />
         </div>
-
-        {galat && (
-          <div className="shrink-0 border-t border-red-200 bg-red-50 px-4 py-2 text-[13px] text-red-800 sm:px-6">
-            {galat}
-          </div>
-        )}
-
-        <Pengetik
-          isianRef={isianRef}
-          draft={draft}
-          setDraft={setDraft}
-          sibuk={sibuk}
-          kirim={kirim}
-          jatah={jatah}
-          tampilkanContoh={kosong}
-        />
-      </div>
+      </section>
     </div>
   );
 }
+
 
 // ── Kemajuan pemasangan ───────────────────────────────────────────────────────
 
@@ -486,7 +534,7 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
  * Langkah ketiga sengaja BUKAN sesuatu yang bisa dikerjakan Palwise. Memindai
  * kode QR harus pakai HP sendiri, jadi titiknya jadi tautan keluar.
  */
-function Langkah({ keadaan }: { keadaan: Pemasangan | null }) {
+function Langkah({ keadaan, sambungkan }: { keadaan: Pemasangan | null; sambungkan: () => void }) {
   if (!keadaan) return null;
 
   const langkah = [
@@ -500,14 +548,11 @@ function Langkah({ keadaan }: { keadaan: Pemasangan | null }) {
       selesai: keadaan.info,
       href: null as string | null,
     },
-    { label: "Nomor", selesai: keadaan.nomor, href: "/app/whatsapp" },
+    { label: "WhatsApp", selesai: keadaan.nomor, href: "/app/whatsapp" },
   ];
 
   return (
-    <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-      <span className="shrink-0 text-ink-300" aria-hidden="true">
-        ·
-      </span>
+    <div className="flex min-w-0 items-center justify-between gap-2 overflow-hidden" aria-label="Progres pemasangan">
       {langkah.map((l) => {
         const isi = (
           <>
@@ -516,21 +561,22 @@ function Langkah({ keadaan }: { keadaan: Pemasangan | null }) {
                 l.selesai ? "bg-brand-600" : "bg-ink-300"
               }`}
             />
-            <span className="hidden truncate md:inline">{l.label}</span>
+            <span className="truncate">{l.label}</span>
           </>
         );
-        const kelas = `inline-flex items-center gap-1.5 text-xs ${
-          l.selesai ? "text-ink-400" : "text-ink-600"
+        const kelas = `inline-flex min-h-8 items-center gap-1.5 text-[10px] sm:text-xs ${
+          l.selesai ? "text-ink-500" : "font-medium text-ink-800"
         }`;
 
         return l.href && !l.selesai ? (
-          <a
+          <button
             key={l.label}
-            href={l.href}
+            type="button"
+            onClick={sambungkan}
             className={`${kelas} hover:text-brand-700 hover:underline`}
           >
             {isi}
-          </a>
+          </button>
         ) : (
           <span key={l.label} className={kelas}>
             {isi}
@@ -582,219 +628,135 @@ function kelompokkan(daftar: Sesi[]): { judul: string; isi: Sesi[] }[] {
   return hasil;
 }
 
-/**
- * Daftar utas. Rel tetap ada karena orang balik lagi besoknya mencari "yang
- * kemarin aku tanya", tapi isinya cuma daftar: yang menonjol harus obrolannya,
- * bukan tombol membuat obrolan.
- */
-function RelRiwayat({
-  daftar,
-  sesiId,
-  buka,
-  tutup,
-  pilih,
-  hapus,
-  baru,
-}: {
-  daftar: Sesi[];
-  sesiId: string | null;
-  buka: boolean;
-  tutup: () => void;
-  pilih: (id: string) => void;
-  hapus: (id: string) => void;
-  baru: () => void;
+function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, ciutkan, pilih, hapus, baru, terkunci }: {
+  daftar: Sesi[]; sesiId: string | null; buka: boolean; ciut: boolean; tutup: () => void; ciutkan: () => void;
+  pilih: (id: string) => void; hapus: (id: string) => void; baru: () => void; terkunci: boolean;
 }) {
   const [mauHapus, setMauHapus] = useState<string | null>(null);
+  const [pencarian, setPencarian] = useState("");
+  const panelRef = useRef<HTMLElement>(null);
+  const cariRef = useRef<HTMLInputElement>(null);
+  const tutupRef = useRef(tutup);
+  tutupRef.current = tutup;
 
-  return (
-    <>
-      {buka && (
-        <div
-          className="fixed inset-0 z-40 bg-ink-950/40 backdrop-blur-sm lg:hidden"
-          onClick={tutup}
-          aria-hidden="true"
-        />
-      )}
+  useEffect(() => {
+    if (!buka) return;
+    const sebelumnya = document.activeElement as HTMLElement | null;
+    cariRef.current?.focus();
+    function keyboard(event: KeyboardEvent) {
+      if (event.key === "Escape") { event.preventDefault(); tutupRef.current(); }
+      if (event.key !== "Tab") return;
+      const nodes = Array.from(panelRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input, a[href]') ?? []).filter(el => el.getClientRects().length > 0);
+      const pertama = nodes[0], terakhir = nodes[nodes.length - 1];
+      if (event.shiftKey && document.activeElement === pertama) { event.preventDefault(); terakhir?.focus(); }
+      else if (!event.shiftKey && document.activeElement === terakhir) { event.preventDefault(); pertama?.focus(); }
+    }
+    const media = window.matchMedia("(min-width: 1024px)");
+    const resize = () => { if (media.matches) tutupRef.current(); };
+    media.addEventListener("change", resize);
+    document.addEventListener("keydown", keyboard);
+    return () => { document.removeEventListener("keydown", keyboard); media.removeEventListener("change", resize); sebelumnya?.focus(); };
+  }, [buka]);
 
-      <aside
-        className={[
-          "flex-col border-r border-ink-200 bg-ink-50/70",
-          "fixed inset-y-0 left-0 z-50 w-64 max-w-[80vw] lg:static lg:z-auto lg:w-56 lg:max-w-none",
-          buka ? "anim-naik flex" : "hidden lg:flex",
-        ].join(" ")}
-      >
-        <div className="flex shrink-0 items-center gap-1 px-3 py-2.5">
-          <p className="flex-1 text-xs font-medium text-ink-500">Riwayat</p>
-          <button
-            type="button"
-            onClick={baru}
-            title="Mulai obrolan baru"
-            className="tap-aman grid h-7 w-7 place-items-center rounded-md text-ink-500 transition hover:bg-ink-200 hover:text-ink-900"
-            aria-label="Mulai obrolan baru"
-          >
-            <IkonTambah />
-          </button>
-          <button
-            type="button"
-            onClick={tutup}
-            className="tap-aman grid h-7 w-7 place-items-center rounded-md text-ink-500 transition hover:bg-ink-200 lg:hidden"
-            aria-label="Tutup riwayat"
-          >
-            <Ikon nama="silang" size={14} />
-          </button>
-        </div>
-
-        <nav className="thin-scroll min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-          {daftar.length === 0 ? (
-            <p className="px-2 py-2 text-xs text-ink-400">Belum ada.</p>
-          ) : (
-            kelompokkan(daftar).map((k) => (
-              <div key={k.judul} className="mb-1">
-                <p className="px-2 pb-1 pt-2 text-[11px] font-medium text-ink-400">
-                  {k.judul}
-                </p>
-                <ul className="space-y-px">
-                  {k.isi.map((s) => {
-                    const aktif = s.id === sesiId;
-                    return (
-                      <li key={s.id} className="group relative">
-                        <button
-                          type="button"
-                          onClick={() => pilih(s.id)}
-                          className={`flex w-full items-center gap-1.5 rounded-md py-1.5 pl-2 pr-7 text-left text-[13px] transition ${
-                            aktif
-                              ? "bg-white font-medium text-ink-900 shadow-sm"
-                              : "text-ink-600 hover:bg-ink-100"
-                          }`}
-                          style={{ transitionDuration: "var(--gerak-cepat)" }}
-                        >
-                          {s.mode === "pasang" && (
-                            <Ikon
-                              nama="asisten"
-                              size={13}
-                              className="shrink-0 text-ink-400"
-                            />
-                          )}
-                          <span className="truncate">
-                            {s.judul || "Belum ada judul"}
-                          </span>
-                        </button>
-
-                        {/* Muncul waktu diarahkan kursor di desktop, dan SELALU
-                        kelihatan di layar sentuh, karena di sana tidak ada yang
-                        namanya diarahkan kursor. */}
-                        <button
-                          type="button"
-                          onClick={() => setMauHapus(s.id)}
-                          className="absolute right-0.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-ink-400 transition hover:bg-ink-200 hover:text-ink-700 lg:opacity-0 lg:group-hover:opacity-100"
-                          aria-label={`Hapus "${s.judul || "obrolan ini"}"`}
-                        >
-                          <Ikon nama="silang" size={13} />
-                        </button>
-
-                        {mauHapus === s.id && (
-                          <div className="mt-1 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-800">
-                            <p>Hapus obrolan ini?</p>
-                            <div className="mt-1.5 flex gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMauHapus(null);
-                                  hapus(s.id);
-                                }}
-                                className="rounded bg-red-600 px-2 py-0.5 font-medium text-white"
-                              >
-                                Hapus
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setMauHapus(null)}
-                                className="rounded border border-red-300 bg-white px-2 py-0.5"
-                              >
-                                Batal
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+  const hasil = daftar.filter(s => (s.judul || "Obrolan baru").toLocaleLowerCase("id").includes(pencarian.toLocaleLowerCase("id")));
+  return <>
+    {buka && <div className={styles.backdrop} onClick={tutup} aria-hidden="true" />}
+    <aside id="riwayat-tanya" ref={panelRef} role={buka ? "dialog" : undefined} aria-modal={buka || undefined} aria-label="Riwayat obrolan"
+      className={[styles.history, ciut ? styles.historyClosed : "", buka ? styles.historyOpen : ""].join(" ")}>
+      <div className={styles.historyHeading}><h2>Ruang obrolan</h2>
+        <button type="button" className={styles.iconButton} aria-label="Tutup riwayat" title="Tutup riwayat" onClick={() => { tutup(); ciutkan(); }}><TanyaIcon nama={buka ? "tutup" : "panel"} size={18} /></button>
+      </div>
+      <button type="button" onClick={() => { setPencarian(""); baru(); }} disabled={terkunci} className={styles.newChat}><TanyaIcon nama="baru" size={17} />Obrolan baru</button>
+      <label className={styles.search}><TanyaIcon nama="cari" size={17} /><input ref={cariRef} type="search" placeholder="Cari obrolan..." aria-label="Cari obrolan" value={pencarian} onChange={e => setPencarian(e.target.value)} /></label>
+      <nav className={styles.historyList} aria-label="Daftar obrolan">
+        {hasil.length === 0 ? <p className={styles.historyEmpty}>{pencarian ? "Tidak ada obrolan yang cocok. Coba kata lain." : "Obrolanmu akan tersimpan di sini. Mulai dengan satu pertanyaan."}</p> : kelompokkan(hasil).map(k =>
+          <div key={k.judul} className={styles.historyGroup}><p>{k.judul}</p><ul>
+            {k.isi.map(s => <li key={s.id}>
+              <div className={styles.historyRow + (s.id === sesiId ? " " + styles.historyRowActive : "")}>
+                <button type="button" disabled={terkunci} onClick={() => { setMauHapus(null); pilih(s.id); }} className={styles.historySelect} aria-current={s.id === sesiId ? "page" : undefined} title={s.judul || "Obrolan baru"}>
+                  {s.mode === "pasang" ? <Ikon nama="asisten" size={16} /> : <TanyaIcon nama="chat" size={16} />}<span>{s.judul || "Obrolan baru"}</span>
+                </button>
+                <button type="button" disabled={terkunci} onClick={() => setMauHapus(s.id)} className={styles.historyDelete} aria-label={`Hapus ${s.judul || "obrolan ini"}`} title="Hapus obrolan"><TanyaIcon nama="hapus" size={15} /></button>
               </div>
-            ))
-          )}
-        </nav>
-      </aside>
-    </>
-  );
+              {mauHapus === s.id && <div className={styles.deleteConfirm}><p>Hapus obrolan ini? Isinya tidak bisa dikembalikan.</p><div>
+                <button type="button" disabled={terkunci} onClick={() => { setMauHapus(null); hapus(s.id); }}>Hapus</button>
+                <button type="button" onClick={() => setMauHapus(null)}>Batal</button>
+              </div></div>}
+            </li>)}
+          </ul></div>)}
+      </nav>
+      <div className={styles.historyFooter}><Ikon nama="info" size={16} /><span>Konteks bisnis, dalam satu obrolan.</span></div>
+    </aside>
+  </>;
 }
+
 
 // ── Gelembung ─────────────────────────────────────────────────────────────────
 
 function DariPemilik({ teks }: { teks: string }) {
-  return (
-    <div className="anim-naik flex justify-end">
-      <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-brand-600 px-3.5 py-2 text-[15px] leading-relaxed text-white">
-        {teks}
-      </p>
-    </div>
-  );
+  return <div className={styles.owner + " anim-naik"}><p>{teks}</p></div>;
 }
 
-/**
- * Tanda Palwise di sebelah tiap jawaban.
- *
- * Latarnya PUTIH bertepi, bukan lingkaran gelap. Logonya biru pekat di atas
- * latar tembus pandang, jadi di atas hitam dia tenggelam: di ukuran kecil yang
- * kelihatan cuma titik hitam, dan pembaca tidak mengenalinya sebagai Palwise.
- */
 function TandaPalwise() {
-  return (
-    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white ring-1 ring-ink-200">
-      <Logo ukuran={14} />
-    </span>
-  );
+  return <span className={styles.avatar}><Logo ukuran={18} /></span>;
 }
 
-function DariPalwise({
-  pesan,
-  jalankan,
-}: {
-  pesan: Pesan;
-  jalankan: (opsi: {
-    batal?: boolean;
-    ambilAlih?: boolean;
-  }) => Promise<string | null>;
+// React escapes every fragment. Model output is never inserted as HTML.
+function formatInline(teks: string): React.ReactNode[] {
+  return teks.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") ? <strong key={i}>{part.slice(2, -2)}</strong> :
+    part.startsWith("`") && part.endsWith("`") ? <code key={i}>{part.slice(1, -1)}</code> : part);
+}
+
+function TeksJawaban({ teks }: { teks: string }) {
+  const hasil: React.ReactNode[] = [];
+  const lines = teks.split("\n");
+  for (let i = 0; i < lines.length;) {
+    const line = lines[i];
+    if (!line.trim()) { i++; continue; }
+    if (line.startsWith("```")) {
+      const code: string[] = []; i++;
+      while (i < lines.length && !lines[i].startsWith("```")) code.push(lines[i++]);
+      i++; hasil.push(<pre key={i}><code>{code.join("\n")}</code></pre>); continue;
+    }
+    if (/^#{1,6} /.test(line)) { hasil.push(<h3 key={i}>{formatInline(line.replace(/^#{1,6} /, ""))}</h3>); i++; continue; }
+    if (/^\s*([-*] |\d+\. )/.test(line)) {
+      const ordered = /^\s*\d+\. /.test(line), items: React.ReactNode[] = [];
+      const pattern = ordered ? /^\s*\d+\. / : /^\s*[-*] /;
+      while (i < lines.length && pattern.test(lines[i])) { items.push(<li key={i}>{formatInline(lines[i].replace(pattern, ""))}</li>); i++; }
+      hasil.push(ordered ? <ol key={i}>{items}</ol> : <ul key={i}>{items}</ul>); continue;
+    }
+    const para = [line]; i++;
+    while (i < lines.length && lines[i].trim() && !/^(#{1,6} |```|\s*[-*] |\s*\d+\. )/.test(lines[i])) para.push(lines[i++]);
+    hasil.push(<p key={i}>{formatInline(para.join("\n"))}</p>);
+  }
+  return <div className={styles.answerText}>{hasil}</div>;
+}
+
+function DariPalwise({ pesan, jalankan }: {
+  pesan: Pesan; jalankan: (opsi: { batal?: boolean; ambilAlih?: boolean }) => Promise<string | null>;
 }) {
-  return (
-    <div className="anim-naik flex gap-2.5">
-      <TandaPalwise />
-      <div className="min-w-0 flex-1 space-y-2.5">
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink-800">
-          {pesan.teks}
-        </p>
-
-        {pesan.usul && (
-          <KartuUsul
-            usul={pesan.usul}
-            status={pesan.usulStatus}
-            kabar={pesan.usulPesan}
-            jalankan={jalankan}
-          />
-        )}
-
-        {/* Dari mana angkanya diambil. Bukan hiasan: satu-satunya cara pemilik
-            toko membedakan jawaban yang dihitung dari database dan jawaban yang
-            cuma omongan. Tidak ada baris ini berarti tidak ada alat yang jalan. */}
-        {pesan.alat.length > 0 && (
-          <p className="text-[11px] text-ink-400">
-            {pesan.alat.map(namaAlat).join(" · ")}
-          </p>
-        )}
+  const [salinan, setSalinan] = useState<"awal" | "selesai" | "gagal">("awal");
+  useEffect(() => { if (salinan === "awal") return; const timer = setTimeout(() => setSalinan("awal"), 2500); return () => clearTimeout(timer); }, [salinan]);
+  async function salin() {
+    try { await navigator.clipboard.writeText(pesan.teks); setSalinan("selesai"); }
+    catch { setSalinan("gagal"); }
+  }
+  return <article className={styles.answer + " anim-naik"}>
+    <div className={styles.answerIdentity}><TandaPalwise /><span>Palwise</span><span className={styles.aiBadge}>AI</span></div>
+    <div className={styles.answerBody}>
+      <TeksJawaban teks={pesan.teks} />
+      {pesan.usul && <div className="mt-4"><KartuUsul usul={pesan.usul} status={pesan.usulStatus} kabar={pesan.usulPesan} jalankan={jalankan} /></div>}
+      <div className={styles.answerFooter}>
+        <button type="button" className={styles.copy} onClick={salin} aria-label="Salin jawaban">
+          <Ikon nama={salinan === "selesai" ? "centang" : "salin"} size={14} /><span aria-live="polite">{salinan === "selesai" ? "Tersalin" : salinan === "gagal" ? "Gagal menyalin, coba lagi" : "Salin jawaban"}</span>
+        </button>
+        {pesan.alat.length > 0 && <span className={styles.sources}><Ikon nama="info" size={12} />{pesan.alat.map(namaAlat).join(" · ")}</span>}
       </div>
     </div>
-  );
+  </article>;
 }
+
 
 /** Nama alat dalam bahasa yang dimengerti pemilik toko. */
 function namaAlat(kode: string): string {
@@ -812,6 +774,7 @@ function namaAlat(kode: string): string {
     lihat_info: "isi catatan",
     lihat_asisten: "setelan asisten",
     keadaan_pemasangan: "langkah pemasangan",
+    sambungkan_whatsapp: "koneksi WhatsApp",
   };
   return peta[kode] ?? kode;
 }
@@ -996,8 +959,9 @@ function KartuUsul({
   async function tekan(opsi: { batal?: boolean; ambilAlih?: boolean }) {
     setProses(true);
     setGalatLokal(null);
-    setGalatLokal(await jalankan(opsi));
-    setProses(false);
+    try { setGalatLokal(await jalankan(opsi)); }
+    catch { setGalatLokal("Status belum bisa diperiksa. Muat ulang obrolan ya."); }
+    finally { setProses(false); }
   }
 
   // Ditulis sebagai switch, bukan rantai ternary yang bercabang di `mengirim`.
@@ -1066,15 +1030,15 @@ function KartuUsul({
     isiLama.length > 200 && isiBaru.length < isiLama.length * 0.6;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-ink-200">
-      <div className="flex items-center gap-2 border-b border-ink-100 bg-ink-50 px-2.5 py-1.5">
+    <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white">
+      <div className="flex items-start gap-2.5 border-b border-ink-100 bg-ink-50 px-4 py-3">
         <Ikon nama={kepala.ikon} size={14} className="shrink-0 text-ink-400" />
-        <p className="min-w-0 flex-1 truncate text-[12px] text-ink-600">
+        <p className="min-w-0 flex-1 break-words text-[12px] leading-relaxed text-ink-600">
           {kepala.isi}
         </p>
       </div>
 
-      <div className="space-y-2 p-2.5">
+      <div className="space-y-3 p-4">
         {usul.jenis === "kirim_berkas" && (
           <p className="flex items-center gap-2 rounded-lg bg-ink-50 px-2.5 py-1.5 text-[13px] text-ink-700">
             <Ikon nama="berkas" size={14} className="shrink-0 text-ink-400" />
@@ -1109,7 +1073,7 @@ function KartuUsul({
       </div>
 
       {menunggu ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-100 px-2.5 py-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-ink-100 px-4 py-3">
           <button
             type="button"
             disabled={proses}
@@ -1161,150 +1125,59 @@ function KartuUsul({
 
 // ── Layar kosong & kotak ketik ────────────────────────────────────────────────
 
-function Sambutan({ pilih }: { pilih: (teks: string) => void }) {
-  return (
-    <div className="py-3">
-      <h2 className="text-base font-semibold text-ink-900">
-        Mau tahu apa, atau mau aku kerjain apa?
-      </h2>
-      <p className="mt-1 text-[13px] text-ink-500">
-        Tulis pakai bahasa kamu sendiri. Kalau aku mau mengirim atau menyimpan
-        sesuatu, isinya aku tunjukkan dulu.
-      </p>
-
-      {/* Cuma di layar lebar. Di HP contohnya jadi baris chip di atas kotak
-          ketik, supaya selalu dalam jangkauan jempol dan tidak tergulir hilang
-          begitu keyboard naik. */}
-      <ul className="anim-urut mt-3 hidden gap-0.5 sm:grid">
-        {CONTOH.map((c) => (
-          <li key={c.label}>
-            <button
-              type="button"
-              onClick={() => pilih(c.label)}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] text-ink-600 transition hover:bg-ink-50 hover:text-ink-900"
-              style={{ transitionDuration: "var(--gerak-cepat)" }}
-            >
-              <Ikon nama={c.ikon} size={14} className="shrink-0 text-ink-400" />
-              {c.label}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+function Sambutan() {
+  return <div className={styles.welcome + " anim-naik"}>
+    <div className={styles.welcomeLogo}><Logo ukuran={40} /></div>
+    <p className={styles.eyebrow}>Kenalan dengan teman kerja AI kamu</p>
+    <h1>Ada yang bisa aku bantu?</h1>
+    <p>Dari kabar pelanggan sampai urusan bisnis.<br />Tanya atau ceritakan yang mau kamu kerjakan.</p>
+  </div>;
 }
 
-function Pengetik({
-  isianRef,
-  draft,
-  setDraft,
-  sibuk,
-  kirim,
-  jatah,
-  tampilkanContoh,
-}: {
-  isianRef: React.RefObject<HTMLTextAreaElement | null>;
-  draft: string;
-  setDraft: (v: string) => void;
-  sibuk: boolean;
-  kirim: (teks: string) => void;
-  jatah: { terpakai: number; batas: number } | null;
-  tampilkanContoh: boolean;
+function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, kosong, ideBuka, togelIde, pilihIde, galat, cobaLagi, bukaWhatsapp }: {
+  isianRef: React.RefObject<HTMLTextAreaElement | null>; draft: string; setDraft: (v: string) => void;
+  sibuk: boolean; terkunci: boolean; kirim: (teks: string) => void; jatah: { terpakai: number; batas: number } | null;
+  kosong: boolean; ideBuka: boolean; togelIde: () => void; pilihIde: (teks: string) => void;
+  galat: string | null; cobaLagi: () => void;
+  bukaWhatsapp: () => void;
 }) {
   const sisa = jatah ? Math.max(0, jatah.batas - jatah.terpakai) : null;
-
-  // Kotaknya tumbuh mengikuti isinya, dan menyusut lagi waktu dikosongkan.
-  // Tanpa ini, perintah tiga baris cuma kelihatan satu baris dan orang tidak
-  // bisa membaca ulang apa yang barusan dia ketik sebelum mengirim.
   useEffect(() => {
     const el = isianRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    el.style.height = Math.min(el.scrollHeight, 180) + "px";
   }, [draft, isianRef]);
 
-  return (
-    <div
-      className="shrink-0 border-t border-ink-200 bg-white"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
-      {tampilkanContoh && (
-        <div className="thin-scroll flex gap-1.5 overflow-x-auto px-3 pt-2.5 sm:hidden">
-          {CONTOH.map((c) => (
-            <button
-              key={c.label}
-              type="button"
-              onClick={() => kirim(c.label)}
-              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-ink-200 px-2.5 py-1.5 text-[12px] text-ink-700"
-            >
-              <Ikon nama={c.ikon} size={13} className="text-ink-400" />
-              {c.label}
-            </button>
-          ))}
+  return <div className={styles.composerDock}>
+    <div className={styles.composerInner}>
+      {galat && <div className={styles.error} role="alert"><span>{galat}</span><button type="button" onClick={cobaLagi} disabled={sibuk}>Muat ulang</button></div>}
+      <form onSubmit={e => { e.preventDefault(); kirim(draft); }} className={styles.composer}>
+        <textarea ref={isianRef} rows={2} value={draft} onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(hover: hover) and (pointer: fine)").matches) { e.preventDefault(); kirim(draft); }
+          }} placeholder={sibuk ? "Siapkan pertanyaan berikutnya..." : "Tanya apa saja, atau minta bantuan..."}
+          className={styles.textarea} aria-label="Pesan untuk Palwise" />
+        <div className={styles.composerToolbar}>
+          {!kosong && <button type="button" onClick={togelIde} className={styles.ideaButton} aria-expanded={ideBuka} aria-controls="ide-tanya"><TanyaIcon nama="ide" size={15} />Ide pertanyaan</button>}
+          <button type="button" onClick={bukaWhatsapp} className={styles.ideaButton} aria-label="Sambungkan WhatsApp di chat"><Ikon nama="whatsapp" size={15} />WhatsApp</button>
+          {kosong && <span className={styles.context}><Ikon nama="info" size={14} />Konteks bisnismu</span>}
+          <button type="submit" disabled={terkunci || !draft.trim()} className={styles.send} aria-label="Kirim pesan" title="Kirim pesan">
+            {sibuk ? <span className={styles.spinner} /> : <TanyaIcon nama="atas" size={21} />}
+          </button>
         </div>
-      )}
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          kirim(draft);
-        }}
-        className="mx-auto flex w-full max-w-2xl items-end gap-2 px-3 py-2.5 sm:px-6"
-      >
-        <textarea
-          ref={isianRef}
-          rows={1}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            // Enter mengirim, Shift+Enter baris baru. Perintah di sini hampir
-            // selalu satu kalimat, jadi yang lebih sering dipakai yang dipasang
-            // di tombol tanpa modifier.
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              kirim(draft);
-            }
-          }}
-          placeholder="Tulis perintah atau pertanyaan"
-          className="textarea-prosa min-h-[42px] flex-1 resize-none py-2.5"
-          disabled={sibuk}
-        />
-        <button
-          type="submit"
-          disabled={sibuk || !draft.trim()}
-          className="tap-aman grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-30"
-          aria-label="Kirim perintah"
-        >
-          <Ikon nama="kirim" size={17} />
-        </button>
       </form>
-
-      {/* Sisa jatah, dan cuma waktu tinggal sedikit. Meteran yang selalu tampil
-          mengajari orang mengabaikannya, dan waktu benar-benar habis dia sudah
-          jadi bagian dari latar. */}
-      {sisa !== null && sisa <= 10 && (
-        <p className="pb-2 text-center text-[11px] text-ink-400">
-          Sisa {sisa} perintah hari ini.
-        </p>
-      )}
+      {(kosong || ideBuka) && <div id="ide-tanya" className={styles.suggestions} aria-label="Ide pertanyaan">
+        {CONTOH.map(c => <button key={c.judul} type="button" onClick={() => pilihIde(c.label)} className={styles.suggestion}>
+          <span className={styles.suggestionIcon}><Ikon nama={c.ikon} size={20} /></span><span><strong>{c.judul}</strong><small>{c.detail}</small></span>
+          <span className={styles.suggestionArrow}><TanyaIcon nama="kanan" size={15} /></span>
+        </button>)}
+      </div>}
+      <div className={styles.composerHint}>
+        <span>Pengiriman pesan & perubahan data menunggu persetujuanmu.</span>
+        {!kosong && <span className={styles.keyboardHint}>Enter kirim · Shift + Enter baris baru</span>}
+      </div>
+      {sisa !== null && sisa <= 10 && <p className="pt-2 text-center text-xs text-ink-600" role="status">Sisa {sisa} perintah hari ini.</p>}
     </div>
-  );
-}
-
-/** Tanda tambah, digambar sendiri supaya sekeluarga dengan ikon yang lain. */
-function IkonTambah() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
+  </div>;
 }
