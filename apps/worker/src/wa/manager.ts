@@ -29,6 +29,7 @@ import {
 import { berurutan } from "../lib/antrian.js";
 import { kabariPelangganSekali, periksaDanKabari } from "../core/kabarKuota.js";
 import { extensionFor, extractMessage, normalizeMime } from "./extract.js";
+import { registerChannelStatusReader } from "./runtimeStatus.js";
 
 const waLogger = pino({ level: "silent" });
 
@@ -67,6 +68,7 @@ interface Session {
 }
 
 const sessions = new Map<string, Session>();
+registerChannelStatusReader(channelId => sessions.get(channelId)?.status ?? null);
 
 // ─── Util ─────────────────────────────────────────────────────────────────────
 

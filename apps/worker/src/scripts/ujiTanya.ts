@@ -1,14 +1,24 @@
 /** Focused regression checks. Uses a disposable local workspace and no AI/WhatsApp calls. */
 import assert from "node:assert/strict";
-import { bacaHasilTanya, mintaSambunganWhatsApp, muatIdeTanya, prisma, sapaanPemasangan, SAPAAN_PASANG } from "@palwise/db";
-import { ALAT, ALAT_PASANG_UJI, jalankanTanya, muatRiwayatTanya } from "../ai/tanya.js";
-import { tahapYangDiminta } from "../ai/tanyaBacaan.js";
+import { bacaHasilTanya, mintaSambunganWhatsApp, muatIdeTanya, prisma, sapaanPemasangan, SAPAAN_PASANG, tanyaStatusWhatsApp } from "@palwise/db";
+import { ALAT, ALAT_PASANG_UJI, jalankanTanya, muatRiwayatTanya, rentangWaktu } from "../ai/tanya.js";
+import { janjiPemeriksaan, rentangHitunganLangsung, tahapYangDiminta } from "../ai/tanyaBacaan.js";
+import { koneksiTanya } from "../ai/tanyaKoneksi.js";
 import { getLlm } from "../ai/provider.js";
 import "../env.js";
 
 async function main() {
   assert.ok(process.env.DATABASE_URL?.startsWith("file:"), "Tests require local SQLite");
   let checks = 0;
+  assert.equal(rentangWaktu("hari-ini", new Date("2026-09-08T18:30:00Z")).dari.toISOString(), "2026-09-08T17:00:00.000Z");
+  assert.equal(rentangWaktu("kemarin", new Date("2026-09-08T18:30:00Z")).sampai.toISOString(), "2026-09-08T17:00:00.000Z"); checks += 2;
+  for (const teks of ["Apa whatsapp sy sudah tersambung?", "WA saya masih aktif?", "Kenapa WhatsApp terputus?", "Cek status WhatsApp"]) {
+    assert.equal(tanyaStatusWhatsApp(teks), true, teks);
+    assert.equal(mintaSambunganWhatsApp(teks), false, teks); checks += 2;
+  }
+  assert.equal(rentangHitunganLangsung("berapa chat masuk hari ini?"), "hari-ini");
+  assert.equal(rentangHitunganLangsung("Kemarin ada berapa pesan masuk?"), "kemarin");
+  assert.equal(rentangHitunganLangsung("Berapa chat masuk dari Maya hari ini?"), null); checks += 3;
   for (const text of [
     "Berikan qrcodenya untuk di scan ke Whatsapp sy",
     "Tampilkan kode QR WhatsApp", "Sambungkan nomor WA saya",
@@ -65,11 +75,31 @@ async function main() {
       assert.equal(tahapYangDiminta(teks), null, teks); checks++;
     }
     const kanal = await prisma.channel.create({ data: { workspaceId: workspace.id, name: "Nomor uji", autoStart: false } });
+    const kanalLain = await prisma.channel.create({ data: { workspaceId: workspace.id, name: "Nomor kedua", autoStart: false } });
+    assert.match((await koneksiTanya(tetangga.id, () => "connected")).catatan, /belum ditautkan/);
+    assert.match((await koneksiTanya(workspace.id, () => null)).catatan, /sedang terputus/);
+    assert.equal((await koneksiTanya(workspace.id, () => "connected")).catatan, "");
+    assert.match((await koneksiTanya(workspace.id, id => id === kanal.id ? "connected" : null)).catatan, /1 dari 2/); checks += 4;
+    await prisma.channel.update({ where: { id: kanal.id }, data: { status: "connected" } });
+    llm.complete = async () => { throw new Error("Count/status lookups must be grounded without asking the model"); };
+    const nol = await jalankanTanya({ workspaceId: workspace.id, riwayat: [], pesan: "berapa chat masuk hari ini?" });
+    assert.match(nol.teks, /terputus/);
+    assert.match(nol.hasilBaca[0].isi, /Pesan masuk: 0/);
+    assert.match(nol.hasilBaca[0].isi, /belum tersinkron/);
+    assert.doesNotMatch(nol.teks, /Belum ada chat/);
+    const status = await jalankanTanya({ workspaceId: workspace.id, riwayat: [{ peran: "palwise", teks: "WhatsApp sudah tersambung." }], pesan: "Apa WhatsApp sy masih tersambung?" });
+    assert.match(status.teks, /terputus/);
+    assert.deepEqual(status.alat, ["status_whatsapp"]); checks += 6;
     const tertarik = await prisma.contact.create({ data: { workspaceId: workspace.id, waJid: "uji-minat@s.whatsapp.net", name: "Maya Uji", phone: "628000001", stage: "tertarik" } });
     const menunggu = await prisma.contact.create({ data: { workspaceId: workspace.id, waJid: "uji-nunggu@s.whatsapp.net", name: "Budi Uji", phone: "628000002", stage: "baru" } });
     await prisma.contact.create({ data: { workspaceId: workspace.id, waJid: "playground:uji-daftar", name: "Kontak Coba", stage: "tertarik" } });
     await prisma.contact.create({ data: { workspaceId: tetangga.id, waJid: "uji-tetangga@s.whatsapp.net", name: "Kontak Tetangga", stage: "tertarik" } });
     await prisma.conversation.create({ data: { workspaceId: workspace.id, channelId: kanal.id, contactId: tertarik.id, messages: { create: { role: "customer", content: "Saya butuh sepatu ukuran 39 untuk hari Jumat." } } } });
+    // Same person on two channels is one customer, but every incoming message counts.
+    const percakapanLain = await prisma.conversation.create({ data: { workspaceId: workspace.id, channelId: kanalLain.id, contactId: tertarik.id, messages: { create: { role: "customer", content: "Pesan kedua untuk pengujian." } } } });
+    const hitung = await ALAT.find(a => a.nama === "hitung_obrolan")!.jalankan({ workspaceId: workspace.id, agentId: agent.id }, {});
+    assert.match(hitung, /Pesan masuk: 2/); assert.match(hitung, /Pelanggan yang chat: 1/); assert.match(hitung, /WIB/); checks += 3;
+    await prisma.conversation.delete({ where: { id: percakapanLain.id } });
     await prisma.conversation.create({ data: { workspaceId: workspace.id, channelId: kanal.id, contactId: menunggu.id, needsHuman: true, handoffReason: "Minta bantuan memilih ukuran", handoffAt: new Date() } });
     llm.complete = async () => { throw new Error("A clear CRM stage lookup must not ask the model to choose its data source"); };
     const minat = await jalankanTanya({ workspaceId: workspace.id, riwayat: [], pesan: "Cek siapa saja yg tertarik" });
@@ -80,6 +110,21 @@ async function main() {
     assert.equal(minat.usul, null); checks += 5;
     const mana = await jalankanTanya({ workspaceId: workspace.id, riwayat: [{ peran: "pemilik", teks: "Cek siapa saja yg tertarik" }, { peran: "palwise", teks: "Ini daftar yang menunggu balasan" }], pesan: "Mana?" });
     assert.deepEqual(mana.hasilBaca, minat.hasilBaca); checks++;
+    assert.ok(janjiPemeriksaan("Kita mulai dengan cek kondisi saat ini ya, saya lihat dulu data pelanggan yang sudah tertarik."));
+    assert.ok(!janjiPemeriksaan("Mau saya cek pelanggan tertarik?"));
+    assert.ok(!janjiPemeriksaan("Saya sudah memeriksa data pelanggan.")); checks += 3;
+    let janjiCalls = 0;
+    llm.complete = async () => {
+      janjiCalls++;
+      if (janjiCalls === 1) return JSON.stringify({ jawab: "Saya bisa bantu. Saya lihat dulu data pelanggan yang sudah tertarik." });
+      if (janjiCalls === 2) return JSON.stringify({ alat: "daftar_pelanggan", argumen: { tahap: "tertarik" } });
+      return JSON.stringify({ jawab: "Maya tertarik sepatu. Mulai dengan follow up sesuai kebutuhannya." });
+    };
+    const lanjut = await jalankanTanya({ workspaceId: workspace.id, riwayat: [], pesan: "Gimana caranya meningkatkan banyak pelanggan, apa kamu bisa?" });
+    assert.equal(janjiCalls, 3); assert.match(lanjut.hasilBaca[0].isi, /Maya Uji/); assert.match(lanjut.teks, /follow up/); checks += 3;
+    llm.complete = async () => JSON.stringify({ jawab: "Sebentar saya cek dulu datanya." });
+    const macet = await jalankanTanya({ workspaceId: workspace.id, riwayat: [], pesan: "Bantu periksa bisnis saya" });
+    assert.match(macet.teks, /belum berhasil dijalankan/); assert.ok(!janjiPemeriksaan(macet.teks)); checks += 2;
     const kosong = await jalankanTanya({ workspaceId: workspace.id, riwayat: [], pesan: "Cek pelanggan negosiasi" });
     assert.match(kosong.hasilBaca[0].isi, /Belum ada pelanggan/); checks++;
     const ide = await muatIdeTanya(workspace.id);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Ikon } from "@/components/Ikon";
+import compact from "./WhatsAppConnect.module.css";
 
 interface Status {
   status: string;
@@ -39,6 +40,8 @@ export function WhatsAppConnect({
   deleteSlot,
   dalamChat = false,
   onStatusChange,
+  onClose,
+  channelPicker,
 }: {
   channelId: string;
   channelName: string;
@@ -48,6 +51,8 @@ export function WhatsAppConnect({
   deleteSlot?: React.ReactNode;
   dalamChat?: boolean;
   onStatusChange?: (connected: boolean) => void;
+  onClose?: () => void;
+  channelPicker?: React.ReactNode;
 }) {
   const router = useRouter();
   const [state, setState] = useState<Status>({
@@ -57,6 +62,7 @@ export function WhatsAppConnect({
     error: null,
     workerUp: true,
   });
+  const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [konfirmCabut, setKonfirmCabut] = useState(false);
@@ -85,6 +91,7 @@ export function WhatsAppConnect({
       const data: Status = await res.json();
       if (!mounted.current) return;
       setState(data);
+      setChecked(true);
       statusCallback.current?.(data.status === "connected" && data.workerUp);
 
       if (data.status === "connected" && prevStatus.current !== "connected") {
@@ -94,6 +101,7 @@ export function WhatsAppConnect({
     } catch {
       if (!mounted.current) return;
       setState(s => ({ ...s, qrDataUrl: null, workerUp: false }));
+      setChecked(true);
       statusCallback.current?.(false);
     } finally {
       refreshBusy.current = false;
@@ -149,41 +157,33 @@ export function WhatsAppConnect({
   const showingQr = state.workerUp && state.status === "qr" && state.qrDataUrl;
   const badge = LABEL[state.status] ?? LABEL.disconnected;
 
-  if (dalamChat) return <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white">
-    <div className="flex items-center gap-3 border-b border-ink-100 bg-ink-50 px-4 py-3">
+  if (dalamChat) return <div className={compact.card}>
+    <div className={compact.heading}>
       <Ikon nama="whatsapp" size={21} />
-      <div className="min-w-0 flex-1"><h3 className="truncate text-sm font-semibold">{channelName}</h3><p className="mt-0.5 text-xs text-ink-500">{state.workerUp ? badge.text : "Koneksi belum bisa diperiksa"}</p></div>
-      {connected && state.workerUp && <Ikon nama="centang" size={19} className="text-brand-600" />}
+      <div className={compact.identity}><h3>{channelName}</h3><p role="status">{!checked ? "Memeriksa sambungan…" : !state.workerUp ? "Status belum tersedia" : connected ? state.phoneNumber || "Tersambung" : state.status === "logged_out" ? "Tautan dicabut dari WhatsApp" : badge.text}</p></div>
+      {checked && connected && state.workerUp && <Ikon nama="centang" size={18} className="text-brand-600" />}
+      <a href="/app/whatsapp" className={compact.icon} aria-label="Kelola nomor WhatsApp" title="Kelola nomor WhatsApp"><span aria-hidden="true">↗</span></a>
+      {onClose && <button type="button" onClick={onClose} className={compact.icon} aria-label="Tutup kartu WhatsApp" title="Tutup kartu WhatsApp"><Ikon nama="silang" size={16} /></button>}
     </div>
-    <div className="p-4 sm:p-5">
-      {connected && state.workerUp ? <div role="status">
-        <p className="text-sm font-semibold">WhatsApp sudah tersambung</p>
-        {state.phoneNumber && <p className="mt-1 text-sm text-ink-600">{state.phoneNumber}</p>}
-        <p className="mt-2 text-xs leading-relaxed text-ink-500">Kamu bisa lanjut ngobrol di sini. Pengaturan nomor dan asisten tetap tersedia di halaman Nomor WhatsApp.</p>
-      </div> : <>
-        <div className="grid items-start gap-5 sm:grid-cols-[200px_minmax(0,1fr)]">
-          <div className="mx-auto grid aspect-square w-[200px] max-w-full place-items-center rounded-xl border border-ink-200 bg-white">
-            {showingQr ? <img src={state.qrDataUrl!} width={200} height={200} alt="Kode QR untuk menautkan WhatsApp ke Palwise" className="h-full w-full rounded-xl p-2" /> :
-              <div className="flex flex-col items-center gap-3 px-5 text-center text-xs leading-relaxed text-ink-500"><Ikon nama="qr" size={38} /><span>{busy || (state.status === "connecting" && state.workerUp) ? "Menyiapkan QR WhatsApp..." : "Tekan Tampilkan QR untuk mulai menyambungkan."}</span></div>}
-          </div>
-          <div><p className="text-sm font-semibold">Tautkan dari WhatsApp kamu</p>
-            <ol className="mt-3 list-decimal space-y-2 pl-4 text-xs leading-relaxed text-ink-600">
-              <li>Buka WhatsApp di HP yang nomornya mau disambungkan.</li>
-              <li>Pilih <strong>Perangkat tertaut</strong>, lalu <strong>Tautkan perangkat</strong>. Di iPhone, buka Pengaturan terlebih dahulu.</li>
-              <li>Scan QR yang muncul di kartu ini.</li>
-            </ol>
-            <p className="mt-3 text-[11px] leading-relaxed text-ink-500">Sedang memakai HP yang sama? Buka obrolan ini di komputer atau perangkat lain untuk menampilkan QR, lalu scan dari HP WhatsApp kamu.</p>
-          </div>
-        </div>
-        {(notice || state.error || !state.workerUp) && <p role="alert" className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-xs leading-relaxed text-red-800">{notice || (!state.workerUp ? "Koneksi WhatsApp belum bisa dihubungi. Coba lagi sebentar ya." : state.error)}</p>}
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" className="btn-primary min-h-11" disabled={busy || (state.status === "connecting" && state.workerUp)} onClick={() => post("start")}>{busy ? "Menyiapkan QR..." : showingQr ? "Perbarui QR" : "Tampilkan QR"}</button>
-          {(state.status === "qr" || state.status === "connecting") && <button type="button" className="btn-ghost min-h-11" disabled={busy} onClick={() => post("stop")}>Batal menyambungkan</button>}
-        </div>
-        <p className="mt-3 text-[11px] text-ink-500">QR diperbarui otomatis selama kartu ini terbuka.</p>
-      </>}
-      <a href="/app/whatsapp" className="mt-4 inline-flex min-h-9 items-center gap-2 text-xs text-brand-700 hover:underline">Kelola nomor WhatsApp <span aria-hidden="true">↗</span></a>
-    </div>
+    {channelPicker}
+    {checked && !(connected && state.workerUp) && <div className={compact.body}>
+      {showingQr && <div className={compact.qr}>
+        <img src={state.qrDataUrl!} width={200} height={200} alt="Kode QR untuk menautkan WhatsApp ke Palwise" />
+        <p>WhatsApp → <strong>Perangkat tertaut</strong> → <strong>Tautkan perangkat</strong></p>
+      </div>}
+      {state.status === "connecting" && state.workerUp && <p className={compact.status} role="status">Menyiapkan sambungan…</p>}
+      {(notice || !state.workerUp || (state.error && state.status !== "logged_out")) && <p role="alert" className={compact.error}>{notice || (!state.workerUp ? "Sambungan belum bisa diperiksa. Coba lagi." : state.error)}</p>}
+      <div className={compact.actions}>
+        {!state.workerUp ? <button type="button" className={compact.primary} disabled={busy} onClick={refresh}>Coba lagi</button> :
+          <button type="button" className={compact.primary} disabled={busy || state.status === "connecting"} onClick={() => post("start")}>{busy ? "Memproses…" : showingQr ? "Perbarui QR" : "Tampilkan QR"}</button>}
+        {state.workerUp && sedangBerubah && <button type="button" className={compact.secondary} disabled={busy} onClick={() => post("stop")}>Batal</button>}
+        <details className={compact.help}><summary>Bantuan</summary><div>
+          <p>Buka WhatsApp di HP → Perangkat tertaut → Tautkan perangkat, lalu scan QR. Di iPhone, menu ini ada di Pengaturan.</p>
+          <p>Memakai HP yang sama? Buka chat ini di komputer atau perangkat lain untuk menampilkan QR.</p>
+          <p>QR diperbarui otomatis saat kartu terbuka.</p>
+        </div></details>
+      </div>
+    </div>}
   </div>;
 
   return (

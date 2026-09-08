@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       const pemilik = await tx.pesanTanya.create({ data: { sesiId: sesi.id, peran: "pemilik", teks: pesan } });
       const jawaban = await tx.pesanTanya.create({ data: {
         sesiId: sesi.id, peran: "palwise",
-        teks: "Bisa, sambungkan WhatsApp langsung lewat kartu di bawah. Pilih nomornya lalu tekan Tampilkan QR. Setelah QR muncul, scan lewat WhatsApp > Perangkat tertaut > Tautkan perangkat.",
+        teks: "Tautkan WhatsApp lewat kartu di bawah.",
         alat: JSON.stringify(["sambungkan_whatsapp"]),
       } });
       const utas = await tx.sesiTanya.findUniqueOrThrow({ where: { id: sesi.id } });

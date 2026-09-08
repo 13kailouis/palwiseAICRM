@@ -31,14 +31,14 @@ export function WhatsAppDalamChat({ tutup, tersambung }: { tutup: () => void; te
   useEffect(() => { void muat(); }, [muat]);
   const nomor = data?.channels.find(c => c.id === terpilih);
 
-  return <section className="mt-6" aria-label="Sambungkan WhatsApp di chat">
-    <div className="mb-3 flex items-center gap-2"><Ikon nama="whatsapp" size={18} /><h2 className="text-sm font-semibold">Sambungkan WhatsApp</h2>
+  return <section className="mt-4 w-full max-w-[480px]" aria-label="Sambungkan WhatsApp di chat">
+    {!nomor && <div className="mb-3 flex items-center gap-2"><Ikon nama="whatsapp" size={18} /><h2 className="text-sm font-semibold">Sambungkan WhatsApp</h2>
       <button type="button" onClick={tutup} className="ml-auto grid h-11 w-11 place-items-center rounded-xl text-ink-500 hover:bg-ink-100" aria-label="Tutup kartu WhatsApp"><Ikon nama="silang" size={16} /></button>
-    </div>
+    </div>}
     {galat && <div role="alert" className="mb-3 rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-800">{galat}<button type="button" onClick={muat} disabled={memuat} className="ml-2 min-h-9 underline">Coba lagi</button></div>}
     {memuat && !data && <p role="status" className="py-5 text-sm text-ink-500">Memuat nomor WhatsApp...</p>}
-    {data && data.channels.length > 1 && <label className="mb-3 block text-xs text-ink-600">Nomor yang ingin kamu sambungkan<select className="input mt-2 w-full" value={terpilih} onChange={e => setTerpilih(e.target.value)}>{data.channels.map(c => <option key={c.id} value={c.id}>{c.name}{c.phoneNumber ? ` · ${c.phoneNumber}` : ""}</option>)}</select></label>}
-    {nomor && <WhatsAppConnect key={nomor.id} channelId={nomor.id} channelName={nomor.name} initialStatus={nomor.status} initialPhone={nomor.phoneNumber} dalamChat onStatusChange={connected => {
+
+    {nomor && <WhatsAppConnect key={nomor.id} channelId={nomor.id} channelName={nomor.name} initialStatus={nomor.status} initialPhone={nomor.phoneNumber} dalamChat onClose={tutup} channelPicker={data && data.channels.length > 1 ? <label className="mx-3 mb-3 block"><span className="sr-only">Pilih nomor WhatsApp</span><select className="input w-full text-xs" value={terpilih} onChange={e => setTerpilih(e.target.value)}>{data.channels.map(c => <option key={c.id} value={c.id}>{c.name}{c.phoneNumber ? ` · ${c.phoneNumber}` : ""}</option>)}</select></label> : null} onStatusChange={connected => {
       // Progres pemasangan berlaku untuk semua nomor di workspace.
       tersambung(connected || !!data?.channels.some(c => c.id !== nomor.id && c.status === "connected"));
       setData(lama => {

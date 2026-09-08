@@ -1,6 +1,6 @@
 .shell { display: flex; height: 100%; min-height: 0; background: #fff; color: #171717; }
 .main { display: flex; flex: 1; min-width: 0; flex-direction: column; position: relative; }
-.header { min-height: 76px; display: flex; align-items: center; gap: 12px; padding: 14px 28px; flex-shrink: 0; border-bottom: 1px solid #f0f0f0; }
+.header { min-height: 54px; display: flex; align-items: center; gap: 12px; padding: 5px 20px; flex-shrink: 0; border-bottom: 1px solid #f0f0f0; }
 .iconButton { width: 42px; height: 42px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; color: #6b7075; transition: background 140ms, color 140ms; }
 .iconButton:hover { background: #f0f0f0; color: #171717; }
 .iconButton:disabled { opacity: .4; cursor: wait; }
@@ -87,12 +87,12 @@
 .jump { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: 40px; height: 40px; border: 1px solid #dedede; border-radius: 50%; display: grid; place-items: center; background: white; box-shadow: 0 4px 14px #0000000c; }
 .conversationArea { display: flex; flex: 1; min-height: 0; position: relative; }
 .workspaceEmpty .conversationArea { flex: 0 0 auto; }
-.history { width: 264px; display: flex; flex-direction: column; flex-shrink: 0; background: #f8f9fb; border-right: 1px solid #e9eaed; padding: 22px 14px 16px; }
+.history { width: 264px; display: flex; flex-direction: column; flex-shrink: 0; background: #f8f9fb; border-right: 1px solid #e9eaed; padding: 5px 12px 12px; }
 .historyClosed { display: none; }
-.historyHeading { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 19px 10px; }
+.historyHeading { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 10px; }
 .historyHeading h2 { font-size: 14px; font-weight: 650; letter-spacing: -.3px; }
 .history .newChat { background: #fff; min-height: 44px; justify-content: flex-start; padding: 0 14px; font-size: 12px; width: 100%; }
-.search { display: flex; align-items: center; gap: 8px; padding: 0 11px; height: 42px; margin: 10px 0 24px; color: #868b91; border-radius: 10px; border: 1px solid transparent; }
+.search { display: flex; align-items: center; gap: 8px; padding: 0 11px; height: 42px; margin: 4px 0 16px; color: #868b91; border-radius: 10px; border: 1px solid transparent; }
 .search:focus-within { border-color: #a3c6f8; background: white; }
 .search input { width: 100%; min-width: 0; background: transparent; font-size: 12px; color: #171717; }
 .search input:focus-visible { outline: none; }
@@ -110,29 +110,24 @@
 .historyRow:hover .historyDelete, .historyRow:focus-within .historyDelete { opacity: 1; }
 .historyDelete:hover { color: #dc2626; background: #fff; }
 .historySelect:disabled, .historyDelete:disabled { opacity: .4; cursor: wait; }
-.deleteConfirm { padding: 12px; margin: 6px 0 10px; background: #fff; border: 1px solid #fecaca; border-radius: 10px; font-size: 11px; color: #991b1b; }
-.deleteConfirm > div { display: flex; gap: 8px; margin-top: 8px; }
-.deleteConfirm button { min-height: 36px; padding: 0 12px; border-radius: 7px; border: 1px solid #e6e6e6; }
-.deleteConfirm button:first-child { background: #dc2626; border-color: #dc2626; color: white; }
 .historyEmpty { font-size: 12px; text-align: center; padding: 28px 14px; color: #6b7075; line-height: 1.8; }
-.historyFooter { display: flex; align-items: center; gap: 9px; padding: 15px 10px 0; margin-top: 12px; border-top: 1px solid #e9eaed; font-size: 11px; color: #6b7075; }
 .backdrop { display: none; }
 @media (hover: none) { .historyDelete { opacity: 1; } }
-@media (max-width: 1279px) { .history { width: 236px; } .header { padding: 12px 20px; } }
+@media (max-width: 1279px) { .history { width: 236px; } .header { padding: 5px 16px; } }
 @media (max-width: 1023px) {
   .history { display: none; }
   .historyOpen { display: flex; position: fixed; inset: 0 auto 0 0; width: min(320px, 88vw); z-index: 70; padding-top: max(18px, env(safe-area-inset-top)); padding-bottom: max(18px, env(safe-area-inset-bottom)); box-shadow: 12px 0 60px #00000015; }
   .backdrop { display: block; position: fixed; inset: 0; z-index: 65; background: #17171745; backdrop-filter: blur(3px); }
   .historyDelete { opacity: 1; }
   .mobileBack { display: inline-flex; }
-  .header { min-height: 66px; padding: 10px 16px; gap: 4px; }
+  .header { min-height: 54px; padding: 5px 12px; gap: 4px; }
   .identity { margin-left: 4px; }
-  .identity > img { display: none; }
+  .identity > img { display: block; }
   .subtitle { max-width: 260px; }
   .workspaceEmpty { padding-bottom: 32px; }
 }
 @media (max-width: 600px) {
-  .header { min-height: 64px; padding: 9px 10px; }
+  .header { min-height: 54px; padding: 5px 8px; }
   .headerActions { gap: 0; }
   .header .newChat { width: 42px; height: 42px; padding: 0; border: 0; }
   .header .newChat span { display: none; }
@@ -217,3 +212,41 @@
   .resultCard { padding: 12px; margin-top: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .shell *, .shell *::before, .shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+.identity { min-height: 42px; flex-shrink: 0; }
+.headerTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #6b7075; font-size: 12px; border-left: 1px solid #e6e6e6; padding-left: 14px; }
+.headerTitle:empty { display: none; }
+.historyClose { display: none; }
+.setupProgress { position: relative; min-width: 0; margin-left: 4px; }
+.setupProgress summary { min-height: 40px; display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 11px; color: #6b7075; border-radius: 8px; padding: 0 8px; white-space: nowrap; }
+.setupProgress summary::-webkit-details-marker { display: none; }
+.setupProgress summary:hover, .setupProgress[open] summary { background: #f6f6f6; }
+.setupProgress b { font-weight: 500; color: #171717; }
+.setupChecklist { position: absolute; right: 0; top: 44px; z-index: 8; width: 240px; padding: 8px 12px; border: 1px solid #e6e6e6; border-radius: 12px; background: #fff; box-shadow: 0 8px 28px #00000012; }
+.setupChecklist > div { display: flex; align-items: center; justify-content: space-between; min-height: 42px; gap: 12px; font-size: 12px; }
+.setupChecklist small { color: #6b7075; }
+.setupChecklist button { color: #1557b0; min-height: 40px; padding: 0 4px; }
+.deleteDialog { width: min(420px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 20px; border: 1px solid #e6e6e6; border-radius: 18px; background: white; color: #171717; box-shadow: 0 20px 80px #00000024; overflow-y: auto; }
+.deleteDialog::backdrop { background: #17171766; backdrop-filter: blur(3px); }
+.dialogHeading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -6px -6px 10px 0; }
+.dialogHeading h2 { font-size: 18px; font-weight: 650; }
+.deleteTitle { font-size: 14px; font-weight: 550; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.dialogDescription { margin-top: 8px; font-size: 13px; line-height: 1.6; color: #6b7075; }
+.dialogActions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+.dialogActions button { min-height: 44px; padding: 0 18px; border: 1px solid #e6e6e6; border-radius: 10px; font-size: 13px; font-weight: 550; }
+.dialogActions button:hover { background: #f5f5f5; }
+.dialogActions .dangerButton { background: #dc2626; border-color: #dc2626; color: white; }
+.dialogActions .dangerButton:hover { background: #b91c1c; }
+.dialogActions button:disabled { opacity: .55; cursor: wait; }
+.dialogError { color: #b42318; font-size: 12px; line-height: 1.6; margin-top: 16px; }
+@media (max-width: 1023px) { .historyClose { display: inline-flex; } }
+@media (max-width: 600px) {
+  .header { gap: 4px; }
+  .headerTitle { display: none; }
+  .identity { gap: 6px; margin-left: 0; }
+  .setupProgress { margin-left: auto; }
+  .setupProgress summary > span { display: none; }
+  .headerActions { margin-left: auto; }
+  .setupProgress + .headerActions { margin-left: 0; }
+  .setupChecklist { right: -42px; }
+  .dialogActions button { flex: 1; }
+}

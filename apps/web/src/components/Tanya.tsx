@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Ikon } from "@/components/Ikon";
 import { Logo } from "@/components/Logo";
+import { HapusObrolanModal } from "@/components/HapusObrolanModal";
 import Link from "next/link";
 import { TanyaIcon } from "@/components/TanyaIcon";
 import styles from "./Tanya.module.css";
@@ -313,15 +314,21 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
     }
   }
 
-  async function hapusUtas(id: string) {
-    if (operasiRef.current || sibuk || mengubah) return;
+  async function hapusUtas(id: string): Promise<string | null> {
+    if (operasiRef.current || sibuk || mengubah) return "Tunggu proses sebelumnya selesai.";
     operasiRef.current = true;
     setMengubah(true);
     setGalat(null);
     try {
     const res = await fetch(`/api/tanya/sesi/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Obrolan belum berhasil dihapus.");
-    const list = await muatDaftar();
+    // Retrying after a lost response is safe: an already absent thread is deleted.
+    if (!res.ok && res.status !== 404) throw new Error("Obrolan belum berhasil dihapus. Coba lagi.");
+    const sisa = daftar.filter(s => s.id !== id);
+    setDaftar(sisa);
+    const list = await muatDaftar().catch(() => {
+      setGalat("Obrolan sudah dihapus. Riwayat lainnya belum bisa diperbarui; muat ulang halaman jika perlu.");
+      return sisa;
+    });
     operasiRef.current = false;
     setMengubah(false);
     if (id === sesiId) {
@@ -332,8 +339,9 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
       if (berikut) await bukaUtas(berikut);
       else await utasBaru();
     }
+    return null;
     } catch (error) {
-      setGalat(error instanceof Error ? error.message : "Tidak bisa menghubungi server.");
+      return error instanceof Error ? error.message : "Tidak bisa menghubungi server.";
     } finally {
       operasiRef.current = false;
       setMengubah(false);
@@ -468,25 +476,18 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
   return (
     <div className={styles.shell}>
       <RelRiwayat daftar={daftar} sesiId={sesiId} buka={riwayatBuka} ciut={riwayatCiut}
-        tutup={() => setRiwayatBuka(false)} ciutkan={() => setRiwayatCiut(true)}
-        pilih={bukaUtas} hapus={hapusUtas} baru={utasBaru} terkunci={terkunci} />
+        tutup={() => setRiwayatBuka(false)}
+        pilih={bukaUtas} hapus={hapusUtas} terkunci={terkunci} />
       <section className={styles.main} aria-label="Tanya Palwise" inert={riwayatBuka}>
         <header className={styles.header}>
-          <Link href="/app" className={styles.iconButton + " " + styles.mobileBack} aria-label="Kembali ke ringkasan" title="Kembali ke ringkasan"><TanyaIcon nama="kembali" /></Link>
           <button type="button" className={styles.iconButton} title="Buka atau tutup riwayat" aria-label="Buka atau tutup riwayat" aria-controls="riwayat-tanya"
             onClick={() => { if (window.matchMedia("(min-width: 1024px)").matches) setRiwayatCiut(!riwayatCiut); else setRiwayatBuka(true); }}><TanyaIcon nama="panel" /></button>
-          <div className={styles.identity}>
-            <Logo ukuran={28} />
-            <div className={styles.identityText}>
-              <p className={styles.identityTitle}>Palwise <span className={styles.aiBadge}>AI</span></p>
-              <p className={styles.subtitle}>{mode === "pasang" ? "Siapkan asisten bisnismu" : judulSekarang || "Teman kerja untuk bisnismu"}</p>
-            </div>
-          </div>
+          <Link href="/app" className={styles.identity} aria-label="Palwise — kembali ke ringkasan" title="Kembali ke ringkasan"><Logo ukuran={24} /><span className={styles.identityTitle}>Palwise</span></Link>
+          {mode === "pasang" ? <Langkah keadaan={pasang} sambungkan={() => { ikutiRef.current = true; setWhatsappBuka(true); }} /> : <p className={styles.headerTitle} title={judulSekarang}>{judulSekarang || ""}</p>}
           <div className={styles.headerActions}>
-            <button type="button" onClick={utasBaru} disabled={terkunci} className={styles.newChat} aria-label="Obrolan baru" title="Obrolan baru"><TanyaIcon nama="baru" size={17} /><span>Obrolan baru</span></button>
+            <button type="button" onClick={utasBaru} disabled={terkunci} className={styles.iconButton} aria-label="Obrolan baru" title="Obrolan baru"><TanyaIcon nama="baru" /></button>
           </div>
         </header>
-        {mode === "pasang" && <div className="border-b border-ink-100 px-5 py-2"><Langkah keadaan={pasang} sambungkan={() => { ikutiRef.current = true; setWhatsappBuka(true); }} /></div>}
         <div className={styles.workspace + (kosong && !memuat ? " " + styles.workspaceEmpty : "")}>
           <div className={styles.conversationArea}>
             <div ref={gulirRef} className={styles.scrollArea} onScroll={(event) => {
@@ -526,69 +527,26 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
 
 // ── Kemajuan pemasangan ───────────────────────────────────────────────────────
 
-/**
- * Tiga langkah pemasangan, sebagai titik-titik di dalam baris kepala.
- *
- * Ada karena obrolan itu bentuk yang paling buruk untuk menjawab "aku sudah
- * sampai mana": percakapan bergulir ke atas lalu hilang. Tapi jawabannya cukup
- * tiga titik, bukan pita selebar layar berisi lencana berlabel lengkap. Di
- * layar kecil labelnya disembunyikan dan yang tersisa titiknya saja, karena di
- * sana yang dibutuhkan cuma "masih ada yang abu-abu atau tidak".
- *
- * Langkah ketiga sengaja BUKAN sesuatu yang bisa dikerjakan Palwise. Memindai
- * kode QR harus pakai HP sendiri, jadi titiknya jadi tautan keluar.
- */
+/** Compact progress; the checklist opens only when requested. */
 function Langkah({ keadaan, sambungkan }: { keadaan: Pemasangan | null; sambungkan: () => void }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const outside = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) ref.current?.removeAttribute("open"); };
+    const escape = (e: KeyboardEvent) => { if (e.key === "Escape" && ref.current?.open) { ref.current.open = false; ref.current.querySelector("summary")?.focus(); } };
+    document.addEventListener("pointerdown", outside); document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); };
+  }, []);
   if (!keadaan) return null;
-
   const langkah = [
-    {
-      label: "Cara bicara",
-      selesai: keadaan.caraBicara,
-      href: null as string | null,
-    },
-    {
-      label: "Info bisnis",
-      selesai: keadaan.info,
-      href: null as string | null,
-    },
-    { label: "WhatsApp", selesai: keadaan.nomor, href: "/app/whatsapp" },
+    { label: "Cara bicara", selesai: keadaan.caraBicara },
+    { label: "Info bisnis", selesai: keadaan.info },
+    { label: "WhatsApp", selesai: keadaan.nomor },
   ];
-
-  return (
-    <div className="flex min-w-0 items-center justify-between gap-2 overflow-hidden" aria-label="Progres pemasangan">
-      {langkah.map((l) => {
-        const isi = (
-          <>
-            <span
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                l.selesai ? "bg-brand-600" : "bg-ink-300"
-              }`}
-            />
-            <span className="truncate">{l.label}</span>
-          </>
-        );
-        const kelas = `inline-flex min-h-8 items-center gap-1.5 text-[10px] sm:text-xs ${
-          l.selesai ? "text-ink-500" : "font-medium text-ink-800"
-        }`;
-
-        return l.href && !l.selesai ? (
-          <button
-            key={l.label}
-            type="button"
-            onClick={sambungkan}
-            className={`${kelas} hover:text-brand-700 hover:underline`}
-          >
-            {isi}
-          </button>
-        ) : (
-          <span key={l.label} className={kelas}>
-            {isi}
-          </span>
-        );
-      })}
-    </div>
-  );
+  const jumlah = langkah.filter(l => l.selesai).length;
+  return <details ref={ref} className={styles.setupProgress}>
+    <summary aria-label={`Progres pemasangan: ${jumlah} dari 3 selesai`}><span>Pasang asisten</span><b>{jumlah}/3</b><TanyaIcon nama="bawah" size={13} /></summary>
+    <div className={styles.setupChecklist}>{langkah.map(l => <div key={l.label}><span>{l.label}</span>{l.selesai ? <span aria-label="Selesai"><TanyaIcon nama="centang" size={16} /></span> : l.label === "WhatsApp" ? <button type="button" onClick={() => { if (ref.current) ref.current.open = false; sambungkan(); }}>Tautkan</button> : <small>Belum diisi</small>}</div>)}</div>
+  </details>;
 }
 
 // ── Rel riwayat ───────────────────────────────────────────────────────────────
@@ -632,11 +590,11 @@ function kelompokkan(daftar: Sesi[]): { judul: string; isi: Sesi[] }[] {
   return hasil;
 }
 
-function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, ciutkan, pilih, hapus, baru, terkunci }: {
-  daftar: Sesi[]; sesiId: string | null; buka: boolean; ciut: boolean; tutup: () => void; ciutkan: () => void;
-  pilih: (id: string) => void; hapus: (id: string) => void; baru: () => void; terkunci: boolean;
+function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, pilih, hapus, terkunci }: {
+  daftar: Sesi[]; sesiId: string | null; buka: boolean; ciut: boolean; tutup: () => void;
+  pilih: (id: string) => void; hapus: (id: string) => Promise<string | null>; terkunci: boolean;
 }) {
-  const [mauHapus, setMauHapus] = useState<string | null>(null);
+  const [mauHapus, setMauHapus] = useState<Sesi | null>(null);
   const [pencarian, setPencarian] = useState("");
   const panelRef = useRef<HTMLElement>(null);
   const cariRef = useRef<HTMLInputElement>(null);
@@ -648,6 +606,7 @@ function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, ciutkan, pilih, hapus, 
     const sebelumnya = document.activeElement as HTMLElement | null;
     cariRef.current?.focus();
     function keyboard(event: KeyboardEvent) {
+      if (document.querySelector("dialog[open]")) return;
       if (event.key === "Escape") { event.preventDefault(); tutupRef.current(); }
       if (event.key !== "Tab") return;
       const nodes = Array.from(panelRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input, a[href]') ?? []).filter(el => el.getClientRects().length > 0);
@@ -668,9 +627,8 @@ function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, ciutkan, pilih, hapus, 
     <aside id="riwayat-tanya" ref={panelRef} role={buka ? "dialog" : undefined} aria-modal={buka || undefined} aria-label="Riwayat obrolan"
       className={[styles.history, ciut ? styles.historyClosed : "", buka ? styles.historyOpen : ""].join(" ")}>
       <div className={styles.historyHeading}><h2>Ruang obrolan</h2>
-        <button type="button" className={styles.iconButton} aria-label="Tutup riwayat" title="Tutup riwayat" onClick={() => { tutup(); ciutkan(); }}><TanyaIcon nama={buka ? "tutup" : "panel"} size={18} /></button>
+        <button type="button" className={styles.iconButton + " " + styles.historyClose} aria-label="Tutup riwayat" title="Tutup riwayat" onClick={tutup}><TanyaIcon nama="tutup" size={18} /></button>
       </div>
-      <button type="button" onClick={() => { setPencarian(""); baru(); }} disabled={terkunci} className={styles.newChat}><TanyaIcon nama="baru" size={17} />Obrolan baru</button>
       <label className={styles.search}><TanyaIcon nama="cari" size={17} /><input ref={cariRef} type="search" placeholder="Cari obrolan..." aria-label="Cari obrolan" value={pencarian} onChange={e => setPencarian(e.target.value)} /></label>
       <nav className={styles.historyList} aria-label="Daftar obrolan">
         {hasil.length === 0 ? <p className={styles.historyEmpty}>{pencarian ? "Tidak ada obrolan yang cocok. Coba kata lain." : "Obrolanmu akan tersimpan di sini. Mulai dengan satu pertanyaan."}</p> : kelompokkan(hasil).map(k =>
@@ -680,17 +638,21 @@ function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, ciutkan, pilih, hapus, 
                 <button type="button" disabled={terkunci} onClick={() => { setMauHapus(null); pilih(s.id); }} className={styles.historySelect} aria-current={s.id === sesiId ? "page" : undefined} title={s.judul || "Obrolan baru"}>
                   {s.mode === "pasang" ? <Ikon nama="asisten" size={16} /> : <TanyaIcon nama="chat" size={16} />}<span>{s.judul || "Obrolan baru"}</span>
                 </button>
-                <button type="button" disabled={terkunci} onClick={() => setMauHapus(s.id)} className={styles.historyDelete} aria-label={`Hapus ${s.judul || "obrolan ini"}`} title="Hapus obrolan"><TanyaIcon nama="hapus" size={15} /></button>
+                <button type="button" disabled={terkunci} onClick={() => setMauHapus(s)} className={styles.historyDelete} aria-label={`Hapus ${s.judul || "obrolan ini"}`} title="Hapus obrolan"><TanyaIcon nama="hapus" size={15} /></button>
               </div>
-              {mauHapus === s.id && <div className={styles.deleteConfirm}><p>Hapus obrolan ini? Isinya tidak bisa dikembalikan.</p><div>
-                <button type="button" disabled={terkunci} onClick={() => { setMauHapus(null); hapus(s.id); }}>Hapus</button>
-                <button type="button" onClick={() => setMauHapus(null)}>Batal</button>
-              </div></div>}
             </li>)}
           </ul></div>)}
       </nav>
-      <div className={styles.historyFooter}><Ikon nama="info" size={16} /><span>Konteks bisnis, dalam satu obrolan.</span></div>
     </aside>
+    {mauHapus && <HapusObrolanModal judul={mauHapus.judul} hapus={() => hapus(mauHapus.id)} tutup={() => {
+      setMauHapus(null);
+      requestAnimationFrame(() => {
+        if (!document.activeElement || document.activeElement === document.body || !(document.activeElement as HTMLElement).getClientRects().length) {
+          if (cariRef.current?.getClientRects().length) cariRef.current.focus();
+          else document.querySelector<HTMLButtonElement>('[aria-controls="riwayat-tanya"]')?.focus();
+        }
+      });
+    }} />}
   </>;
 }
 
@@ -772,6 +734,7 @@ function DariPalwise({ pesan, jalankan }: {
 function namaAlat(kode: string): string {
   const peta: Record<string, string> = {
     hitung_obrolan: "hitungan chat",
+    status_whatsapp: "status WhatsApp saat diperiksa",
     daftar_pelanggan: "tahap pelanggan",
     daftar_masalah: "daftar keluhan",
     daftar_nunggu: "yang nunggu dibalas",

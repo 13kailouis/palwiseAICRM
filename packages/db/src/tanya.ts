@@ -68,6 +68,7 @@ export function sapaanPemasangan(keadaan: KeadaanPemasangan): string {
 
 /** Recognize device linking, while leaving product/payment QR requests alone. */
 export function mintaSambunganWhatsApp(teks: string): boolean {
+  if (tanyaStatusWhatsApp(teks)) return false;
   const isi = teks.toLowerCase().replace(/whats\s*app/g, "whatsapp");
   if (/\b(qris|bayar|pembayaran|transfer|rekening|menu|katalog|produk)\b/.test(isi)) return false;
   const whatsapp = /\b(whatsapp|wa)\b/.test(isi);
@@ -76,4 +77,12 @@ export function mintaSambunganWhatsApp(teks: string): boolean {
   const sambung = /\b(sambung\w*|hubung\w*|connect\w*|taut\w*|scan|pindai|login)\b/.test(isi);
   const minta = /\b(tampil\w*|muncul\w*|beri\w*|minta|mana|lihat|buat\w*|kirim\w*|scan|pindai)\b/.test(isi);
   return taut || (whatsapp && (qr || sambung)) || (qr && minta);
+}
+
+/** A status question must not be mistaken for permission to begin linking. */
+export function tanyaStatusWhatsApp(teks: string): boolean {
+  const isi = teks.toLowerCase().replace(/whats\s*app/g, "whatsapp");
+  return /\b(whatsapp|wa)\b/.test(isi) && /\b(status|sudah|udah|sdh|udh|masih|apakah|apa|kenapa|kok)\b/.test(isi) &&
+    /\b(status|terhubung|tersambung|tertaut|nyambung|sambung|terputus|putus|aktif|connect\w*|disconnect\w*)\b/.test(isi) &&
+    !/\b(tampilkan|minta|berikan|buatkan|scan|pindai|sambungkan|hubungkan|tautkan)\b/.test(isi);
 }

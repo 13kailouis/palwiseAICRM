@@ -8,6 +8,22 @@ export interface GiliranTanya {
   hasilBaca?: HasilBacaTanya[];
 }
 
+/** A final response cannot promise read-only work that no background job will perform. */
+export function janjiPemeriksaan(teks: string): boolean {
+  if (/\b(mau|bolehkah|boleh|ingin) (aku|saya)|\b(kalau|jika)\b/i.test(teks) && /\?\s*$/.test(teks)) return false;
+  return /\b(aku|saya|kami)\s+(?:(?:akan|mau|coba|sedang|lagi)\s+)?(?:cek|periksa|lihat|baca|cari|mengecek|memeriksa|melihat|membaca|mencari)\b/i.test(teks) ||
+    /\b(?:sebentar|tunggu)\b.{0,40}\b(?:cek|periksa|lihat|cari)\b/i.test(teks);
+}
+
+export function rentangHitunganLangsung(pesan: string): string | null {
+  const isi = pesan.toLowerCase().trim().replace(/[?.!]+$/, "");
+  const waktu = "(hari ini|kemarin|7 hari terakhir|30 hari terakhir)";
+  const tanya = "(?:ada )?berapa (?:chat|pesan|pelanggan)(?: yang)?(?: masuk| chat)?(?: whatsapp| wa)?";
+  const cocok = new RegExp(`^(?:${waktu} )?${tanya}(?: ${waktu})?$`).exec(isi);
+  if (!cocok || (cocok[1] && cocok[2])) return null;
+  return ({ "kemarin": "kemarin", "7 hari terakhir": "7-hari", "30 hari terakhir": "30-hari" } as Record<string, string>)[cocok[1] || cocok[2]] ?? "hari-ini";
+}
+
 /** Only unambiguous stage lookups take the direct read path. Other requests stay conversational. */
 export function tahapYangDiminta(pesan: string, riwayat: GiliranTanya[] = []): string | null {
   let isi = pesan.toLowerCase().trim().replace(/[?.!]+$/, "");
@@ -27,6 +43,7 @@ export function tahapYangDiminta(pesan: string, riwayat: GiliranTanya[] = []): s
 }
 
 const JUDUL: Record<string, string> = {
+  status_whatsapp: "Status WhatsApp",
   hitung_obrolan: "Ringkasan chat", daftar_pelanggan: "Daftar pelanggan",
   daftar_masalah: "Keluhan yang masih terbuka", daftar_nunggu: "Menunggu balasan tim",
   daftar_janji: "Janji temu", cari_kontak: "Hasil pencarian pelanggan",

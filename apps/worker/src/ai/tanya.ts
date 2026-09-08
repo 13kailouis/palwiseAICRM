@@ -7,6 +7,7 @@ import {
   periodeBerikutnya,
   prisma,
   terpakaiSekarang,
+  tanyaStatusWhatsApp,
   type HasilBacaTanya,
 } from "@palwise/db";
 import { env } from "../env.js";
@@ -15,7 +16,8 @@ import { parseJsonLoose, sekarangIndonesia } from "./agent.js";
 import { getLlm } from "./provider.js";
 import { formatKnowledge, searchKnowledge } from "./rag.js";
 import { LlmMessage, textMessage } from "./types.js";
-import { hasilUntukChat, konteksGiliranTanya, tahapYangDiminta, TAHAP_TANYA, type GiliranTanya } from "./tanyaBacaan.js";
+import { hasilUntukChat, janjiPemeriksaan, konteksGiliranTanya, rentangHitunganLangsung, tahapYangDiminta, TAHAP_TANYA, type GiliranTanya } from "./tanyaBacaan.js";
+import { koneksiTanya } from "./tanyaKoneksi.js";
 
 /**
  * Ruang perintah: otak halaman "Tanya".
@@ -126,9 +128,11 @@ export interface Alat {
 }
 
 /** Awal dan akhir sebuah rentang yang disebut orang sehari-hari. */
-function rentangWaktu(nama: string): { dari: Date; sampai: Date; sebutan: string } {
-  const awalHariIni = new Date();
-  awalHariIni.setHours(0, 0, 0, 0);
+export function rentangWaktu(nama: string, sekarang = new Date()): { dari: Date; sampai: Date; sebutan: string } {
+  const awalHariIni = new Date(sekarang);
+  // Calendar days use Jakarta time on both Windows and the UTC production host.
+  const jakarta = new Date(awalHariIni.getTime() + 7 * 60 * 60 * 1000);
+  awalHariIni.setTime(Date.UTC(jakarta.getUTCFullYear(), jakarta.getUTCMonth(), jakarta.getUTCDate()) - 7 * 60 * 60 * 1000);
   const sehari = 24 * 60 * 60 * 1000;
 
   switch (nama) {
@@ -193,6 +197,11 @@ function baris(k: {
  */
 export const ALAT: Alat[] = [
   {
+    nama: "status_whatsapp",
+    untuk: "Status sambungan WhatsApp saat ini, termasuk nomor yang putus. Baca ini saat ditanya apakah WhatsApp sudah tersambung; riwayat lama bukan bukti koneksi aktif.",
+    async jalankan({ workspaceId }) { return (await koneksiTanya(workspaceId)).teks; },
+  },
+  {
     nama: "daftar_pelanggan",
     untuk: "Daftar dan jumlah pelanggan menurut tahap CRM. Pakai tahap tertarik untuk pelanggan berminat; ini BERBEDA dari menunggu balasan atau komplain.",
     argumen: `{"tahap":"baru|tertarik|negosiasi|closing|selesai|batal"}`,
@@ -219,17 +228,15 @@ export const ALAT: Alat[] = [
       const { dari, sampai, sebutan } = rentangWaktu(String(arg?.rentang ?? "hari-ini"));
       const dalam = { gte: dari, lt: sampai };
 
-      // Yang dihitung PELANGGANNYA, bukan barisan pesannya. Satu orang yang
-      // mengirim delapan baris tetap satu orang, dan itu yang dimaksud pemilik
-      // toko waktu dia bertanya "ada berapa yang chat".
-      const [utas, balasan, pelangganBaru] = await Promise.all([
+      // Show message count and unique customers separately, including across channels.
+      const [utas, balasan, pelangganBaru, masuk, koneksi] = await Promise.all([
         prisma.message.findMany({
           where: {
             role: "customer",
             createdAt: dalam,
             conversation: { workspaceId, ...HANYA_OBROLAN_ASLI },
           },
-          select: { conversationId: true },
+          select: { conversation: { select: { contactId: true } } },
           distinct: ["conversationId"],
         }),
         prisma.message.count({
@@ -242,13 +249,18 @@ export const ALAT: Alat[] = [
         prisma.contact.count({
           where: { workspaceId, ...HANYA_PELANGGAN_ASLI, createdAt: dalam },
         }),
+        prisma.message.count({ where: { role: "customer", createdAt: dalam, conversation: { workspaceId, ...HANYA_OBROLAN_ASLI } } }),
+        koneksiTanya(workspaceId),
       ]);
 
       return [
-        `Rentang: ${sebutan}.`,
-        `Pelanggan yang chat: ${utas.length}`,
+        ...(koneksi.catatan ? [koneksi.catatan, ""] : []),
+        `Tercatat ${sebutan} (WIB):`,
+        `Pesan masuk: ${masuk}`,
+        `Pelanggan yang chat: ${new Set(utas.map(u => u.conversation.contactId)).size}`,
         `Pesan yang keluar dari kamu dan asisten: ${balasan}`,
         `Pelanggan yang baru pertama chat: ${pelangganBaru}`,
+        ...(koneksi.catatan ? ["", "Angka ini bukan jumlah seluruh chat di WhatsApp. Tautkan kembali untuk menerima chat berikutnya."] : []),
       ].join("\n");
     },
   },
@@ -554,18 +566,18 @@ export const ALAT: Alat[] = [
     nama: "keadaan_pemasangan",
     untuk: "Tiga langkah pemasangan: cara bicara, Info bisnis, nomor WhatsApp. Mana yang sudah, mana yang belum.",
     async jalankan({ workspaceId, agentId }) {
-      const [agent, jumlahInfo, channel] = await Promise.all([
+      const [agent, jumlahInfo, koneksi] = await Promise.all([
         agentId ? prisma.agent.findUnique({ where: { id: agentId } }) : null,
         agentId
           ? prisma.knowledgeSource.count({ where: { agentId, status: "ready" } })
           : 0,
-        prisma.channel.findFirst({ where: { workspaceId, status: "connected" } }),
+        koneksiTanya(workspaceId),
       ]);
 
       return [
         `1. Cara bicara asisten: ${agent?.behaviorPrompt?.trim() ? "SUDAH diisi" : "BELUM diisi"}`,
         `2. Info bisnis: ${jumlahInfo > 0 ? `SUDAH, ${jumlahInfo} catatan terhafal` : "BELUM ada satu pun"}`,
-        `3. Nomor WhatsApp: ${channel ? "Tercatat tersambung; kartu WhatsApp memeriksa status koneksi langsung." : "BELUM tersambung. Jalankan sambungkan_whatsapp untuk membuka kartu QR di chat ini. Pemilik tetap harus menekan Tampilkan QR dan memindainya lewat Perangkat tertaut di HP sendiri."}`,
+        `3. Nomor WhatsApp: ${koneksi.aktif ? koneksi.teks : "BELUM tersambung. Jalankan sambungkan_whatsapp untuk membuka kartu QR di chat ini. Pemilik tetap harus menekan Tampilkan QR dan memindainya lewat Perangkat tertaut di HP sendiri."}`,
       ].join("\n");
     },
   },
@@ -588,6 +600,7 @@ export type ModeTanya = "perintah" | "pasang";
 /** Diekspor dengan nama terpisah supaya selftest bisa membuktikan daftarnya,
  *  tanpa membuat isinya kelihatan seperti setelan yang boleh diubah dari luar. */
 export const ALAT_PASANG_UJI: ReadonlySet<string> = new Set([
+  "status_whatsapp",
   "keadaan_pemasangan",
   "sambungkan_whatsapp",
   "lihat_asisten",
@@ -778,6 +791,15 @@ export async function jalankanTanya({
   ]);
 
   const ctx: Konteks = { workspaceId, agentId: agent?.id ?? null };
+  if (tanyaStatusWhatsApp(pesan)) {
+    const isi = await ALAT.find(a => a.nama === "status_whatsapp")!.jalankan(ctx, {});
+    return { teks: isi.split("\n")[0], usul: null, alat: ["status_whatsapp"], hasilBaca: [hasilUntukChat("status_whatsapp", isi, {})] };
+  }
+  const rentang = mode === "perintah" ? rentangHitunganLangsung(pesan) : null;
+  if (rentang) {
+    const isi = await ALAT.find(a => a.nama === "hitung_obrolan")!.jalankan(ctx, { rentang });
+    return { teks: isi.split("\n")[0], usul: null, alat: ["hitung_obrolan"], hasilBaca: [hasilUntukChat("hitung_obrolan", isi, { rentang })] };
+  }
   // A clear stage lookup reads the exact CRM filter, even if the model would pick another tool.
   const tahap = mode === "perintah" ? tahapYangDiminta(pesan, riwayat) : null;
   if (tahap) {
@@ -790,6 +812,8 @@ export async function jalankanTanya({
   }
   const llm = getLlm();
   let system = systemPrompt(ws.name, mode);
+  system += "\n\nUntuk hitungan chat, selalu sebut data yang TERCATAT di Palwise. Bila hasil alat menyebut WhatsApp terputus, sampaikan bahwa data belum lengkap; angka nol bukan bukti tidak ada chat di WhatsApp. Status tersambung di riwayat lama harus diperiksa ulang dengan status_whatsapp.";
+  system += "\nJangan mengakhiri giliran dengan janji seperti 'saya lihat dulu', 'sebentar saya cek', atau 'akan saya siapkan'. Tidak ada pekerjaan latar belakang setelah jawaban dikirim. Jika perlu membaca, panggil alat sekarang, lalu berikan hasil dan langkah konkret dalam giliran yang sama. Jika data kurang, tanyakan satu hal spesifik. Untuk permintaan saran bisnis, berikan saran yang dapat dikerjakan sesuai data yang tersedia.";
   if (mode === "pasang") {
     const pemasangan = ALAT.find(a => a.nama === "keadaan_pemasangan")!;
     system += "\n\nSTATUS PEMASANGAN SAAT INI (dibaca dari data tersimpan, utamakan ini daripada sapaan lama):\n" + await pemasangan.jalankan(ctx, {});
@@ -811,6 +835,7 @@ export async function jalankanTanya({
   const dipakai: string[] = [];
   const hasilBaca: HasilBacaTanya[] = [];
   const kontakDibaca = new Set<string>();
+  let janjiDiperbaiki = false;
 
   for (let langkah = 0; langkah <= ALAT_MAKS; langkah++) {
     let mentah: string;
@@ -890,8 +915,21 @@ export async function jalankanTanya({
       continue;
     }
 
-    const teks = String(jawaban.jawab ?? "").trim();
+    // Count claims are grounded in the returned counts and their sync caveat, never a model's 'no chats' inference.
+    const hitungan = hasilBaca.find(h => h.alat === "hitung_obrolan" && !h.gagal);
+    const teks = hitungan ? hitungan.isi.split("\n")[0] : String(jawaban.jawab ?? "").trim();
     const usul = await bacaUsul(ctx, jawaban.usul, mode);
+
+    if (!usul && janjiPemeriksaan(String(jawaban.jawab ?? ""))) {
+      if (janjiDiperbaiki || langkah === ALAT_MAKS) return {
+        teks: hasilBaca.length ? "Berikut hasil pemeriksaan yang tersedia. Saran lanjutannya belum berhasil disusun; coba tanyakan langkah yang ingin kamu bahas." : "Pemeriksaannya belum berhasil dijalankan. Coba sebutkan data pelanggan yang ingin diperiksa, misalnya pelanggan tertarik.",
+        usul: null, alat: dipakai, hasilBaca,
+      };
+      janjiDiperbaiki = true;
+      pesanModel.push(textMessage("assistant", mentah));
+      pesanModel.push(textMessage("user", "Jawaban itu baru janji, bukan hasil. Lanjutkan sekarang: panggil alat baca yang diperlukan, kemudian jawab permintaan awal dengan hasil dan langkah konkret. Jika data sudah diperiksa, langsung simpulkan. Jangan menjanjikan proses yang akan berjalan setelah giliran berakhir."));
+      continue;
+    }
 
     // A personalized draft cannot skip the customer's actual conversation.
     if (usul && "kontakId" in usul && /follow[ -]?up|draf|balasan/i.test(pesan) && !kontakDibaca.has(usul.kontakId)) {

@@ -1,0 +1,29 @@
+.card { border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; min-width: 0; }
+.heading { display: flex; align-items: center; gap: 10px; padding: 12px; }
+.heading > svg { flex-shrink: 0; }
+.identity { flex: 1; min-width: 0; }
+.identity h3 { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.identity p { font-size: 11px; line-height: 1.5; color: #6b7075; margin-top: 2px; overflow-wrap: anywhere; }
+.icon { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; border-radius: 9px; color: #6b7075; }
+.icon:hover { color: #171717; background: #f5f5f5; }
+.body { padding: 0 12px 12px; }
+.qr { display: flex; align-items: center; gap: 16px; padding: 8px 0 16px; }
+.qr img { flex-shrink: 0; width: 200px; height: 200px; padding: 6px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; }
+.qr p { color: #6b7075; font-size: 12px; line-height: 1.8; }
+.status { font-size: 12px; color: #6b7075; padding: 0 0 12px; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.primary, .secondary { min-height: 40px; padding: 0 14px; border-radius: 9px; font-size: 12px; font-weight: 550; }
+.primary { background: #1a73e8; color: #fff; }
+.primary:hover { background: #1557b0; }
+.primary:disabled, .secondary:disabled { opacity: .55; cursor: wait; }
+.secondary { color: #54585c; border: 1px solid #e5e7eb; }
+.secondary:hover { background: #f5f5f5; }
+.help { margin-left: auto; font-size: 11px; color: #6b7075; }
+.help summary { display: flex; align-items: center; justify-content: flex-end; min-height: 40px; cursor: pointer; padding: 0 6px; list-style: none; }
+.help summary::-webkit-details-marker { display: none; }
+.help[open] { width: 100%; }
+.help[open] summary { justify-content: flex-start; padding: 0; }
+.help > div { border-top: 1px solid #e5e7eb; padding-top: 10px; line-height: 1.8; }
+.help p + p { margin-top: 8px; }
+.error { color: #b42318; font-size: 12px; line-height: 1.7; padding-bottom: 12px; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .qr { flex-direction: column; gap: 8px; } .qr p { max-width: 260px; text-align: center; } .heading { gap: 6px; } }
