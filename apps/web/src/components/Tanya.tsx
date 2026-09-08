@@ -598,6 +598,7 @@ function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, pilih, hapus, terkunci 
   const [pencarian, setPencarian] = useState("");
   const panelRef = useRef<HTMLElement>(null);
   const cariRef = useRef<HTMLInputElement>(null);
+  const pemicuHapusRef = useRef<HTMLButtonElement | null>(null);
   const tutupRef = useRef(tutup);
   tutupRef.current = tutup;
 
@@ -638,7 +639,7 @@ function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, pilih, hapus, terkunci 
                 <button type="button" disabled={terkunci} onClick={() => { setMauHapus(null); pilih(s.id); }} className={styles.historySelect} aria-current={s.id === sesiId ? "page" : undefined} title={s.judul || "Obrolan baru"}>
                   {s.mode === "pasang" ? <Ikon nama="asisten" size={16} /> : <TanyaIcon nama="chat" size={16} />}<span>{s.judul || "Obrolan baru"}</span>
                 </button>
-                <button type="button" disabled={terkunci} onClick={() => setMauHapus(s)} className={styles.historyDelete} aria-label={`Hapus ${s.judul || "obrolan ini"}`} title="Hapus obrolan"><TanyaIcon nama="hapus" size={15} /></button>
+                <button type="button" disabled={terkunci} onClick={event => { pemicuHapusRef.current = event.currentTarget; setMauHapus(s); }} className={styles.historyDelete} aria-label={`Hapus ${s.judul || "obrolan ini"}`} title="Hapus obrolan"><TanyaIcon nama="hapus" size={15} /></button>
               </div>
             </li>)}
           </ul></div>)}
@@ -647,6 +648,11 @@ function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, pilih, hapus, terkunci 
     {mauHapus && <HapusObrolanModal judul={mauHapus.judul} hapus={() => hapus(mauHapus.id)} tutup={() => {
       setMauHapus(null);
       requestAnimationFrame(() => {
+        const pemicu = pemicuHapusRef.current;
+        if (pemicu?.isConnected && !pemicu.disabled && pemicu.getClientRects().length && !pemicu.closest('[inert]')) {
+          pemicu.focus();
+          return;
+        }
         if (!document.activeElement || document.activeElement === document.body || !(document.activeElement as HTMLElement).getClientRects().length) {
           if (cariRef.current?.getClientRects().length) cariRef.current.focus();
           else document.querySelector<HTMLButtonElement>('[aria-controls="riwayat-tanya"]')?.focus();

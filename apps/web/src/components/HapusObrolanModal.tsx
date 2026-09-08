@@ -25,6 +25,11 @@ function DialogHapus({ judul, hapus, tutup }: Props) {
     document.body.style.overflow = "hidden";
     return () => { dialog.close(); document.body.style.overflow = overflow; };
   }, []);
+  useEffect(() => {
+    // Keep keyboard focus in the modal while every action is disabled.
+    if (sibuk) dialogRef.current?.focus();
+    else batalRef.current?.focus();
+  }, [sibuk]);
   async function konfirmasi() {
     if (proses.current) return;
     proses.current = true; setSibuk(true); setGalat(null);
@@ -35,7 +40,15 @@ function DialogHapus({ judul, hapus, tutup }: Props) {
     } catch { setGalat("Obrolan belum berhasil dihapus. Coba lagi."); }
     finally { proses.current = false; setSibuk(false); }
   }
-  return <dialog ref={dialogRef} className={styles.deleteDialog} aria-labelledby="hapus-obrolan-judul" aria-describedby="hapus-obrolan-info"
+  return <dialog ref={dialogRef} tabIndex={-1} className={styles.deleteDialog} aria-labelledby="hapus-obrolan-judul" aria-describedby="hapus-obrolan-info"
+    onKeyDown={event => {
+      if (event.key !== "Tab") return;
+      const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')).filter(button => button.getClientRects().length);
+      if (!buttons.length) { event.preventDefault(); return; }
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === event.currentTarget)) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || document.activeElement === event.currentTarget)) { event.preventDefault(); first.focus(); }
+    }}
     onCancel={event => { event.preventDefault(); if (!proses.current) tutup(); }}
     onClick={event => { if (event.target === event.currentTarget && !proses.current) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) tutup(); } }}>
     <div className={styles.dialogHeading}><h2 id="hapus-obrolan-judul">Hapus obrolan?</h2><button type="button" className={styles.iconButton} disabled={sibuk} onClick={tutup} aria-label="Tutup konfirmasi"><TanyaIcon nama="tutup" size={18} /></button></div>
