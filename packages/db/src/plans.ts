@@ -308,6 +308,23 @@ export function getPlan(id: string): Plan {
 /** Jatah harian khusus ruang coba, terpisah dari kuota balasan pelanggan. */
 export const JATAH_RUANG_COBA_HARIAN = 30;
 
+/**
+ * Jatah harian ruang perintah (halaman Tanya), juga terpisah dari kuota
+ * balasan pelanggan.
+ *
+ * Lebih besar dari ruang coba karena pemakaiannya beda bentuk: ruang coba
+ * dibuka beberapa kali waktu memasang lalu jarang disentuh lagi, sedangkan
+ * ruang perintah dipakai tiap hari sambil berdiri di toko. Empat puluh
+ * perintah sehari itu jauh di atas pemakaian normal, jadi yang kena cuma
+ * pemakaian yang memang tidak wajar.
+ *
+ * Angkanya perintah, BUKAN panggilan model. Satu perintah bisa memanggil model
+ * sampai empat kali, dan yang dihitung tetap satu, karena yang dimengerti
+ * pemilik toko itu "aku sudah nanya berapa kali", bukan berapa kali mesinnya
+ * berpikir.
+ */
+export const JATAH_TANYA_HARIAN = 40;
+
 export function formatIDR(value: number): string {
   return "Rp " + value.toLocaleString("id-ID");
 }

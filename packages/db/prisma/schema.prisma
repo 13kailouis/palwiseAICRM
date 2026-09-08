@@ -39,6 +39,21 @@ model Workspace {
   playgroundUsed    Int      @default(0)
   playgroundResetAt DateTime @default(now())
 
+  /// Ruang perintah (halaman Tanya) punya jatah harian SENDIRI, sama seperti
+  /// ruang coba, dan sama sekali tidak memotong jatah balasan pelanggan.
+  ///
+  /// Alasannya sama persis: yang dibayar pemilik toko itu balasan ke
+  /// pelanggannya. Kalau bertanya "hari ini ada berapa yang chat" memotong
+  /// jatah yang sama, pemilik warung yang penasaran menghabiskan jatahnya
+  /// sendiri sebelum satu pelanggan pun dibalas.
+  ///
+  /// Dan ini BUKAN jatah kosmetik. Satu perintah bisa memanggil model dua
+  /// sampai empat kali (pilih alat, baca hasil, susun jawaban), jadi tanpa
+  /// meteran sendiri biayanya tidak kelihatan di mana pun sampai tagihannya
+  /// datang.
+  tanyaUsed    Int      @default(0)
+  tanyaResetAt DateTime @default(now())
+
   /// Supaya peringatan kuota tidak dikirim berulang-ulang.
   quotaWarnedAt    DateTime?
   quotaExhaustedAt DateTime?
@@ -95,6 +110,7 @@ model Workspace {
   contacts      Contact[]
   conversations Conversation[]
   pembayaran    Pembayaran[]
+  sesiTanya     SesiTanya[]
 }
 
 /// Masukan, saran, dan laporan bug dari pengguna.
@@ -736,4 +752,80 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
+}
+
+// ─── Ruang perintah (halaman Tanya) ───────────────────────────────────────────
+
+/**
+ * Satu utas percakapan antara PEMILIK USAHA dan Palwise.
+ *
+ * Ini bukan obrolan pelanggan, dan tidak boleh pernah bercampur dengan
+ * Conversation. Tiga chat di produk ini gampang tertukar: kotak masuk
+ * (pelanggan sungguhan), ruang coba (pura-pura jadi pelanggan), dan ini
+ * (kamu ke Palwise). Yang paling mahal kalau tertukar yang ini, karena di sini
+ * orang mengetik perintah, dan perintah yang nyasar ke utas pelanggan akan
+ * terkirim ke pelanggan itu apa adanya.
+ *
+ * Jadi tabelnya pun sengaja dipisah, bukan cuma tampilannya. Tidak ada satu
+ * kueri kotak masuk pun yang bisa tidak sengaja menarik baris dari sini.
+ */
+model SesiTanya {
+  id String @id @default(cuid())
+  /// Judul pendek, diambil dari pesan pertama. Kosong = belum sempat diisi.
+  judul String @default("")
+
+  /// perintah | pasang
+  ///
+  /// "pasang" itu utas pemandu pemasangan: Palwise yang bertanya duluan, dan
+  /// yang dia kerjakan cuma menyusun cara bicara asisten dan mengisi Info
+  /// bisnis. Alatnya sengaja dipersempit di mode ini. Utas pemasangan yang
+  /// bisa mengirim pesan ke pelanggan itu berbahaya: orang yang baru daftar
+  /// belum tahu apa pun tentang produknya, dan pesan pertama yang keluar dari
+  /// nomornya tidak bisa ditarik balik.
+  mode String @default("perintah")
+  createdAt DateTime @default(now())
+  /// Dipakai mengurutkan daftar riwayat, jadi utas yang barusan dipakai
+  /// selalu di atas. Bukan createdAt: utas lama yang dibuka lagi hari ini
+  /// tetap yang paling relevan.
+  updatedAt DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  pesan PesanTanya[]
+
+  @@index([workspaceId, updatedAt])
+}
+
+/** Satu gelembung di ruang perintah. */
+model PesanTanya {
+  id String @id @default(cuid())
+  /// pemilik | palwise
+  peran String
+  teks  String
+
+  /// Alat baca yang dipakai menyusun jawaban ini, JSON array of string.
+  /// Ditampilkan kecil di bawah jawaban supaya pemiliknya tahu angkanya
+  /// diambil dari mana, bukan dikarang.
+  alat String @default("[]")
+
+  /// Usulan tindakan yang MENUNGGU persetujuan, JSON. Null = jawaban biasa.
+  ///
+  /// Modelnya tidak pernah mengerjakan tindakan sendiri. Dia cuma menyusun
+  /// usul, dan usul itu disimpan di sini sampai pemiliknya menekan tombolnya.
+  /// Mengirim pesan ke pelanggan sungguhan itu tidak bisa ditarik balik dan
+  /// yang keluar nama tokonya, jadi tidak ada jalur mana pun yang membolehkan
+  /// model menembak langsung.
+  usul String?
+  /// menunggu | dikerjakan | dibatalkan | gagal
+  usulStatus String?
+  /// Kabar hasil pengerjaan, mis. galat waktu WhatsApp-nya putus.
+  usulPesan String?
+
+  createdAt DateTime @default(now())
+
+  sesiId String
+  sesi   SesiTanya @relation(fields: [sesiId], references: [id], onDelete: Cascade)
+
+  @@index([sesiId, createdAt])
 }

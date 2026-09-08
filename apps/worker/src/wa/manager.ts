@@ -1586,6 +1586,70 @@ export async function sendToConversation(
   }
 }
 
+/**
+ * Kirim gambar atau berkas bisnis ke sebuah obrolan, dengan kalimat pengantar
+ * kalau ada.
+ *
+ * Kembarannya `sendToConversation`, dan sengaja memakai pemeriksaan yang persis
+ * sama: obrolan ruang coba ditolak, nomor yang sedang putus ditolak, dan alamat
+ * tujuannya diambil lewat `alamatKirim` supaya nomor asli yang menang atas LID.
+ * Yang membedakan cuma isinya berkas, bukan teks.
+ *
+ * Dipakai ruang perintah ("kirim katalog ke Budi"), lewat kartu yang harus
+ * ditekan pemiliknya dulu.
+ */
+export async function kirimBerkasKeObrolan(
+  conversationId: string,
+  berkas: { fileName: string; mimeType: string; kind: string; name: string }[],
+  pengantar?: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    include: { contact: true },
+  });
+  if (!conversation) return { ok: false, error: "Obrolannya tidak ketemu" };
+  if (!conversation.channelId) {
+    return { ok: false, error: "Ini obrolan di ruang coba, bukan WhatsApp beneran" };
+  }
+
+  const session = sessions.get(conversation.channelId);
+  if (!session?.sock || session.status !== "connected") {
+    return { ok: false, error: "Nomor WhatsApp-nya lagi tidak nyambung" };
+  }
+
+  const tujuan = alamatKirim(conversation.contact.waJid, conversation.contact.phone);
+  if (!tujuan) {
+    return { ok: false, error: "Pelanggan ini tidak punya nomor WhatsApp" };
+  }
+
+  try {
+    if (pengantar?.trim()) {
+      await sendBubbles(session.sock, tujuan, [pengantar.trim()], 25, conversation.channelId);
+    }
+    await sendAssets(session.sock, tujuan, berkas);
+
+    // Sama seperti sendToConversation: mengirim sesuatu berarti obrolannya
+    // hidup lagi. Tanpa ini berkasnya sampai ke pelanggan sementara utasnya
+    // tetap tersembunyi dari daftar, dan jawaban pelanggannya masuk ke utas
+    // yang tidak pernah dibuka pemiliknya.
+    if (conversation.status !== "open") {
+      await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { status: "open" },
+      });
+      bus.publish({
+        type: "conversation",
+        workspaceId: conversation.workspaceId,
+        conversationId: conversation.id,
+      });
+    }
+
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export function isChannelConnected(channelId: string): boolean {
   return sessions.get(channelId)?.status === "connected";
 }

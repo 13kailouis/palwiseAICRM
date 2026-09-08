@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import express, { type Request, type Response } from "express";
-import { prisma } from "@palwise/db";
+import { getPlan, prisma } from "@palwise/db";
 
 import { env, aiConfigured } from "./env.js";
 import { log } from "./lib/log.js";
@@ -15,11 +15,18 @@ import {
   runAgentOnConversation,
 } from "./core/conversation.js";
 import { pilihSikap, ringkasSikap, type LabelRasa } from "@palwise/rasa";
-import { getQuota } from "./core/quota.js";
+import {
+  ambilJatahTanya,
+  getQuota,
+  kembalikanJatahTanya,
+  pesanJatahTanya,
+} from "./core/quota.js";
 import { ringkasPelanggan } from "./core/ringkasan.js";
+import { jalankanTanya, judulDariPesan, type Usul } from "./ai/tanya.js";
 import {
   channelRuntimeStatus,
   isChannelConnected,
+  kirimBerkasKeObrolan,
   sendToConversation,
   startChannel,
   stopChannel,
@@ -842,6 +849,414 @@ router.post("/jobs/followup", async (_req, res) => {
 // Realtime -------------------------------------------------------------------
 
 /** Server-Sent Events untuk update QR & pesan masuk di dashboard. */
+// ─── Ruang perintah (halaman Tanya) ───────────────────────────────────────────
+
+/**
+ * Satu giliran di ruang perintah.
+ *
+ * Worker yang menulis kedua gelembungnya, bukan halaman web, supaya jawaban dan
+ * usulnya tersimpan bersamaan. Kalau web yang menulis, ada jeda antara jawaban
+ * tersimpan dan usulnya tersimpan, dan kartu "Kirim" yang muncul tanpa usul di
+ * belakangnya adalah tombol yang tidak mengerjakan apa-apa.
+ */
+router.post("/tanya", async (req, res) => {
+  try {
+    const workspaceId = String(req.body?.workspaceId ?? "");
+    const sesiId = String(req.body?.sesiId ?? "");
+    const pesan = String(req.body?.pesan ?? "").trim();
+
+    if (!workspaceId || !sesiId) {
+      res.status(400).json({ error: "workspaceId dan sesiId wajib diisi" });
+      return;
+    }
+    if (!pesan) {
+      res.status(400).json({ error: "Perintahnya kosong" });
+      return;
+    }
+    // Batasnya jauh di atas kalimat perintah mana pun, dan ada supaya satu
+    // tempelan raksasa tidak jadi satu prompt raksasa yang dibayar.
+    if (pesan.length > 2000) {
+      res.status(400).json({ error: "Perintahnya kepanjangan, ringkas dulu ya" });
+      return;
+    }
+
+    const sesi = await prisma.sesiTanya.findFirst({
+      where: { id: sesiId, workspaceId },
+    });
+    if (!sesi) {
+      res.status(404).json({ error: "Utasnya tidak ketemu" });
+      return;
+    }
+
+    const jatah = await ambilJatahTanya(workspaceId);
+    if (jatah.habis) {
+      // Habisnya HARUS bersuara. Jalur yang diam waktu kehabisan jatah bikin
+      // orang mengira produknya rusak, dan itu lebih mahal daripada batasnya
+      // sendiri.
+      res.status(429).json({
+        error: jatah.belumKonfirmasi
+          ? `Jatah ${jatah.batas} perintahnya sudah habis. Konfirmasi dulu emailmu lewat tautan yang kami kirim, nanti jatahnya lahir lagi tiap hari.`
+          : `Jatah ${jatah.batas} perintah hari ini sudah habis. Besok jatahnya penuh lagi.`,
+      });
+      return;
+    }
+    if (!(await pesanJatahTanya(workspaceId))) {
+      res.status(429).json({ error: "Jatah perintah hari ini sudah habis." });
+      return;
+    }
+
+    const riwayat = await prisma.pesanTanya.findMany({
+      where: { sesiId },
+      orderBy: { createdAt: "asc" },
+      take: 40,
+    });
+
+    const dariPemilik = await prisma.pesanTanya.create({
+      data: { sesiId, peran: "pemilik", teks: pesan },
+    });
+
+    // Judul diisi dari perintah pertama, dan cuma sekali. Utas yang sudah punya
+    // judul tidak berubah judulnya cuma karena pertanyaan kelima kebetulan
+    // lebih panjang.
+    if (!sesi.judul) {
+      await prisma.sesiTanya.update({
+        where: { id: sesiId },
+        data: { judul: judulDariPesan(pesan) },
+      });
+    }
+
+    let hasil;
+    try {
+      hasil = await jalankanTanya({
+        workspaceId,
+        riwayat: riwayat.map((r) => ({ peran: r.peran, teks: r.teks })),
+        pesan,
+        // Modenya diambil dari BARIS UTASNYA, tidak pernah dari badan
+        // permintaan. Kalau klien yang menentukan, utas pemasangan tinggal
+        // dipanggil dengan mode "perintah" dan seluruh pembatasan alatnya
+        // hilang dalam satu baris.
+        mode: sesi.mode === "pasang" ? "pasang" : "perintah",
+      });
+    } catch (err) {
+      // Jatahnya dikembalikan. Perintah yang tidak pernah dijawab tidak boleh
+      // ikut memotong, dan tanpa ini gangguan di pihak Google memakan jatah
+      // pemilik toko.
+      await kembalikanJatahTanya(workspaceId);
+      await prisma.pesanTanya.delete({ where: { id: dariPemilik.id } }).catch(() => {});
+      throw err;
+    }
+
+    const dariPalwise = await prisma.pesanTanya.create({
+      data: {
+        sesiId,
+        peran: "palwise",
+        teks: hasil.teks,
+        alat: JSON.stringify(hasil.alat),
+        usul: hasil.usul ? JSON.stringify(hasil.usul) : null,
+        usulStatus: hasil.usul ? "menunggu" : null,
+      },
+    });
+
+    // Menyentuh utasnya supaya dia naik ke atas daftar riwayat.
+    await prisma.sesiTanya.update({
+      where: { id: sesiId },
+      data: { updatedAt: new Date() },
+    });
+
+    res.json({
+      ok: true,
+      pesan: [dariPemilik, dariPalwise].map(bentukPesanTanya),
+      jatah: await ambilJatahTanya(workspaceId),
+    });
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+/**
+ * Kerjakan usul yang tadi ditampilkan sebagai kartu.
+ *
+ * Yang dikerjakan diambil dari BARIS DI DATABASE, bukan dari apa pun yang
+ * dikirim layar. Kalau isi pesannya ikut dikirim dari klien, kartu yang tampil
+ * dan pesan yang terkirim bisa berbeda, dan seluruh gunanya menampilkan dulu
+ * jadi hilang.
+ */
+router.post("/tanya/lakukan", async (req, res) => {
+  try {
+    const workspaceId = String(req.body?.workspaceId ?? "");
+    const pesanId = String(req.body?.pesanId ?? "");
+    // Default: asistennya TETAP jalan. Perintah "suruh Budi bawa STNK" itu satu
+    // titipan, bukan niat mengambil alih obrolannya selamanya. Kalau asisten
+    // dimatikan diam-diam, Budi bertanya lagi besok dan tidak ada yang menjawab.
+    const ambilAlih = req.body?.ambilAlih === true;
+
+    if (!workspaceId || !pesanId) {
+      res.status(400).json({ error: "workspaceId dan pesanId wajib diisi" });
+      return;
+    }
+
+    const baris = await prisma.pesanTanya.findFirst({
+      where: { id: pesanId, sesi: { workspaceId } },
+    });
+    if (!baris?.usul) {
+      res.status(404).json({ error: "Usulnya tidak ketemu" });
+      return;
+    }
+    if (baris.usulStatus !== "menunggu") {
+      // Dua ketukan cepat di tombol yang sama tidak boleh jadi dua pesan ke
+      // pelanggan, atau dua catatan kembar di Info bisnis. Yang kedua ditolak
+      // di sini, bukan di layar.
+      res.status(409).json({
+        error:
+          baris.usulStatus === "dikerjakan"
+            ? "Ini sudah dikerjakan sebelumnya."
+            : "Usul ini sudah tidak berlaku.",
+      });
+      return;
+    }
+
+    const usul = JSON.parse(baris.usul) as Usul;
+
+    const gagal = async (pesan: string, kode = 400) => {
+      await prisma.pesanTanya.update({
+        where: { id: pesanId },
+        data: { usulStatus: "gagal", usulPesan: pesan },
+      });
+      res.status(kode).json({ error: pesan });
+    };
+
+    const beres = async (kabar: string, tambahan: Record<string, unknown> = {}) => {
+      await prisma.pesanTanya.update({
+        where: { id: pesanId },
+        data: { usulStatus: "dikerjakan", usulPesan: kabar },
+      });
+      res.json({ ok: true, kabar, ...tambahan });
+    };
+
+    // ── Menyimpan setelan ─────────────────────────────────────────────────────
+    //
+    // Tidak menyentuh WhatsApp sama sekali, jadi tidak lewat pemeriksaan
+    // obrolan di bawah. Bisa dikerjakan walau nomornya belum tersambung, dan
+    // itu memang yang terjadi selama pemasangan.
+    if (usul.jenis === "tambah_info" || usul.jenis === "ubah_info") {
+      const agent = await prisma.agent.findFirst({
+        where: { workspaceId },
+        orderBy: { createdAt: "asc" },
+      });
+      if (!agent) return void (await gagal("Belum ada asisten di akun ini."));
+
+      let sourceId: string;
+
+      if (usul.jenis === "tambah_info") {
+        // Batas paket diperiksa DI SINI, bukan waktu kartunya dibuat. Antara
+        // kartu muncul dan tombolnya ditekan bisa lewat berhari-hari, dan
+        // selama itu catatannya bisa bertambah dari halaman Info bisnis.
+        const ws = await prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId } });
+        const paket = getPlan(ws.plan);
+        const terpakai = await prisma.knowledgeSource.count({
+          where: { agent: { workspaceId } },
+        });
+        if (terpakai >= paket.maxKnowledgeSources) {
+          return void (await gagal(
+            `Paket ${paket.name} muat ${paket.maxKnowledgeSources} catatan, dan sudah penuh. Naikkan paket dulu, atau gabungkan beberapa catatan lama.`,
+          ));
+        }
+
+        // Catatan yang isinya sama persis tidak ditambah dua kali. Aturan yang
+        // sama dengan formulir Info bisnis, dan alasannya bukan kerapian:
+        // salinan kembar saling berebut tempat di hasil pencarian dan
+        // mendorong keluar catatan lain yang justru dibutuhkan.
+        const kembar = await prisma.knowledgeSource.findFirst({
+          where: { agentId: agent.id, content: usul.isi },
+          select: { title: true },
+        });
+        if (kembar) {
+          return void (await gagal(
+            `Isinya sama persis dengan catatan "${kembar.title}" yang sudah ada, jadi tidak ditambah lagi.`,
+          ));
+        }
+
+        const dibuat = await prisma.knowledgeSource.create({
+          data: {
+            agentId: agent.id,
+            type: "text",
+            title: usul.judul,
+            content: usul.isi,
+            status: "pending",
+          },
+        });
+        sourceId = dibuat.id;
+      } else {
+        const punya = await prisma.knowledgeSource.findFirst({
+          where: { id: usul.catatanId, agent: { workspaceId } },
+        });
+        if (!punya) return void (await gagal("Catatannya sudah tidak ada."));
+
+        await prisma.knowledgeSource.update({
+          where: { id: punya.id },
+          data: { title: usul.judul, content: usul.isi, status: "pending", error: null },
+        });
+        sourceId = punya.id;
+      }
+
+      // Menghafal ulang WAJIB. Potongan lama dibuat dari teks yang lama, jadi
+      // tanpa ini asisten masih menjawab pakai versi sebelum diubah, dan itu
+      // bentuk kegagalan yang paling membingungkan: pemiliknya melihat catatan
+      // sudah benar di layar, tapi pelanggan tetap dikasih harga lama.
+      try {
+        await indexSource(sourceId);
+        invalidateAgentCache(agent.id);
+      } catch (err) {
+        log.error(
+          `ruang perintah: gagal menghafal catatan ${sourceId} — ${err instanceof Error ? err.message : err}`,
+        );
+        return void (await beres(
+          "Tersimpan, tapi belum sempat dihafal. Buka Info bisnis lalu tekan Hafalkan lagi.",
+          { sourceId },
+        ));
+      }
+
+      return void (await beres(
+        usul.jenis === "tambah_info"
+          ? `"${usul.judul}" sudah tersimpan dan dihafal.`
+          : `"${usul.judul}" sudah diperbarui dan dihafal ulang.`,
+        { sourceId },
+      ));
+    }
+
+    if (usul.jenis === "ubah_asisten") {
+      const agent = await prisma.agent.findFirst({
+        where: { workspaceId },
+        orderBy: { createdAt: "asc" },
+      });
+      if (!agent) return void (await gagal("Belum ada asisten di akun ini."));
+
+      await prisma.agent.update({
+        where: { id: agent.id },
+        data: { behaviorPrompt: usul.isi },
+      });
+      return void (await beres("Cara bicara asistennya sudah disimpan."));
+    }
+
+    // ── Mengirim ke pelanggan ─────────────────────────────────────────────────
+    const kontak = await prisma.contact.findFirst({
+      where: { id: usul.kontakId, workspaceId },
+    });
+    if (!kontak) return void (await gagal("Pelanggannya sudah tidak ada.", 404));
+
+    const conversation = await prisma.conversation.findFirst({
+      where: { workspaceId, contactId: kontak.id, channelId: { not: null } },
+      orderBy: { lastMessageAt: "desc" },
+    });
+    if (!conversation) {
+      return void (await gagal(
+        "Belum pernah ada obrolan WhatsApp dengan pelanggan ini, jadi belum bisa dikirimi.",
+      ));
+    }
+
+    let kirim: { ok: boolean; error?: string };
+    if (usul.jenis === "kirim_pesan") {
+      kirim = await sendToConversation(conversation.id, [usul.teks]);
+    } else {
+      const berkas = await prisma.mediaAsset.findFirst({
+        where: { code: usul.kode, agent: { workspaceId } },
+      });
+      if (!berkas) return void (await gagal("Berkasnya sudah tidak ada.", 404));
+
+      kirim = await kirimBerkasKeObrolan(
+        conversation.id,
+        [
+          {
+            fileName: berkas.fileName,
+            mimeType: berkas.mimeType,
+            kind: berkas.kind,
+            name: berkas.name,
+          },
+        ],
+        usul.teks,
+      );
+      if (kirim.ok) {
+        await prisma.mediaAsset.update({
+          where: { id: berkas.id },
+          data: { sentCount: { increment: 1 } },
+        });
+      }
+    }
+
+    if (!kirim.ok) {
+      return void (await gagal(kirim.error ?? "Gagal mengirim"));
+    }
+
+    // Yang benar-benar terkirim ikut dicatat di utas pelanggannya, supaya
+    // kotak masuk tidak berbohong. Tanpa ini pemilik toko membuka obrolan Budi
+    // dan tidak melihat pesan yang barusan dia kirim sendiri.
+    await appendMessage({
+      conversationId: conversation.id,
+      workspaceId,
+      role: "human",
+      content:
+        usul.jenis === "kirim_pesan"
+          ? usul.teks
+          : [usul.teks, `[terkirim: ${usul.namaBerkas}]`].filter(Boolean).join("\n"),
+    });
+
+    if (ambilAlih) {
+      await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { aiEnabled: false, needsHuman: false, handoffReason: null, handoffAt: null },
+      });
+    }
+
+    await beres(
+      ambilAlih
+        ? "Terkirim. Asisten dimatikan di obrolan ini."
+        : "Terkirim. Asisten tetap jalan di obrolan ini.",
+      { conversationId: conversation.id, ambilAlih },
+    );
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+/** Buang usul tanpa mengerjakannya. */
+router.post("/tanya/batal", async (req, res) => {
+  try {
+    const workspaceId = String(req.body?.workspaceId ?? "");
+    const pesanId = String(req.body?.pesanId ?? "");
+
+    const hasil = await prisma.pesanTanya.updateMany({
+      where: { id: pesanId, usulStatus: "menunggu", sesi: { workspaceId } },
+      data: { usulStatus: "dibatalkan", usulPesan: "Tidak jadi dikirim." },
+    });
+    res.json({ ok: hasil.count === 1 });
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+/** Bentuk baris PesanTanya untuk dikirim ke layar. */
+function bentukPesanTanya(p: {
+  id: string;
+  peran: string;
+  teks: string;
+  alat: string;
+  usul: string | null;
+  usulStatus: string | null;
+  usulPesan: string | null;
+  createdAt: Date;
+}) {
+  return {
+    id: p.id,
+    peran: p.peran,
+    teks: p.teks,
+    alat: JSON.parse(p.alat || "[]") as string[],
+    usul: p.usul ? (JSON.parse(p.usul) as Usul) : null,
+    usulStatus: p.usulStatus,
+    usulPesan: p.usulPesan,
+    createdAt: p.createdAt,
+  };
+}
+
 router.get("/events", (req, res) => {
   const workspaceId = String(req.query.workspaceId ?? "");
   if (!workspaceId) {

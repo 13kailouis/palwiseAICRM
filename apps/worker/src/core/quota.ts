@@ -1,5 +1,6 @@
 import {
   JATAH_RUANG_COBA_HARIAN,
+  JATAH_TANYA_HARIAN,
   getPlan,
   periodeBerikutnya,
   prisma,
@@ -180,6 +181,75 @@ export async function kembalikanJatahRuangCoba(workspaceId: string): Promise<voi
   await prisma.workspace.updateMany({
     where: { id: workspaceId, playgroundUsed: { gt: 0 } },
     data: { playgroundUsed: { decrement: 1 } },
+  });
+}
+
+/**
+ * Jatah harian ruang perintah (halaman Tanya).
+ *
+ * Bentuknya sengaja disalin dari `ambilJatahRuangCoba`, bukan digabung
+ * dengannya. Dua meteran ini mengukur dua hal yang berbeda dan angkanya beda,
+ * dan menggabungkannya berarti orang yang seharian bertanya "siapa yang
+ * komplen" kehabisan jatah untuk menguji asistennya, atau sebaliknya.
+ *
+ * Kenapa ini butuh meteran sama sekali: satu perintah bisa memanggil model dua
+ * sampai empat kali (pilih alat, baca hasilnya, susun jawabannya). Tanpa
+ * meteran, ini satu-satunya jalur pakai model di seluruh produk yang biayanya
+ * tidak terlihat di mana pun sampai tagihannya datang.
+ *
+ * Sama seperti ruang coba, sebelum emailnya dikonfirmasi jatahnya TIDAK lahir
+ * lagi tiap hari: angkanya sama, tapi berlaku sekali seumur akun. Alasannya
+ * juga sama, yaitu bentuk harian itulah yang bikin akun sampah layak dibuat,
+ * bukan besar jatahnya.
+ */
+export async function ambilJatahTanya(workspaceId: string): Promise<{
+  terpakai: number;
+  batas: number;
+  habis: boolean;
+  belumKonfirmasi: boolean;
+}> {
+  let ws = await prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId } });
+  const terkonfirmasi = await emailSudahDikonfirmasi(workspaceId);
+
+  const sehari = 24 * 60 * 60 * 1000;
+  if (terkonfirmasi && Date.now() - ws.tanyaResetAt.getTime() >= sehari) {
+    ws = await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { tanyaUsed: 0, tanyaResetAt: new Date() },
+    });
+  }
+
+  return {
+    terpakai: ws.tanyaUsed,
+    batas: JATAH_TANYA_HARIAN,
+    habis: ws.tanyaUsed >= JATAH_TANYA_HARIAN,
+    belumKonfirmasi: !terkonfirmasi,
+  };
+}
+
+/**
+ * Ambil satu jatah, kalau memang masih ada.
+ *
+ * Pengecekan dan pemotongannya jadi satu perintah, alasan yang sama dengan
+ * `pesanKredit`: dua tab yang terbuka bersamaan tidak boleh sama-sama lolos di
+ * sisa jatah yang terakhir.
+ */
+export async function pesanJatahTanya(workspaceId: string): Promise<boolean> {
+  await ambilJatahTanya(workspaceId); // sekalian tolkan kalau harinya sudah ganti
+
+  const hasil = await prisma.workspace.updateMany({
+    where: { id: workspaceId, tanyaUsed: { lt: JATAH_TANYA_HARIAN } },
+    data: { tanyaUsed: { increment: 1 } },
+  });
+
+  return hasil.count === 1;
+}
+
+/** Kembalikan jatah yang sudah diambil, dipakai kalau perintahnya gagal diproses. */
+export async function kembalikanJatahTanya(workspaceId: string): Promise<void> {
+  await prisma.workspace.updateMany({
+    where: { id: workspaceId, tanyaUsed: { gt: 0 } },
+    data: { tanyaUsed: { decrement: 1 } },
   });
 }
 

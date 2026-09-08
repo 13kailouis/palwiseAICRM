@@ -9910,6 +9910,641 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     await prisma.agent.update({ where: { id: agent.id }, data: { rasaAktif: true } });
   }
 
+  // ─── Ruang perintah (halaman Tanya) ────────────────────────────────────────
+  //
+  // Yang diuji di sini bukan kepintaran modelnya, tapi tiga hal yang kalau
+  // rusak merusaknya diam-diam:
+  //
+  //  1. Angkanya datang dari database, bukan dari model.
+  //  2. Usul kirim yang kontaknya bukan milik akun ini dibuang.
+  //  3. Ruang coba tidak ikut terhitung sebagai pelanggan sungguhan.
+  {
+    console.log("\nRuang perintah");
+
+    const { ALAT, bacaUsul, jalankanTanya, judulDariPesan } = await import(
+      "../ai/tanya.js"
+    );
+
+    // Judul utas: dipotong tanpa memanggil model, dan tidak boleh putus di
+    // tengah kata.
+    check(
+      "judul pendek dipakai apa adanya",
+      judulDariPesan("ada yang komplen nggak") === "ada yang komplen nggak",
+    );
+    const judulPanjang = judulDariPesan(
+      "tolong chat pelanggan yang namanya budi santoso, tanyakan jadi order apa tidak",
+    );
+    check(
+      "judul panjang dipotong di batas kata",
+      judulPanjang.length <= 45 && judulPanjang.endsWith("…") && !judulPanjang.includes("  "),
+      judulPanjang,
+    );
+
+    const ctxTanya = { workspaceId: workspace.id, agentId: agent.id };
+    const alatPeta = new Map(ALAT.map((a) => [a.nama, a]));
+
+    // Semua alat harus bisa dijalankan tanpa meledak, termasuk waktu datanya
+    // kosong. Alat yang melempar galat bikin seluruh perintah gagal, dan
+    // pemilik toko cuma melihat "gagal menjalankan perintah".
+    let alatGagal: string[] = [];
+    for (const a of ALAT) {
+      try {
+        await a.jalankan(ctxTanya, { rentang: "30-hari", kata: "budi", pertanyaan: "harga" });
+      } catch (err) {
+        alatGagal.push(`${a.nama}: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+    check("semua alat baca jalan tanpa galat", alatGagal.length === 0, alatGagal.join(" | "));
+
+    // Argumen kosong juga tidak boleh meledak. Model salah menulis argumen itu
+    // hal biasa, dan itu tidak boleh jadi galat di layar.
+    alatGagal = [];
+    for (const a of ALAT) {
+      try {
+        await a.jalankan(ctxTanya, {});
+      } catch (err) {
+        alatGagal.push(a.nama);
+      }
+    }
+    check("alat tetap jalan walau argumennya kosong", alatGagal.length === 0, alatGagal.join(", "));
+
+    // Kontak ruang coba TIDAK boleh ikut terhitung.
+    //
+    // Ini bug yang sama bentuknya dengan yang sudah diperbaiki di Ringkasan dan
+    // Pelanggan: kalau saringannya lupa dipasang, "hari ini 12 yang chat" di
+    // ruang perintah beda dari kartu dashboard yang bilang 7, dan dua angka
+    // yang berbeda untuk hal yang sama bikin orang berhenti mempercayai
+    // dua-duanya.
+    const kontakPalsu = await prisma.contact.create({
+      data: {
+        workspaceId: workspace.id,
+        waJid: `playground:${agent.id}-uji-tanya`,
+        name: "Kontak Ruang Coba",
+        masalah: "pura-pura komplain",
+        masalahSejak: new Date(),
+      },
+    });
+    const hasilMasalah = await alatPeta.get("daftar_masalah")!.jalankan(ctxTanya, {});
+    check(
+      "kontak ruang coba tidak muncul di daftar keluhan",
+      !hasilMasalah.includes("Kontak Ruang Coba"),
+      hasilMasalah.slice(0, 120),
+    );
+    const hasilCari = await alatPeta.get("cari_kontak")!.jalankan(ctxTanya, {
+      kata: "Kontak Ruang Coba",
+    });
+    check(
+      "kontak ruang coba tidak muncul di pencarian pelanggan",
+      // Yang diperiksa ID-nya. Kalimat "tidak ada yang cocok dengan ..."
+      // mengulang kata pencariannya sendiri, jadi mencocokkan nama selalu
+      // kelihatan gagal padahal saringannya bekerja.
+      !hasilCari.includes(kontakPalsu.id),
+      hasilCari.slice(0, 120),
+    );
+
+    // Keluhan sungguhan justru HARUS muncul, lengkap dengan sudah berapa lama
+    // menggantung. Yang paling lama duluan.
+    const kontakAsli = await prisma.contact.create({
+      data: {
+        workspaceId: workspace.id,
+        waJid: "628555010203@s.whatsapp.net",
+        phone: "628555010203",
+        name: "Bu Ani Uji",
+        masalah: "paket belum sampai",
+        masalahSejak: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+    });
+    const masalahAsli = await alatPeta.get("daftar_masalah")!.jalankan(ctxTanya, {});
+    check(
+      "keluhan sungguhan muncul lengkap dengan lamanya menggantung",
+      masalahAsli.includes("Bu Ani Uji") &&
+        masalahAsli.includes("paket belum sampai") &&
+        masalahAsli.includes("3 hari"),
+      masalahAsli.slice(0, 160),
+    );
+    check(
+      "id kontak ikut dibawa, supaya usul kirim tidak perlu menebak",
+      masalahAsli.includes(kontakAsli.id),
+    );
+
+    // Usul yang kontaknya milik workspace LAIN wajib dibuang.
+    //
+    // Ini pengaman terpenting di seluruh halaman. Kalau bocor, satu id yang
+    // ditebak model bisa jadi kartu "Kirim ke ..." yang mengirim pesan atas
+    // nama toko orang lain.
+    const wsLain = await prisma.workspace.create({
+      data: { name: "__selftest_tetangga__" },
+    });
+    const kontakTetangga = await prisma.contact.create({
+      data: {
+        workspaceId: wsLain.id,
+        waJid: "628777000222@s.whatsapp.net",
+        phone: "628777000222",
+        name: "Punya Tetangga",
+      },
+    });
+
+    check(
+      "usul ke kontak workspace lain dibuang",
+      (await bacaUsul(ctxTanya, {
+        jenis: "kirim_pesan",
+        kontakId: kontakTetangga.id,
+        teks: "halo",
+      })) === null,
+    );
+    check(
+      "usul dengan id karangan dibuang",
+      (await bacaUsul(ctxTanya, {
+        jenis: "kirim_pesan",
+        kontakId: "id-yang-tidak-pernah-ada",
+        teks: "halo",
+      })) === null,
+    );
+    check(
+      "usul tanpa isi pesan dibuang",
+      (await bacaUsul(ctxTanya, {
+        jenis: "kirim_pesan",
+        kontakId: kontakAsli.id,
+        teks: "   ",
+      })) === null,
+    );
+    check(
+      "usul ke berkas yang tidak ada dibuang",
+      (await bacaUsul(ctxTanya, {
+        jenis: "kirim_berkas",
+        kontakId: kontakAsli.id,
+        kode: "kode-karangan",
+      })) === null,
+    );
+
+    const usulSah = await bacaUsul(ctxTanya, {
+      jenis: "kirim_pesan",
+      kontakId: kontakAsli.id,
+      teks: "Halo bu, paketnya sudah kami cek ya",
+    });
+    check(
+      "usul yang sah lolos, lengkap dengan nama dan nomornya",
+      usulSah?.jenis === "kirim_pesan" &&
+        usulSah.kepada === "Bu Ani Uji" &&
+        // Nomornya WAJIB ikut. Tiga pelanggan bisa sama-sama bernama Budi, dan
+        // kartu yang cuma menyebut nama tidak pernah cukup untuk memastikan.
+        usulSah.nomor === "628555010203",
+      JSON.stringify(usulSah),
+    );
+
+    // Putaran penuh, dengan model yang dipaksa menjawab persis.
+    {
+      installRawStub(
+        JSON.stringify({
+          jawab: "Siap, ini yang mau aku kirim.",
+          usul: {
+            jenis: "kirim_pesan",
+            kontakId: kontakAsli.id,
+            teks: "Halo bu Ani, paketnya sudah kami cek ya",
+          },
+        }),
+      );
+      const hasil = await jalankanTanya({
+        workspaceId: workspace.id,
+        riwayat: [],
+        pesan: "tolong chat bu ani soal paketnya",
+      });
+      check(
+        "usul dari model sampai ke layar sebagai kartu",
+        hasil.usul?.jenis === "kirim_pesan" && hasil.usul.kepada === "Bu Ani Uji",
+        JSON.stringify(hasil.usul),
+      );
+
+      // Model yang menyebut kontak orang lain tidak boleh menghasilkan kartu,
+      // TAPI jawabannya tetap tampil sebagai kalimat biasa. Yang hilang cuma
+      // tombolnya.
+      installRawStub(
+        JSON.stringify({
+          jawab: "Oke, ini pesannya.",
+          usul: {
+            jenis: "kirim_pesan",
+            kontakId: kontakTetangga.id,
+            teks: "halo",
+          },
+        }),
+      );
+      const bocor = await jalankanTanya({
+        workspaceId: workspace.id,
+        riwayat: [],
+        pesan: "kirim ke tetangga",
+      });
+      check(
+        "kartu tidak muncul kalau kontaknya bukan milik akun ini",
+        bocor.usul === null && bocor.teks.includes("Oke"),
+        JSON.stringify(bocor),
+      );
+
+      // Jawaban yang bukan JSON tidak boleh menjatuhkan halaman.
+      installRawStub("maaf saya bingung");
+      const rusak = await jalankanTanya({
+        workspaceId: workspace.id,
+        riwayat: [],
+        pesan: "apa kabar",
+      });
+      check(
+        "balasan model yang rusak dijawab dengan kalimat, bukan galat",
+        rusak.usul === null && rusak.teks.length > 0,
+        rusak.teks,
+      );
+
+      installStub();
+    }
+
+    await prisma.workspace.delete({ where: { id: wsLain.id } });
+    await prisma.contact.delete({ where: { id: kontakPalsu.id } });
+
+    // Prompt-nya sendiri harus menyatakan dua larangan yang jadi dasar seluruh
+    // halaman ini. Kalau kalimatnya hilang, modelnya mulai mengarang angka dan
+    // mengaku bisa mengirim sendiri, dan itu cuma ketahuan dari keluhan.
+    const sumberTanya = fs.readFileSync(
+      path.join(
+        path.resolve(fileURLToPath(import.meta.url), "../../../../.."),
+        "apps/worker/src/ai/tanya.ts",
+      ),
+      "utf8",
+    );
+    check(
+      "prompt melarang menyebut angka yang bukan dari alat",
+      sumberTanya.includes("TIDAK BOLEH menyebut angka"),
+    );
+    check(
+      "prompt menyatakan dia tidak bisa mengirim sendiri",
+      sumberTanya.includes("Kamu tidak bisa mengirim apa pun sendiri"),
+    );
+    check(
+      "prompt melarang menebak id kontak",
+      sumberTanya.includes("Jangan pernah mengarang id"),
+    );
+    check(
+      "prompt menolak kirim serentak ke banyak orang",
+      sumberTanya.includes("mengirim ke banyak orang sekaligus"),
+    );
+
+    // Kirim ke pelanggan cuma boleh lewat baris di database, bukan teks yang
+    // dikirim layar. Kalau teksnya boleh datang dari klien, kartu yang dibaca
+    // dan pesan yang terkirim bisa berbeda.
+    const akarUjiTanya = path.resolve(fileURLToPath(import.meta.url), "../../../../..");
+    const rutePalwise = fs.readFileSync(
+      path.join(akarUjiTanya, "apps/worker/src/routes.ts"),
+      "utf8",
+    );
+    const blokLakukan = rutePalwise.slice(
+      rutePalwise.indexOf('router.post("/tanya/lakukan"'),
+      rutePalwise.indexOf('router.post("/tanya/batal"'),
+    );
+    check(
+      "usul dibaca dari database, bukan dari badan permintaan",
+      blokLakukan.includes("JSON.parse(baris.usul)") &&
+        !blokLakukan.includes("req.body?.teks"),
+    );
+    check(
+      "usul yang sudah dikerjakan tidak bisa dikirim dua kali",
+      blokLakukan.includes('baris.usulStatus !== "menunggu"'),
+    );
+    check(
+      "ambil alih tidak menyala secara bawaan",
+      blokLakukan.includes("req.body?.ambilAlih === true"),
+    );
+    check(
+      "yang terkirim ikut dicatat di obrolan pelanggannya",
+      blokLakukan.includes("appendMessage("),
+    );
+
+    // Bar bawah HP tidak boleh bergeser cuma karena ada menu baru disisipkan.
+    const navigasiTs = fs.readFileSync(
+      path.join(akarUjiTanya, "apps/web/src/lib/navigasi.ts"),
+      "utf8",
+    );
+    check(
+      "menu bar bawah dipilih lewat alamat, bukan nomor urut",
+      navigasiTs.includes('const BAWAH: string[] = ["/app", "/app/inbox", "/app/kontak", "/app/agent"]') &&
+        !navigasiTs.includes("SEMUA_MENU[0]"),
+    );
+    check("menu Tanya terdaftar", navigasiTs.includes('href: "/app/tanya"'));
+
+    // Pil masukan menutupi tombol kirim di pojok yang sama.
+    const masukanTsx = fs.readFileSync(
+      path.join(akarUjiTanya, "apps/web/src/components/KirimMasukan.tsx"),
+      "utf8",
+    );
+    check(
+      "pil masukan disembunyikan di ruang perintah",
+      masukanTsx.includes('pathname.startsWith("/app/tanya")'),
+    );
+
+    // Semua kode alat harus punya nama Indonesianya di layar. Kode mentah
+    // seperti "hitung_obrolan" di bawah jawaban itu bocoran isi perut.
+    const tanyaTsx = fs.readFileSync(
+      path.join(akarUjiTanya, "apps/web/src/components/Tanya.tsx"),
+      "utf8",
+    );
+    const tanpaNama = ALAT.filter((a) => !tanyaTsx.includes(`${a.nama}:`)).map((a) => a.nama);
+    check(
+      "tiap alat punya nama yang dimengerti pemilik toko",
+      tanpaNama.length === 0,
+      tanpaNama.join(", "),
+    );
+    check(
+      "jawaban Palwise tidak digambar sebagai gelembung seperti kotak masuk",
+      tanyaTsx.includes("Jawaban Palwise TIDAK pakai gelembung"),
+    );
+
+    // ── Mode pemasangan & menyimpan setelan ─────────────────────────────────
+    {
+      const { ALAT_PASANG_UJI, bacaUsul: bacaUsul2, jalankanTanya: jalankan2 } =
+        await import("../ai/tanya.js");
+
+      // Mode pasang TIDAK boleh punya alat yang menyentuh pelanggan.
+      //
+      // Orang yang sedang dipandu memasang baru saja mendaftar. Pesan yang
+      // keluar dari nomornya di hari pertama tidak bisa ditarik balik, dan
+      // tidak ada satu pun alasan pemasangan butuh mengirim apa pun.
+      const bocor = [...ALAT_PASANG_UJI].filter((n) =>
+        ["cari_kontak", "lihat_kontak", "daftar_masalah", "hitung_obrolan", "daftar_gambar"].includes(
+          n,
+        ),
+      );
+      check("mode pasang tidak punya alat yang menyentuh pelanggan", bocor.length === 0, bocor.join(", "));
+
+      // Dan usul kirim ditolak di KODE, bukan cuma tidak disebut di prompt.
+      check(
+        "usul kirim ditolak di utas pemasangan",
+        (await bacaUsul2(
+          ctxTanya,
+          { jenis: "kirim_pesan", kontakId: kontakAsli.id, teks: "halo" },
+          "pasang",
+        )) === null,
+      );
+      check(
+        "usul kirim tetap boleh di utas perintah biasa",
+        (await bacaUsul2(
+          ctxTanya,
+          { jenis: "kirim_pesan", kontakId: kontakAsli.id, teks: "halo" },
+          "perintah",
+        )) !== null,
+      );
+
+      // Usul menyimpan setelan boleh di dua mode.
+      const usulAsisten = await bacaUsul2(
+        ctxTanya,
+        { jenis: "ubah_asisten", isi: "Kamu customer service Kopi Uji. Santai, panggil kak." },
+        "pasang",
+      );
+      check(
+        "usul cara bicara membawa teks lamanya",
+        usulAsisten?.jenis === "ubah_asisten" &&
+          // Yang lama ikut, karena kartunya harus bisa menunjukkan apa yang
+          // berubah. "Simpan" tanpa tahu apa yang ditimpa itu lompatan iman.
+          usulAsisten.isiLama.includes("Nara"),
+        JSON.stringify(usulAsisten)?.slice(0, 140),
+      );
+      check(
+        "usul cara bicara yang isinya sama persis dibuang",
+        (await bacaUsul2(
+          ctxTanya,
+          { jenis: "ubah_asisten", isi: agent.behaviorPrompt },
+          "pasang",
+        )) === null,
+      );
+
+      const usulTambah = await bacaUsul2(
+        ctxTanya,
+        { jenis: "tambah_info", judul: "Jam buka", isi: "Buka Senin sampai Sabtu jam 9 sampai 5." },
+        "pasang",
+      );
+      check(
+        "usul catatan baru lolos dengan judulnya",
+        usulTambah?.jenis === "tambah_info" && usulTambah.judul === "Jam buka",
+      );
+      check(
+        "catatan yang terlalu pendek dibuang",
+        (await bacaUsul2(ctxTanya, { jenis: "tambah_info", judul: "x", isi: "buka" }, "pasang")) ===
+          null,
+      );
+
+      // Mengubah catatan wajib menyertakan yang lama, dan catatan milik akun
+      // lain tidak pernah bisa disentuh.
+      const catatanTetangga = await prisma.knowledgeSource.create({
+        data: {
+          agentId: (
+            await prisma.agent.create({
+              data: {
+                workspaceId: (await prisma.workspace.create({ data: { name: "__selftest_tetangga2__" } }))
+                  .id,
+                name: "Agent Tetangga",
+              },
+            })
+          ).id,
+          type: "text",
+          title: "Rahasia tetangga",
+          content: "Ini catatan punya orang lain, jangan pernah bisa disentuh dari sini.",
+        },
+      });
+      check(
+        "usul mengubah catatan akun lain dibuang",
+        (await bacaUsul2(
+          ctxTanya,
+          { jenis: "ubah_info", catatanId: catatanTetangga.id, isi: "diubah sepihak oleh model" },
+          "perintah",
+        )) === null,
+      );
+
+      const usulUbah = await bacaUsul2(
+        ctxTanya,
+        { jenis: "ubah_info", catatanId: source.id, isi: "HARGA BARU\nArabika Gayo 200gr Rp 95.000." },
+        "perintah",
+      );
+      check(
+        "usul mengubah catatan sendiri membawa isi lamanya",
+        usulUbah?.jenis === "ubah_info" && usulUbah.isiLama.includes("85.000"),
+      );
+      check(
+        "perubahan yang tidak mengubah apa pun dibuang",
+        (await bacaUsul2(
+          ctxTanya,
+          { jenis: "ubah_info", catatanId: source.id, isi: KNOWLEDGE },
+          "perintah",
+        )) === null,
+      );
+
+      // Putaran penuh di mode pasang: model yang nekat mengusulkan kirim tetap
+      // tidak menghasilkan kartu.
+      installRawStub(
+        JSON.stringify({
+          jawab: "Oke, aku kirim ya.",
+          usul: { jenis: "kirim_pesan", kontakId: kontakAsli.id, teks: "halo" },
+        }),
+      );
+      const nekat = await jalankan2({
+        workspaceId: workspace.id,
+        riwayat: [],
+        pesan: "kirim ke bu ani",
+        mode: "pasang",
+      });
+      check(
+        "utas pemasangan tidak pernah menghasilkan kartu kirim",
+        nekat.usul === null,
+        JSON.stringify(nekat.usul),
+      );
+      installStub();
+
+      await prisma.workspace.deleteMany({ where: { name: "__selftest_tetangga2__" } });
+
+      // Prompt pemandu harus tetap memegang dua aturan yang menentukan
+      // hasilnya. Kalau hilang, wawancaranya berubah jadi formulir yang
+      // dibacakan, dan catatan yang tersimpan mulai berisi harga karangan.
+      check(
+        "pemandu bertanya satu per satu",
+        sumberTanya.includes("SATU pertanyaan per giliran"),
+      );
+      check(
+        "pemandu dilarang mengarang isi catatan",
+        sumberTanya.includes("Cuma yang benar-benar dikatakan pemiliknya"),
+      );
+      check(
+        "pemandu tahu nomor WhatsApp harus dikerjakan pemiliknya sendiri",
+        sumberTanya.includes("memindai kode QR"),
+      );
+
+      // Menyimpan catatan wajib menghafal ulang. Tanpa ini pemiliknya melihat
+      // catatan sudah benar di layar sementara pelanggan tetap dikasih harga
+      // lama, dan itu bentuk kegagalan yang paling sulit ditebak orang.
+      const blokSimpan = rutePalwise.slice(
+        rutePalwise.indexOf('if (usul.jenis === "tambah_info"'),
+        rutePalwise.indexOf('// ── Mengirim ke pelanggan'),
+      );
+      check(
+        "catatan yang disimpan langsung dihafal ulang",
+        blokSimpan.includes("indexSource(sourceId)") &&
+          blokSimpan.includes("invalidateAgentCache"),
+      );
+      check(
+        "batas catatan per paket diperiksa waktu disimpan, bukan waktu diusulkan",
+        blokSimpan.includes("maxKnowledgeSources"),
+      );
+      check(
+        "catatan kembar tidak ditambah dua kali",
+        blokSimpan.includes("content: usul.isi"),
+      );
+
+      // Modenya diambil dari barisnya, bukan dari badan permintaan. Kalau klien
+      // yang menentukan, seluruh pembatasan alat di atas hilang dalam satu
+      // baris JSON.
+      const blokTanya = rutePalwise.slice(
+        rutePalwise.indexOf('router.post("/tanya"'),
+        rutePalwise.indexOf('router.post("/tanya/lakukan"'),
+      );
+      check(
+        "mode utas dibaca dari database, bukan dari badan permintaan",
+        blokTanya.includes('sesi.mode === "pasang"') && !blokTanya.includes("req.body?.mode"),
+      );
+
+      // Sapaan pembukanya ditulis tanpa memanggil model.
+      const ruteSesi = fs.readFileSync(
+        path.join(akarUjiTanya, "apps/web/src/app/api/tanya/sesi/route.ts"),
+        "utf8",
+      );
+      check(
+        "sapaan pemasangan ditulis langsung, tidak lewat model",
+        ruteSesi.includes("SAPAAN_PASANG") && !ruteSesi.includes("callWorker"),
+      );
+
+      // Pita kemajuan harus menghitung dengan cara yang sama dengan Ringkasan.
+      const rutePasang = fs.readFileSync(
+        path.join(akarUjiTanya, "apps/web/src/app/api/tanya/pemasangan/route.ts"),
+        "utf8",
+      );
+      check(
+        "pita pemasangan memakai patokan yang sama dengan Ringkasan",
+        rutePasang.includes("behaviorPrompt") &&
+          rutePasang.includes('status: "ready"') &&
+          rutePasang.includes('status: "connected"'),
+      );
+
+      const halamanRingkas = fs.readFileSync(
+        path.join(akarUjiTanya, "apps/web/src/app/app/page.tsx"),
+        "utf8",
+      );
+      check(
+        "Ringkasan menawarkan jalan pasang sambil ngobrol",
+        halamanRingkas.includes('href="/app/mulai"'),
+      );
+
+      // Cara bicara yang diganti versi yang jauh lebih pendek.
+      //
+      // Bentuk bug yang sama dengan tombol "Mulai dari contoh" dulu: contohnya
+      // lebih miskin dari tulisan bawaan yang dia timpa, dan mutu asistennya
+      // TURUN justru sesudah orangnya merasa sudah menyiapkan. Di jalur chat
+      // bentuknya persis sama, jadi remnya dipasang di dua tempat: prompt yang
+      // menyuruh membaca dulu, dan kartu yang berteriak kalau tetap menyusut.
+      check(
+        "pemandu disuruh membaca cara bicara lama sebelum menggantinya",
+        sumberTanya.includes("JALANKAN lihat_asisten DULU") &&
+          sumberTanya.includes("SETIDAKNYA selengkap yang lama"),
+      );
+      check(
+        "kartu memperingatkan kalau yang baru jauh lebih pendek",
+        tanyaTsx.includes("menyusutBanyak") &&
+          tanyaTsx.includes("Yang baru jauh lebih pendek"),
+      );
+
+      // Yang mau diubah harus KELIHATAN tanpa diklik.
+      //
+      // Versi pertama menyembunyikan teks lama di balik tautan "Lihat yang
+      // lama", dan itu salah arah: tidak ada yang membuka lipatan untuk
+      // memeriksa sesuatu yang dia belum tahu perlu diperiksa. Yang dilipat
+      // sekarang justru bagian yang TIDAK berubah.
+      check(
+        "perubahan ditampilkan sebagai perbandingan baris, bukan teks baru saja",
+        tanyaTsx.includes("function bandingkan(") &&
+          tanyaTsx.includes("<Perubahan lama={isiLama} baru={isiBaru} />"),
+      );
+      check(
+        "yang dilipat bagian yang tidak berubah, bukan yang lama",
+        // Yang diperiksa SAKELARNYA, bukan sebutannya: frasa "Lihat yang lama"
+        // masih ada di komentar yang menjelaskan kenapa tautan itu dibuang.
+        tanyaTsx.includes("baris tidak berubah") && !tanyaTsx.includes("setLihatLama"),
+      );
+      check(
+        "baris yang dibuang ditandai coretan, yang masuk ditandai warna merek",
+        tanyaTsx.includes("line-through decoration-ink-300") &&
+          tanyaTsx.includes("border-brand-500"),
+      );
+
+      // Kepala halaman tidak boleh tumbuh jadi beberapa baris lagi. Halaman ini
+      // setinggi layar dan isinya satu kolom obrolan, jadi tiap baris di kepala
+      // diambil langsung dari ruang baca.
+      check(
+        "kepala halaman tetap satu baris",
+        !tanyaTsx.includes("Kamu bicara ke Palwise di sini") &&
+          !tanyaTsx.includes("Jawab seadanya aja"),
+      );
+      check(
+        "mulai obrolan baru cuma ikon, bukan tombol hitam selebar rel",
+        !tanyaTsx.includes('className="btn-ink flex-1') &&
+          tanyaTsx.includes('title="Mulai obrolan baru"'),
+      );
+
+      // Titik mengetik harus <span>, karena itu yang dianimasikan globals.css.
+      // Versi sebelumnya memakai <i> dan titiknya diam saja: yang hilang bukan
+      // hiasan, tapi satu-satunya tanda bahwa perintahnya sedang dikerjakan.
+      const globalsCss = fs.readFileSync(
+        path.join(akarUjiTanya, "apps/web/src/app/globals.css"),
+        "utf8",
+      );
+      check(
+        "titik mengetik memakai elemen yang memang dianimasikan",
+        globalsCss.includes(".titik-ketik span") &&
+          !tanyaTsx.includes("<i />"),
+      );
+    }
+  }
+
   // Bersih-bersih --------------------------------------------------------------
   await prisma.workspace.delete({ where: { id: workspace.id } });
 

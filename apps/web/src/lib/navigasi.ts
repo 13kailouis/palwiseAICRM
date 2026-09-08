@@ -27,6 +27,7 @@ export const KELOMPOK: Kelompok[] = [
     judul: "Setiap hari",
     menu: [
       { href: "/app", label: "Ringkasan", ikon: "ringkasan" },
+      { href: "/app/tanya", label: "Tanya", ikon: "tanya" },
       { href: "/app/inbox", label: "Chat masuk", pendek: "Chat", ikon: "chat" },
       { href: "/app/kontak", label: "Pelanggan", ikon: "pelanggan" },
     ],
@@ -63,13 +64,30 @@ export const SEMUA_MENU: Menu[] = KELOMPOK.flatMap((k) => k.menu);
  * Yang dipilih persis kelompok "Setiap hari" ditambah Asisten. Tiga yang
  * pertama itu yang dibuka tiap hari, dan Asisten yang paling menentukan
  * pengguna baru berhasil atau menyerah.
+ *
+ * DISEBUT LEWAT ALAMATNYA, BUKAN NOMOR URUT. Dulu isinya SEMUA_MENU[0..3], dan
+ * itu diam-diam salah begitu ada menu baru disisipkan di tengah: menambahkan
+ * "Tanya" sesudah Ringkasan langsung menggeser Asisten keluar dari bar bawah,
+ * tanpa satu baris pun yang kelihatan berubah. Dengan alamat, menu baru tidak
+ * pernah menggeser siapa pun kecuali memang ditulis di sini.
+ *
+ * "Tanya" SENGAJA BELUM MASUK sini. Petaknya sudah penuh, dan menggeser salah
+ * satu dari empat yang sudah ada itu keputusan tersendiri yang harus diambil
+ * sesudah kelihatan seberapa sering ruang perintah benar-benar dipakai, bukan
+ * sekarang waktu halamannya baru lahir. Di HP dia jadi layar dorongan yang
+ * dibuka dari tombol Menu dan dari kotak di Ringkasan.
  */
-export const MENU_BAWAH: Menu[] = [
-  SEMUA_MENU[0], // Ringkasan
-  SEMUA_MENU[1], // Chat masuk
-  SEMUA_MENU[2], // Pelanggan
-  SEMUA_MENU[3], // Asisten
-];
+const BAWAH: string[] = ["/app", "/app/inbox", "/app/kontak", "/app/agent"];
+
+export const MENU_BAWAH: Menu[] = BAWAH.map((href) => {
+  const menu = SEMUA_MENU.find((m) => m.href === href);
+  if (!menu) {
+    throw new Error(
+      `Menu bar bawah "${href}" tidak ada di KELOMPOK. Alamatnya berubah atau menunya dihapus.`,
+    );
+  }
+  return menu;
+});
 
 /** Apakah menu ini yang sedang dibuka. */
 export function sedangDibuka(href: string, pathname: string): boolean {

@@ -21,6 +21,7 @@
 export type NamaIkon =
   | "ringkasan"
   | "chat"
+  | "tanya"
   | "pelanggan"
   | "asisten"
   | "info"
@@ -73,6 +74,21 @@ const GAMBAR: Record<NamaIkon, React.ReactNode> = {
   // Balon percakapan dengan ekor di kiri bawah.
   chat: (
     <path d="M6 4h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6l-5 4v-4H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+  ),
+
+  // Balon dengan tanda tanya, ekornya di KANAN bawah.
+  //
+  // Sengaja dibedakan dari `chat` di dua hal sekaligus, karena keduanya
+  // berdiri bersebelahan di menu dan ketukan yang salah di sini mahal: yang
+  // satu obrolan pelanggan sungguhan, yang satunya kamu bicara ke Palwise.
+  // Ekornya dibalik (kamu yang bicara, bukan pelanggan) dan isinya tanda
+  // tanya, jadi di ukuran 18px pun kedua bentuk itu tidak pernah tertukar.
+  tanya: (
+    <>
+      <path d="M18 4H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h6l5 4v-4h1a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z" />
+      <path d="M9.9 8.4a2.3 2.3 0 0 1 4.3 1.1c0 1.5-1.9 1.7-2.1 2.9" />
+      <path d="M12 14.4h.01" />
+    </>
   ),
 
   // Dua orang: satu di depan, satu menyembul di belakang.

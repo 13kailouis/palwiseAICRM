@@ -326,14 +326,31 @@ export default async function DashboardPage() {
                 Dibuka di tab baru, karena orangnya sedang di tengah pemasangan.
                 Menariknya keluar dari halaman ini berarti dia kehilangan
                 tempatnya. */}
-            <a
-              href="/panduan"
-              target="_blank"
-              rel="noreferrer"
-              className="tap-aman mt-4 inline-block text-sm text-brand-700 hover:underline"
-            >
-              Baru pertama kali? Baca panduannya dulu
-            </a>
+            {/* Dua jalan keluar dari kotak ini, dan yang tebal SENGAJA yang
+                obrolan.
+
+                Yang bikin orang berhenti di langkah satu bukan jumlah
+                langkahnya, tapi kotak kosong berjudul "Perilaku asisten" yang
+                tidak ada seorang pun tahu harus diisi apa. Panduan menjelaskan
+                kotak itu; obrolan menghilangkannya, karena "usahamu jualan
+                apa" bisa dijawab siapa saja tanpa membaca apa pun dulu.
+
+                Panduannya tetap ada di sebelahnya, sebagai teks biasa, buat
+                yang memang lebih suka membaca sendiri dulu. */}
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Link href="/app/mulai" className="btn-ink">
+                <Ikon nama="tanya" size={15} />
+                Pasang sambil ngobrol
+              </Link>
+              <a
+                href="/panduan"
+                target="_blank"
+                rel="noreferrer"
+                className="tap-aman text-sm text-brand-700 hover:underline"
+              >
+                Atau baca panduannya dulu
+              </a>
+            </div>
           </div>
         )}
 
@@ -372,6 +389,50 @@ export default async function DashboardPage() {
           </Link>
           </SpandukTutup>
         )}
+
+        {/* Pintu ke ruang perintah.
+            Bentuknya kotak ketik, bukan tombol, dan itu disengaja: yang perlu
+            dimengerti orang dalam sekali lihat bukan "ada halaman baru", tapi
+            "aku boleh ngetik pakai bahasaku sendiri". Kotak ketik mengatakan
+            itu tanpa satu kalimat penjelasan pun.
+
+            Ditaruh SESUDAH langkah pemasangan dan kabar uang, karena dua itu
+            ada cuma kalau memang mendesak. Buat akun yang sudah jalan,
+            keduanya tidak muncul, dan kotak ini yang pertama kelihatan. */}
+        <Link
+          href="/app/tanya"
+          className="anim-urut card flex items-center gap-3 p-3 transition hover:-translate-y-0.5 hover:border-ink-300 hover:shadow-md sm:p-4"
+          style={{ transitionDuration: "var(--gerak)" }}
+        >
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-900 text-white">
+            <Ikon nama="tanya" size={18} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm text-ink-500">
+              Tanya apa aja, atau kasih perintah
+            </span>
+            {/* Contohnya cuma di layar lebar. Di HP baris kedua ini bikin
+                kotaknya setinggi dua baris tanpa menambah apa pun yang tidak
+                sudah dikatakan baris pertama. */}
+            <span className="mt-0.5 hidden text-xs text-ink-400 sm:block">
+              &quot;ada yang komplen nggak&quot;, &quot;chat Budi tanyain jadi order apa nggak&quot;
+            </span>
+          </span>
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="shrink-0 text-ink-400"
+            aria-hidden="true"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </Link>
 
         {/* Dua kolom di HP, bukan satu.
 

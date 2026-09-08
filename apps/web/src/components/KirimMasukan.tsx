@@ -50,7 +50,11 @@ export function KirimMasukan({
   // pil ini menutupinya. Kotak masuk itu halaman kerja utama; kalau ada
   // masukan, tinggal kirim dari halaman lain. (Di HP obrolan kotak masuk itu
   // layar penuh yang menutup pil ini sendiri, jadi ini terutama soal desktop.)
-  if (pathname.startsWith("/app/inbox")) return null;
+  // Ruang perintah punya masalah yang sama persis: tombol kirimnya juga
+  // bundar di pojok kanan bawah, dan dua tombol bundar bertumpuk di sudut yang
+  // sama itu ketukan yang salah menunggu terjadi.
+  if (pathname.startsWith("/app/inbox") || pathname.startsWith("/app/tanya"))
+    return null;
 
   if (!buka) {
     return (
