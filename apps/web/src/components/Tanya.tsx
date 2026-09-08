@@ -8,6 +8,7 @@ import Link from "next/link";
 import { TanyaIcon } from "@/components/TanyaIcon";
 import styles from "./Tanya.module.css";
 import { WhatsAppDalamChat } from "@/components/WhatsAppDalamChat";
+import type { HasilBacaTanya, IdeTanya } from "@palwise/db";
 
 /** A dedicated AI workspace, with a searchable history and a responsive composer. */
 
@@ -45,6 +46,7 @@ interface Pesan {
   peran: string;
   teks: string;
   alat: string[];
+  hasilBaca?: HasilBacaTanya[];
   usul: Usul | null;
   usulStatus: string | null;
   usulPesan: string | null;
@@ -64,19 +66,6 @@ interface Pemasangan {
   nomor: boolean;
 }
 
-/**
- * Contoh perintah untuk layar kosong.
- *
- * Empat, bukan sepuluh. Ini bukan daftar kemampuan, ini pancingan: yang
- * dibutuhkan orang yang baru pertama membuka halaman ini cuma bukti bahwa
- * mengetik dengan bahasa sendiri memang boleh.
- */
-const CONTOH = [
-  { ikon: "ringkasan", judul: "Lihat kabar bisnis", detail: "Ringkas chat yang masuk hari ini", label: "Ringkas chat yang masuk hari ini. Ada berapa dan apa saja yang perlu aku perhatikan?" },
-  { ikon: "pelanggan", judul: "Cek pelanggan", detail: "Temukan yang butuh perhatian", label: "Ada pelanggan yang komplen atau belum dibalas?" },
-  { ikon: "kalender", judul: "Atur hari ini", detail: "Lihat jadwal dan janji pelanggan", label: "Siapa yang janji ketemu hari ini?" },
-  { ikon: "kirim", judul: "Bantu follow up", detail: "Siapkan pesan untuk pelanggan", label: "Bantu aku menyiapkan pesan follow up untuk pelanggan." },
-] as const;
 
 /**
  * Jawaban siap tekan untuk pertanyaan pertama pemasangan.
@@ -106,6 +95,21 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
   const [sesiId, setSesiId] = useState<string | null>(sesiAwal);
   const [pesan, setPesan] = useState<Pesan[]>([]);
   const [draft, setDraft] = useState("");
+  const [ideAkun, setIdeAkun] = useState<{ usaha: string; ide: IdeTanya[] }>({ usaha: "", ide: [] });
+  const permintaanIde = useRef(0);
+  const muatIde = useCallback(async () => {
+    const urutan = ++permintaanIde.current;
+    try {
+      const res = await fetch("/api/tanya/ide", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (urutan === permintaanIde.current) setIdeAkun(data);
+    } catch { /* Suggestions are optional; typing remains available. */ }
+  }, []);
+  useEffect(() => {
+    void muatIde();
+    return () => { permintaanIde.current++; };
+  }, [muatIde, sesiId]);
   const [sibuk, setSibuk] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
   const [riwayatBuka, setRiwayatBuka] = useState(false);
@@ -493,7 +497,7 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
             }}>
               {memuat ? <div className={styles.loading} role="status"><span className={styles.spinner} />Menyiapkan obrolan...</div> :
                 <div className={styles.thread}>
-                  {kosong ? <Sambutan /> : <div className={styles.messages} role="log" aria-label="Percakapan dengan Palwise" aria-live="polite" aria-relevant="additions">
+                  {kosong ? <Sambutan usaha={ideAkun.usaha} /> : <div className={styles.messages} role="log" aria-label="Percakapan dengan Palwise" aria-live="polite" aria-relevant="additions">
                     {pesan.map((p) => p.peran === "pemilik" ? <DariPemilik key={p.id} teks={p.teks} /> :
                       <DariPalwise key={p.id} pesan={p} jalankan={(opsi) => jalankanUsul(p.id, opsi)} />)}
                   </div>}
@@ -510,7 +514,7 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
             {!kosong && jauhDariBawah && <button type="button" onClick={keBawah} className={styles.jump} aria-label="Ke pesan terbaru" title="Ke pesan terbaru"><TanyaIcon nama="bawah" size={18} /></button>}
           </div>
           <Pengetik isianRef={isianRef} draft={draft} setDraft={setDraft} sibuk={sibuk} terkunci={terkunci || !sesiId} kirim={kirim}
-            jatah={jatah} kosong={kosong && !memuat} ideBuka={ideBuka} togelIde={() => setIdeBuka(!ideBuka)} pilihIde={pilihIde}
+            jatah={jatah} kosong={kosong && !memuat} ide={ideAkun.ide} ideBuka={ideBuka} togelIde={() => { if (!ideBuka) void muatIde(); setIdeBuka(!ideBuka); }} pilihIde={pilihIde}
             bukaWhatsapp={() => { ikutiRef.current = true; setWhatsappBuka(true); }}
             galat={galat} cobaLagi={() => { if (sesiId) void bukaUtas(sesiId, true); else void utasBaru(); }} />
         </div>
@@ -739,19 +743,25 @@ function DariPalwise({ pesan, jalankan }: {
   const [salinan, setSalinan] = useState<"awal" | "selesai" | "gagal">("awal");
   useEffect(() => { if (salinan === "awal") return; const timer = setTimeout(() => setSalinan("awal"), 2500); return () => clearTimeout(timer); }, [salinan]);
   async function salin() {
-    try { await navigator.clipboard.writeText(pesan.teks); setSalinan("selesai"); }
+    const lengkap = [pesan.teks, ...(pesan.hasilBaca ?? []).map(h => `${h.judul}\n${h.isi}`)].join("\n\n");
+    try { await navigator.clipboard.writeText(lengkap); setSalinan("selesai"); }
     catch { setSalinan("gagal"); }
   }
   return <article className={styles.answer + " anim-naik"}>
     <div className={styles.answerIdentity}><TandaPalwise /><span>Palwise</span><span className={styles.aiBadge}>AI</span></div>
     <div className={styles.answerBody}>
-      <TeksJawaban teks={pesan.teks} />
+      {!(pesan.hasilBaca?.[0]?.isi.startsWith(pesan.teks) && pesan.teks) && <TeksJawaban teks={pesan.teks} />}
+      {(pesan.hasilBaca ?? []).map((hasil, index) => <details key={`${hasil.alat}-${index}`} className={styles.resultCard} aria-label={hasil.judul}
+        open={!new Set(["lihat_kontak", "lihat_info", "lihat_asisten", "cari_info_bisnis"]).has(hasil.alat)}>
+        <summary className={styles.resultHeading}><span>{hasil.judul}</span>{hasil.gagal && <small>Belum berhasil dibaca</small>}</summary>
+        <TeksJawaban teks={hasil.isi} />
+      </details>)}
       {pesan.usul && <div className="mt-4"><KartuUsul usul={pesan.usul} status={pesan.usulStatus} kabar={pesan.usulPesan} jalankan={jalankan} /></div>}
       <div className={styles.answerFooter}>
-        <button type="button" className={styles.copy} onClick={salin} aria-label="Salin jawaban">
-          <Ikon nama={salinan === "selesai" ? "centang" : "salin"} size={14} /><span aria-live="polite">{salinan === "selesai" ? "Tersalin" : salinan === "gagal" ? "Gagal menyalin, coba lagi" : "Salin jawaban"}</span>
+        <button type="button" className={styles.copy} onClick={salin} aria-label="Salin jawaban" title={salinan === "selesai" ? "Tersalin" : "Salin jawaban"}>
+          <Ikon nama={salinan === "selesai" ? "centang" : "salin"} size={16} /><span className="sr-only" aria-live="polite">{salinan === "selesai" ? "Tersalin" : salinan === "gagal" ? "Gagal menyalin, coba lagi" : ""}</span>
         </button>
-        {pesan.alat.length > 0 && <span className={styles.sources}><Ikon nama="info" size={12} />{pesan.alat.map(namaAlat).join(" · ")}</span>}
+        {pesan.alat.length > 0 && <details className={styles.sourceMenu}><summary aria-label="Sumber jawaban" title="Sumber jawaban"><Ikon nama="info" size={16} /></summary><div>{[...new Set(pesan.alat)].map(kode => <p key={kode}>{namaAlat(kode)}</p>)}</div></details>}
       </div>
     </div>
   </article>;
@@ -762,6 +772,7 @@ function DariPalwise({ pesan, jalankan }: {
 function namaAlat(kode: string): string {
   const peta: Record<string, string> = {
     hitung_obrolan: "hitungan chat",
+    daftar_pelanggan: "tahap pelanggan",
     daftar_masalah: "daftar keluhan",
     daftar_nunggu: "yang nunggu dibalas",
     daftar_janji: "janji temu",
@@ -1125,19 +1136,19 @@ function KartuUsul({
 
 // ── Layar kosong & kotak ketik ────────────────────────────────────────────────
 
-function Sambutan() {
+function Sambutan({ usaha }: { usaha: string }) {
   return <div className={styles.welcome + " anim-naik"}>
     <div className={styles.welcomeLogo}><Logo ukuran={40} /></div>
-    <p className={styles.eyebrow}>Kenalan dengan teman kerja AI kamu</p>
-    <h1>Ada yang bisa aku bantu?</h1>
-    <p>Dari kabar pelanggan sampai urusan bisnis.<br />Tanya atau ceritakan yang mau kamu kerjakan.</p>
+    <h1>Mau kerjakan apa?</h1>
+    {usaha && <p className={styles.businessName}>{usaha}</p>}
   </div>;
 }
 
-function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, kosong, ideBuka, togelIde, pilihIde, galat, cobaLagi, bukaWhatsapp }: {
+function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, kosong, ide, ideBuka, togelIde, pilihIde, galat, cobaLagi, bukaWhatsapp }: {
   isianRef: React.RefObject<HTMLTextAreaElement | null>; draft: string; setDraft: (v: string) => void;
   sibuk: boolean; terkunci: boolean; kirim: (teks: string) => void; jatah: { terpakai: number; batas: number } | null;
   kosong: boolean; ideBuka: boolean; togelIde: () => void; pilihIde: (teks: string) => void;
+  ide: IdeTanya[];
   galat: string | null; cobaLagi: () => void;
   bukaWhatsapp: () => void;
 }) {
@@ -1145,36 +1156,43 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
   useEffect(() => {
     const el = isianRef.current;
     if (!el) return;
-    el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 180) + "px";
+    const sesuaikan = () => {
+      el.style.height = "auto";
+      el.style.height = Math.min(el.scrollHeight, 180) + "px";
+    };
+    let lebar = el.clientWidth;
+    sesuaikan();
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth !== lebar) { lebar = el.clientWidth; sesuaikan(); }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [draft, isianRef]);
 
   return <div className={styles.composerDock}>
     <div className={styles.composerInner}>
       {galat && <div className={styles.error} role="alert"><span>{galat}</span><button type="button" onClick={cobaLagi} disabled={sibuk}>Muat ulang</button></div>}
       <form onSubmit={e => { e.preventDefault(); kirim(draft); }} className={styles.composer}>
-        <textarea ref={isianRef} rows={2} value={draft} onChange={e => setDraft(e.target.value)}
+        <textarea ref={isianRef} rows={1} value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(hover: hover) and (pointer: fine)").matches) { e.preventDefault(); kirim(draft); }
-          }} placeholder={sibuk ? "Siapkan pertanyaan berikutnya..." : "Tanya apa saja, atau minta bantuan..."}
+          }} placeholder={sibuk ? "Tulis pertanyaan berikutnya..." : "Tanya Palwise..."}
           className={styles.textarea} aria-label="Pesan untuk Palwise" />
         <div className={styles.composerToolbar}>
-          {!kosong && <button type="button" onClick={togelIde} className={styles.ideaButton} aria-expanded={ideBuka} aria-controls="ide-tanya"><TanyaIcon nama="ide" size={15} />Ide pertanyaan</button>}
-          <button type="button" onClick={bukaWhatsapp} className={styles.ideaButton} aria-label="Sambungkan WhatsApp di chat"><Ikon nama="whatsapp" size={15} />WhatsApp</button>
-          {kosong && <span className={styles.context}><Ikon nama="info" size={14} />Konteks bisnismu</span>}
+          {!kosong && <button type="button" onClick={togelIde} className={styles.ideaButton} title="Saran untuk bisnismu" aria-label="Saran untuk bisnismu" aria-expanded={ideBuka} aria-controls="ide-tanya"><TanyaIcon nama="ide" size={18} /></button>}
+          <button type="button" onClick={bukaWhatsapp} className={styles.ideaButton} title="Sambungkan WhatsApp" aria-label="Sambungkan WhatsApp di chat"><Ikon nama="whatsapp" size={19} /></button>
           <button type="submit" disabled={terkunci || !draft.trim()} className={styles.send} aria-label="Kirim pesan" title="Kirim pesan">
             {sibuk ? <span className={styles.spinner} /> : <TanyaIcon nama="atas" size={21} />}
           </button>
         </div>
       </form>
-      {(kosong || ideBuka) && <div id="ide-tanya" className={styles.suggestions} aria-label="Ide pertanyaan">
-        {CONTOH.map(c => <button key={c.judul} type="button" onClick={() => pilihIde(c.label)} className={styles.suggestion}>
-          <span className={styles.suggestionIcon}><Ikon nama={c.ikon} size={20} /></span><span><strong>{c.judul}</strong><small>{c.detail}</small></span>
-          <span className={styles.suggestionArrow}><TanyaIcon nama="kanan" size={15} /></span>
+      {(kosong || ideBuka) && ide.length > 0 && <div id="ide-tanya" className={styles.suggestions} aria-label="Saran untuk bisnismu">
+        {ide.map(c => <button key={c.judul} type="button" onClick={() => pilihIde(c.pesan)} className={styles.suggestion} title={c.pesan}>
+          <span className={styles.suggestionIcon}><Ikon nama={c.ikon} size={17} /></span><span><strong>{c.judul}</strong></span>
         </button>)}
       </div>}
       <div className={styles.composerHint}>
-        <span>Pengiriman pesan & perubahan data menunggu persetujuanmu.</span>
+        <span>Draf diperiksa sebelum dikirim.</span>
         {!kosong && <span className={styles.keyboardHint}>Enter kirim · Shift + Enter baris baru</span>}
       </div>
       {sisa !== null && sisa <= 10 && <p className="pt-2 text-center text-xs text-ink-600" role="status">Sisa {sisa} perintah hari ini.</p>}

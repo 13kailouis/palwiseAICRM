@@ -1,11 +1,13 @@
 import {
   HANYA_OBROLAN_ASLI,
   HANYA_PELANGGAN_ASLI,
+  bacaHasilTanya,
   displayName,
   getPlan,
   periodeBerikutnya,
   prisma,
   terpakaiSekarang,
+  type HasilBacaTanya,
 } from "@palwise/db";
 import { env } from "../env.js";
 import { log } from "../lib/log.js";
@@ -13,6 +15,7 @@ import { parseJsonLoose, sekarangIndonesia } from "./agent.js";
 import { getLlm } from "./provider.js";
 import { formatKnowledge, searchKnowledge } from "./rag.js";
 import { LlmMessage, textMessage } from "./types.js";
+import { hasilUntukChat, konteksGiliranTanya, tahapYangDiminta, TAHAP_TANYA, type GiliranTanya } from "./tanyaBacaan.js";
 
 /**
  * Ruang perintah: otak halaman "Tanya".
@@ -103,6 +106,7 @@ export interface HasilTanya {
   usul: Usul | null;
   /** Nama alat yang benar-benar dijalankan, untuk ditampilkan di bawah jawaban. */
   alat: string[];
+  hasilBaca: HasilBacaTanya[];
 }
 
 export interface Konteks {
@@ -188,6 +192,25 @@ function baris(k: {
  * yang menjawab pertanyaan pemilik toko itu kueri di sini, bukan modelnya.
  */
 export const ALAT: Alat[] = [
+  {
+    nama: "daftar_pelanggan",
+    untuk: "Daftar dan jumlah pelanggan menurut tahap CRM. Pakai tahap tertarik untuk pelanggan berminat; ini BERBEDA dari menunggu balasan atau komplain.",
+    argumen: `{"tahap":"baru|tertarik|negosiasi|closing|selesai|batal"}`,
+    async jalankan({ workspaceId }, arg) {
+      const tahap = String(arg?.tahap ?? "");
+      if (!TAHAP_TANYA.some(t => t === tahap)) return "Sebutkan tahap pelanggan: baru, tertarik, negosiasi, closing, selesai, atau batal.";
+      const where = { workspaceId, ...HANYA_PELANGGAN_ASLI, stage: tahap };
+      const [jumlah, orang] = await prisma.$transaction([
+        prisma.contact.count({ where }),
+        prisma.contact.findMany({ where, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: 20,
+          select: { id: true, name: true, waPushName: true, phone: true, stage: true } }),
+      ]);
+      if (!jumlah) return `Belum ada pelanggan yang tercatat di tahap ${tahap}.`;
+      return `Ada ${jumlah} pelanggan yang tercatat di tahap ${tahap}.` +
+        (jumlah > orang.length ? ` Menampilkan ${orang.length} dari ${jumlah}; daftar lengkap tersedia di halaman Pelanggan.` : "") + "\n\n" +
+        orang.map(k => `- ${baris(k)} (id: ${k.id}${k.phone ? `, nomor: ${k.phone}` : ""}) — tahap ${k.stage}`).join("\n");
+    },
+  },
   {
     nama: "hitung_obrolan",
     untuk: "Berapa pelanggan yang chat, berapa balasan yang keluar, berapa pelanggan baru.",
@@ -620,6 +643,10 @@ function aturanBersama(): string {
   return `ANGKA DAN FAKTA
 Kamu TIDAK BOLEH menyebut angka, nama, tanggal, atau isi catatan yang tidak datang dari hasil alat di percakapan ini, atau dari yang diketik pemiliknya sendiri. Kalau belum punya, panggil alatnya dulu. Menebak itu kesalahan terparah yang bisa kamu buat di sini.
 
+HASIL YANG DILIHAT PEMILIK
+Hasil alat baca ditampilkan sebagai kartu data di bawah jawabanmu. Jangan menaruh daftar di properti JSON lain seperti data, daftar, atau pelanggan: properti itu bukan jawaban. Tulis narasi hanya di jawab. Kalau hasil kosong, katakan belum ada data yang cocok; jangan berkata "ini daftarnya" atau mengajak memilih pelanggan yang tidak ada. Kalau alat gagal, katakan gagal membaca, BUKAN tidak ada pelanggan.
+Pelanggan tertarik adalah tahap tertarik di CRM: pakai daftar_pelanggan. daftar_nunggu hanya untuk obrolan yang meminta bantuan manusia. Menunggu balasan TIDAK berarti kesal, komplain, atau tertarik. Jangan menyimpulkan perasaan tanpa bukti. Jika pemilik berkata "mana?" atau daftar belum tampil, baca ulang data yang diminta semula, bukan mengulang kalimat jawabanmu.
+
 MENYIMPAN SESUATU
 Kamu tidak pernah menyimpan sendiri. Kamu menyusun usul, dan pemiliknya yang menekan tombol Simpan. Untuk mengubah catatan yang sudah ada, kamu WAJIB menjalankan lihat_info dulu dan menulis ulang SELURUH isinya, bukan potongannya, karena yang tersimpan menggantikan yang lama.
 
@@ -645,6 +672,7 @@ Kamu tidak bisa mengirim apa pun sendiri. Kamu cuma menyusun usul, dan pemilikny
 Sebelum mengusulkan, kamu WAJIB sudah menjalankan cari_kontak dan dapat id-nya. Jangan pernah mengarang id.
 Kalau cari_kontak tidak ketemu, atau ketemu lebih dari satu, JANGAN mengusulkan apa pun: tanya balik yang mana orangnya, sebutkan pilihannya beserta nomornya.
 Pesan yang kamu susun ditujukan untuk PELANGGAN, jadi tulis seperti toko yang menghubungi pelanggannya, bukan seperti kamu menjawab pemiliknya.
+Untuk follow up atau draf balasan, WAJIB baca lihat_kontak agar isinya sesuai obrolan terakhir pelanggan itu. Sebutkan kebutuhan yang benar-benar dibahas. Jangan membuat pesan generik ke "pelanggan", mengarang nama, penawaran, atau diskon. Jika riwayat belum ada, katakan konteksnya belum tersedia dan minta satu hal yang diperlukan.
 
 ${bentukJawaban("perintah")}
 
@@ -720,10 +748,19 @@ const ALAT_MAKS = 3;
 /** Berapa giliran lama yang ikut dikirim. Riwayat panjang itu token yang dibayar tiap pesan. */
 const RIWAYAT_GILIRAN = 8;
 
+export async function muatRiwayatTanya(sesiId: string, workspaceId: string): Promise<GiliranTanya[]> {
+  const terbaru = await prisma.pesanTanya.findMany({
+    where: { sesiId, sesi: { workspaceId } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 40,
+  });
+  return terbaru.reverse().map(r => ({ peran: r.peran, teks: r.teks, hasilBaca: bacaHasilTanya(r.hasilBaca) }));
+}
+
 export interface JalankanTanyaInput {
   workspaceId: string;
   /** Giliran sebelumnya, urut dari yang paling lama. */
-  riwayat: { peran: string; teks: string }[];
+  riwayat: GiliranTanya[];
   pesan: string;
   /** Mode utasnya. Menentukan prompt DAN alat mana yang boleh dipakai. */
   mode?: ModeTanya;
@@ -741,6 +778,16 @@ export async function jalankanTanya({
   ]);
 
   const ctx: Konteks = { workspaceId, agentId: agent?.id ?? null };
+  // A clear stage lookup reads the exact CRM filter, even if the model would pick another tool.
+  const tahap = mode === "perintah" ? tahapYangDiminta(pesan, riwayat) : null;
+  if (tahap) {
+    const alat = ALAT.find(a => a.nama === "daftar_pelanggan")!;
+    const isi = await alat.jalankan(ctx, { tahap });
+    return {
+      teks: isi.split("\n")[0], usul: null, alat: [alat.nama],
+      hasilBaca: [hasilUntukChat(alat.nama, isi, { tahap })],
+    };
+  }
   const llm = getLlm();
   let system = systemPrompt(ws.name, mode);
   if (mode === "pasang") {
@@ -756,30 +803,37 @@ export async function jalankanTanya({
     ...riwayat
       .slice(-RIWAYAT_GILIRAN)
       .map((r) =>
-        textMessage(r.peran === "pemilik" ? "user" : "assistant", r.teks),
+        textMessage(r.peran === "pemilik" ? "user" : "assistant", konteksGiliranTanya(r)),
       ),
     textMessage("user", pesan),
   ];
 
   const dipakai: string[] = [];
+  const hasilBaca: HasilBacaTanya[] = [];
+  const kontakDibaca = new Set<string>();
 
   for (let langkah = 0; langkah <= ALAT_MAKS; langkah++) {
-    const mentah = await llm.complete({
+    let mentah: string;
+    try { mentah = await llm.complete({
       system,
       messages: pesanModel,
       temperature: 0.2,
       json: true,
       maxTokens: 1400,
       model: env.GEMINI_MODEL,
-    });
+    }); } catch (error) {
+      if (!hasilBaca.length) throw error;
+      return { teks: "Ringkasan belum selesai dibuat. Hasil pemeriksaan tetap ada di bawah.", usul: null, alat: dipakai, hasilBaca };
+    }
 
     const jawaban = parseJsonLoose(mentah);
     if (!jawaban || typeof jawaban !== "object") {
       log.warn(`ruang perintah: balasan model bukan JSON — ${mentah.slice(0, 200)}`);
       return {
-        teks: "Maaf, aku belum menangkap maksudnya. Coba tulis ulang dengan kalimat lain ya.",
+        teks: hasilBaca.length ? "Berikut hasil yang sudah diperiksa." : "Maaf, aku belum menangkap maksudnya. Coba tulis ulang dengan kalimat lain ya.",
         usul: null,
         alat: dipakai,
+        hasilBaca,
       };
     }
 
@@ -815,16 +869,22 @@ export async function jalankanTanya({
       }
 
       let hasil: string;
+      let gagal = false;
       try {
         hasil = await alat.jalankan(ctx, jawaban.argumen ?? {});
       } catch (err) {
         log.error(
           `ruang perintah: alat ${alat.nama} gagal — ${err instanceof Error ? err.message : err}`,
         );
-        hasil = "Alatnya gagal dijalankan. Katakan ke pemiliknya kalau bagian ini belum bisa dibaca.";
+        gagal = true;
+        hasil = "Data ini belum bisa dibaca karena koneksi bermasalah. Coba lagi sebentar ya.";
       }
 
       dipakai.push(alat.nama);
+      if (!gagal && alat.nama === "lihat_kontak") kontakDibaca.add(String(jawaban.argumen?.kontakId ?? ""));
+      if (alat.nama !== "sambungkan_whatsapp") {
+        hasilBaca.push(hasilUntukChat(alat.nama, hasil, jawaban.argumen ?? {}, gagal));
+      }
       pesanModel.push(textMessage("assistant", mentah));
       pesanModel.push(textMessage("user", `HASIL ALAT ${alat.nama}:\n${hasil}`));
       continue;
@@ -833,21 +893,41 @@ export async function jalankanTanya({
     const teks = String(jawaban.jawab ?? "").trim();
     const usul = await bacaUsul(ctx, jawaban.usul, mode);
 
+    // A personalized draft cannot skip the customer's actual conversation.
+    if (usul && "kontakId" in usul && /follow[ -]?up|draf|balasan/i.test(pesan) && !kontakDibaca.has(usul.kontakId)) {
+      const alat = petaAlat.get("lihat_kontak")!;
+      let isi: string;
+      try { isi = await alat.jalankan(ctx, { kontakId: usul.kontakId }); }
+      catch {
+        hasilBaca.push(hasilUntukChat(alat.nama, "Obrolan pelanggan belum bisa dibaca. Coba lagi sebentar ya.", {}, true));
+        return { teks: "Aku belum bisa menyiapkan draf yang sesuai karena obrolan pelanggan belum terbaca.", alat: dipakai, hasilBaca, usul: null };
+      }
+      kontakDibaca.add(usul.kontakId);
+      dipakai.push(alat.nama);
+      hasilBaca.push(hasilUntukChat(alat.nama, isi, {}));
+      pesanModel.push(textMessage("assistant", mentah));
+      pesanModel.push(textMessage("user", `HASIL ALAT lihat_kontak:\n${isi}\n\nPerbaiki draf berdasarkan obrolan ini. Jika obrolan kosong, jelaskan konteks belum cukup dan tanyakan satu hal, jangan mengarang kebutuhan pelanggan.`));
+      continue;
+    }
+
     return {
       teks:
-        teks ||
+        (hasilBaca.length && hasilBaca.every(h => h.gagal) ? "Data belum bisa dibaca. Coba lagi sebentar ya." :
+        !usul && hasilBaca.length && hasilBaca.every(h => /^(Tidak ada|Belum ada)/.test(h.isi)) ? "Belum ada data yang cocok dengan permintaan ini." : teks) ||
         (usul
           ? "Ini yang mau aku kirim. Cek dulu, baru tekan Kirim."
           : "Aku belum punya jawabannya."),
       usul,
       alat: dipakai,
+      hasilBaca,
     };
   }
 
   return {
-    teks: "Maaf, aku muter-muter dan belum ketemu jawabannya. Coba tanya dengan cara lain ya.",
+    teks: hasilBaca.length ? "Berikut hasil yang sudah diperiksa. Bagian lainnya belum selesai diperiksa." : "Maaf, aku belum ketemu jawabannya. Coba tanya dengan cara lain ya.",
     usul: null,
     alat: dipakai,
+    hasilBaca,
   };
 }
 

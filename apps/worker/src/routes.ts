@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import express, { type Request, type Response } from "express";
-import { getPlan, prisma } from "@palwise/db";
+import { bacaHasilTanya, getPlan, prisma } from "@palwise/db";
 
 import { env, aiConfigured } from "./env.js";
 import { log } from "./lib/log.js";
@@ -22,7 +22,7 @@ import {
   pesanJatahTanya,
 } from "./core/quota.js";
 import { ringkasPelanggan } from "./core/ringkasan.js";
-import { jalankanTanya, judulDariPesan, type Usul } from "./ai/tanya.js";
+import { jalankanTanya, judulDariPesan, muatRiwayatTanya, type Usul } from "./ai/tanya.js";
 import {
   channelRuntimeStatus,
   isChannelConnected,
@@ -905,11 +905,7 @@ router.post("/tanya", async (req, res) => {
       return;
     }
 
-    const riwayat = await prisma.pesanTanya.findMany({
-      where: { sesiId },
-      orderBy: { createdAt: "asc" },
-      take: 40,
-    });
+    const riwayat = await muatRiwayatTanya(sesiId, workspaceId);
 
     const dariPemilik = await prisma.pesanTanya.create({
       data: { sesiId, peran: "pemilik", teks: pesan },
@@ -929,7 +925,7 @@ router.post("/tanya", async (req, res) => {
     try {
       hasil = await jalankanTanya({
         workspaceId,
-        riwayat: riwayat.map((r) => ({ peran: r.peran, teks: r.teks })),
+        riwayat,
         pesan,
         // Modenya diambil dari BARIS UTASNYA, tidak pernah dari badan
         // permintaan. Kalau klien yang menentukan, utas pemasangan tinggal
@@ -952,6 +948,7 @@ router.post("/tanya", async (req, res) => {
         peran: "palwise",
         teks: hasil.teks,
         alat: JSON.stringify(hasil.alat),
+        hasilBaca: JSON.stringify(hasil.hasilBaca),
         usul: hasil.usul ? JSON.stringify(hasil.usul) : null,
         usulStatus: hasil.usul ? "menunggu" : null,
       },
@@ -1240,6 +1237,7 @@ function bentukPesanTanya(p: {
   peran: string;
   teks: string;
   alat: string;
+  hasilBaca: string;
   usul: string | null;
   usulStatus: string | null;
   usulPesan: string | null;
@@ -1250,6 +1248,7 @@ function bentukPesanTanya(p: {
     peran: p.peran,
     teks: p.teks,
     alat: JSON.parse(p.alat || "[]") as string[],
+    hasilBaca: bacaHasilTanya(p.hasilBaca),
     usul: p.usul ? (JSON.parse(p.usul) as Usul) : null,
     usulStatus: p.usulStatus,
     usulPesan: p.usulPesan,

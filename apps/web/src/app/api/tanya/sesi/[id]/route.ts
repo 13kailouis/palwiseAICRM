@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma, SAPAAN_PASANG, sapaanPemasangan } from "@palwise/db";
+import { bacaHasilTanya, prisma, SAPAAN_PASANG, sapaanPemasangan } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
 import { bacaPemasangan } from "@/lib/pemasangan";
 
@@ -36,6 +36,7 @@ export async function GET(
       peran: p.peran,
       teks: sapaan && p.teks === SAPAAN_PASANG ? sapaan : p.teks,
       alat: JSON.parse(p.alat || "[]") as string[],
+      hasilBaca: bacaHasilTanya(p.hasilBaca),
       usul: p.usul ? JSON.parse(p.usul) : null,
       usulStatus: p.usulStatus,
       usulPesan: p.usulPesan,

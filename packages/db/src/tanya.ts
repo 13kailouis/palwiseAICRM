@@ -28,6 +28,24 @@ export const SAPAAN_PASANG =
  *  karena di utas ini yang bicara duluan Palwise, bukan pemiliknya. */
 export const JUDUL_PASANG = "Pasang asisten";
 
+export interface HasilBacaTanya {
+  alat: string;
+  judul: string;
+  isi: string;
+  gagal: boolean;
+}
+
+/** Accept legacy messages and reject malformed stored result payloads. */
+export function bacaHasilTanya(nilai: string | null | undefined): HasilBacaTanya[] {
+  try {
+    const data: unknown = JSON.parse(nilai || "[]");
+    return Array.isArray(data) ? data.filter((v): v is HasilBacaTanya =>
+      !!v && typeof v === "object" && typeof v.alat === "string" &&
+      typeof v.judul === "string" && typeof v.isi === "string" && typeof v.gagal === "boolean",
+    ).slice(0, 4) : [];
+  } catch { return []; }
+}
+
 export interface KeadaanPemasangan {
   caraBicara: boolean;
   info: boolean;

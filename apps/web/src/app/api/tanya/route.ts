@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       await tx.sesiTanya.update({ where: { id: sesi.id }, data: { updatedAt: new Date(), ...(utas.judul ? {} : { judul: pesan.slice(0, 70) }) } });
       return [pemilik, jawaban];
     });
-    return NextResponse.json({ pesan: hasil.map(p => ({ ...p, alat: JSON.parse(p.alat), usul: null })) });
+    return NextResponse.json({ pesan: hasil.map(p => ({ ...p, alat: JSON.parse(p.alat), hasilBaca: [], usul: null })) });
   }
 
   try {

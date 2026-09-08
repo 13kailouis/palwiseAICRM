@@ -68,6 +68,13 @@
 .answerText pre { overflow-x: auto; white-space: pre; background: #f6f6f6; border: 1px solid #e6e6e6; border-radius: 12px; padding: 14px; margin: 12px 0; max-width: 100%; }
 .answerText pre code { padding: 0; background: none; }
 .answerFooter { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.resultCard { margin-top: 16px; padding: 16px; border: 1px solid #e4e7eb; border-radius: 14px; background: #fafbfc; min-width: 0; }
+.resultHeading { cursor: pointer; color: #50565e; font-size: 13px; }
+.resultHeading > span { color: #171717; font-weight: 650; }
+.resultHeading small { color: #b42318; font-size: 11px; margin-left: 8px; }
+.resultCard[open] > .resultHeading { margin-bottom: 10px; }
+.resultCard:first-child { margin-top: 0; }
+.resultCard .answerText { font-size: 13px; line-height: 1.8; }
 .copy { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; margin-left: -8px; border-radius: 8px; color: #6b7075; font-size: 10px; }
 .copy:hover { color: #171717; background: #f6f6f6; }
 .sources { display: inline-flex; align-items: center; gap: 5px; color: #6b7075; font-size: 10px; flex-wrap: wrap; }
@@ -167,5 +174,46 @@
   :global(html[data-tanya-keyboard="1"]) .suggestions,
   :global(html[data-tanya-keyboard="1"]) .composerHint { display: none; }
   :global(html[data-tanya-keyboard="1"]) .textarea { max-height: 100px; }
+}
+.welcome { margin-bottom: 22px; }
+.welcomeLogo { width: 48px; height: 48px; border-radius: 15px; margin-bottom: 14px; }
+.welcomeLogo img { width: 30px; height: 30px; }
+.welcome h1 { font-size: 32px; letter-spacing: -1px; }
+.welcome .businessName { margin-top: 8px; font-size: 12px; overflow-wrap: anywhere; }
+.composer { padding: 12px 12px 8px; border-radius: 18px; }
+.textarea { min-height: 28px; }
+.composerToolbar { margin-top: 4px; gap: 2px; }
+.ideaButton { border: 0; width: 40px; height: 40px; padding: 0; justify-content: center; }
+.send { width: 38px; height: 38px; border-radius: 12px; }
+.suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+.suggestion { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 12px; min-height: 42px; }
+.suggestionIcon { display: flex; margin: 0; }
+.suggestion strong { font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
+.answerFooter { margin-top: 6px; gap: 2px; }
+.copy { width: 40px; min-height: 40px; justify-content: center; margin: 0; padding: 0; }
+.sourceMenu { position: relative; color: #6b7075; font-size: 11px; }
+.sourceMenu summary { display: grid; place-items: center; cursor: pointer; width: 40px; height: 40px; border-radius: 8px; list-style: none; }
+.sourceMenu summary::-webkit-details-marker { display: none; }
+.sourceMenu summary:hover, .sourceMenu[open] summary { background: #f4f4f4; color: #171717; }
+.sourceMenu > div { position: absolute; bottom: 44px; left: 0; min-width: 170px; max-width: 230px; padding: 10px 12px; line-height: 1.9; border: 1px solid #e6e6e6; border-radius: 10px; background: white; box-shadow: 0 6px 20px #0000000c; z-index: 2; }
+@media (max-width: 600px) {
+  .header { min-height: 54px; padding: 5px 8px; }
+  .subtitle { display: none; }
+  .workspaceEmpty { padding: 18px 0; }
+  .welcome { margin-bottom: 16px; }
+  .welcomeLogo { width: 40px; height: 40px; margin-bottom: 12px; border-radius: 13px; }
+  .welcomeLogo img { width: 26px; height: 26px; }
+  .welcome h1 { font-size: 25px; letter-spacing: -.7px; }
+  .welcome .businessName { margin-top: 6px; font-size: 11px; }
+  .composerDock { padding: 6px 10px max(8px, env(safe-area-inset-bottom)); }
+  .composer { padding: 10px 10px 6px; border-radius: 16px; }
+  .textarea { min-height: 27px; font-size: 16px; }
+  .composerHint { display: none; }
+  .suggestions { gap: 6px; margin-top: 12px; }
+  .suggestion { padding: 8px 10px; min-height: 40px; max-width: 100%; }
+  .thread { padding: 20px 14px; }
+  .messages { gap: 20px; }
+  .answerIdentity { margin-bottom: 9px; }
+  .resultCard { padding: 12px; margin-top: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .shell *, .shell *::before, .shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

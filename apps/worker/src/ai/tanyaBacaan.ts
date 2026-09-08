@@ -1,0 +1,53 @@
+import type { HasilBacaTanya } from "@palwise/db";
+
+export const TAHAP_TANYA = ["baru", "tertarik", "negosiasi", "closing", "selesai", "batal"] as const;
+
+export interface GiliranTanya {
+  peran: string;
+  teks: string;
+  hasilBaca?: HasilBacaTanya[];
+}
+
+/** Only unambiguous stage lookups take the direct read path. Other requests stay conversational. */
+export function tahapYangDiminta(pesan: string, riwayat: GiliranTanya[] = []): string | null {
+  let isi = pesan.toLowerCase().trim().replace(/[?.!]+$/, "");
+  if (/^(mana|yang mana|mana daftarnya|tampilkan daftarnya|kok (tidak|nggak|gak) (ada|muncul)|daftarnya mana)$/.test(isi)) {
+    const sebelumnya = [...riwayat].reverse().find(r => r.peran === "pemilik" &&
+      !/^(mana|yang mana|mana daftarnya|tampilkan daftarnya|kok (tidak|nggak|gak) (ada|muncul)|daftarnya mana)[?.!]*$/i.test(r.teks.trim()));
+    return sebelumnya ? tahapYangDiminta(sebelumnya.teks) : null;
+  }
+  if (!/\b(cek|cari|lihat|tampil\w*|daftar|siapa|berapa|ada)\b/.test(isi)) return null;
+  if (!/\b(siapa|pelanggan|customer|kontak|prospek)\b/.test(isi) && !/\b(yg|yang)\s+(tertarik|berminat|negosiasi|closing)\b/.test(isi)) return null;
+  if (/\b(kirim\w*|balas|hubungi|hapus|ubah|pindah\w*|buat\w*|susun|tulis|siapkan|pesankan)\b/.test(isi)) return null;
+  // Do not silently discard an extra filter, comparison, exclusion, or requested explanation.
+  if (/\b(hari|kemarin|minggu|bulan|tahun|tanggal|sejak|sebelum|setelah|kenapa|mengapa|alasan|banding\w*|selain|bukan|belum|tidak|nggak|gak|komplain|komplen|nunggu|menunggu|bernama|nama|nomor|dari)\b/.test(isi)) return null;
+  const tahap = TAHAP_TANYA.filter(t => new RegExp(`\\b${t}\\b`).test(isi));
+  if (tahap.length === 0 && /\bberminat\b/.test(isi)) return "tertarik";
+  return tahap.length === 1 ? tahap[0] : null;
+}
+
+const JUDUL: Record<string, string> = {
+  hitung_obrolan: "Ringkasan chat", daftar_pelanggan: "Daftar pelanggan",
+  daftar_masalah: "Keluhan yang masih terbuka", daftar_nunggu: "Menunggu balasan tim",
+  daftar_janji: "Janji temu", cari_kontak: "Hasil pencarian pelanggan",
+  lihat_kontak: "Detail pelanggan", cari_info_bisnis: "Info bisnis yang ditemukan",
+  daftar_gambar: "Gambar dan berkas", pemakaian: "Paket dan pemakaian",
+  daftar_info: "Catatan info bisnis", lihat_info: "Isi catatan", lihat_asisten: "Asisten kamu",
+  keadaan_pemasangan: "Progres pemasangan",
+};
+
+export function hasilUntukChat(alat: string, isi: string, argumen: Record<string, unknown>, gagal = false): HasilBacaTanya {
+  const tahap = typeof argumen.tahap === "string" && TAHAP_TANYA.some(t => t === argumen.tahap) ? argumen.tahap : "";
+  return {
+    alat,
+    judul: alat === "daftar_pelanggan" && tahap ? `Pelanggan ${tahap}` : JUDUL[alat] ?? "Hasil pemeriksaan",
+    // Internal record IDs are for subsequent tool calls, not customer-facing copy.
+    isi: isi.replace(/\s*\(id:\s*[^,\s)]+\)/g, "").replace(/\(id:\s*[^,\s)]+,\s*/g, "("),
+    gagal,
+  };
+}
+
+export function konteksGiliranTanya(r: GiliranTanya): string {
+  const hasil = (r.hasilBaca ?? []).map(h => `${h.judul}${h.gagal ? " (gagal dibaca)" : ""}:\n${h.isi}`).join("\n\n");
+  return r.teks + (hasil ? `\n\nData yang ditampilkan saat itu (baca ulang untuk keadaan terbaru):\n${hasil.slice(0, 6000)}` : "");
+}

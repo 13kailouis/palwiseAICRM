@@ -809,6 +809,10 @@ model PesanTanya {
   /// diambil dari mana, bukan dikarang.
   alat String @default("[]")
 
+  /// Hasil baca yang benar-benar diperoleh, ditampilkan terpisah dari narasi AI.
+  /// Snapshot ini ikut tersimpan supaya daftar tidak hilang saat utas dibuka lagi.
+  hasilBaca String @default("[]")
+
   /// Usulan tindakan yang MENUNGGU persetujuan, JSON. Null = jawaban biasa.
   ///
   /// Modelnya tidak pernah mengerjakan tindakan sendiri. Dia cuma menyusun
