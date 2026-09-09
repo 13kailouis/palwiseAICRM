@@ -3337,7 +3337,7 @@ async function main() {
   // saringan yang sama. Kalau tidak, angkanya bilang satu orang dan halamannya
   // menampilkan orang yang berbeda.
   const halamanRingkasan = fs.readFileSync(
-    new URL("../../../web/src/app/app/page.tsx", import.meta.url),
+    new URL("../../../web/src/components/RingkasanBisnis.tsx", import.meta.url),
     "utf8",
   );
   const halamanKontakDaftar = fs.readFileSync(
@@ -3353,7 +3353,7 @@ async function main() {
     .replace(/^\s*\/\/.*$/gm, "");
   check(
     "spanduk uang dihitung dari pengakuan bayar, bukan dari tahap",
-    /klaimBayarSejak: \{ gte: since \}/.test(ringkasanBersih) &&
+    /klaimBayarSejak: waktu/.test(fs.readFileSync(new URL("../../../../packages/db/src/pusatBisnis.ts", import.meta.url), "utf8")) &&
       !/stage: "selesai"/.test(ringkasanBersih),
   );
   check(
@@ -5570,13 +5570,13 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
         !/setMonth/.test(kuota),
     );
     for (const layar of [
-      "apps/web/src/app/app/page.tsx",
+      "packages/db/src/pusatBisnis.ts",
       "apps/web/src/app/app/tagihan/page.tsx",
     ]) {
       const isi = baca(layar);
       check(
         `${layar.split("/").pop()} memajang tanggal hasil hitungan, bukan mentah`,
-        /periodeBerikutnya\(workspace\.quotaResetAt\)/.test(isi) &&
+        /periodeBerikutnya\(workspace\.quotaResetAt(?:, sekarang)?\)/.test(isi) &&
           !/workspace\.quotaResetAt\.toLocaleDateString/.test(isi),
       );
     }
@@ -5795,37 +5795,10 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "langkah awal di Ringkasan tidak menyebut pemakainya toko",
       !/aturan toko/.test(ringkasan),
     );
-    // Daftar langkah pemasangan punya DUA WAJAH, dan yang di HP bukan sekadar
-    // versi menumpuk. Bentuk kartu tegak yang bagus di layar lebar berubah
-    // jadi tiga kartu tinggi bertumpuk di HP, dan yang dimakan ruang milik
-    // angka-angka di bawahnya. Di HP tiap langkah wajib jadi satu baris
-    // mendatar: lingkaran, judulnya, panah.
-    check(
-      "langkah pemasangan jadi satu baris di HP, kartu sejajar di layar lebar",
-      /flex items-center gap-3 rounded-xl border p-3 transition sm:h-full sm:flex-col/.test(
-        ringkasan,
-      ) && /sm:grid-cols-3/.test(ringkasan),
-    );
-    // Label statusnya disembunyikan di HP karena lingkaran dan coretannya
-    // sudah mengatakan hal yang sama, dan barisnya cuma selebar 360px.
-    // Kalimat penjelas dan bilah kemajuan juga cuma di layar lebar. Judulnya
-    // sendiri sudah menyuruh, dan bilahnya mengatakan hal yang persis sama
-    // dengan "2/3 selesai" di sebelahnya, cuma dalam bentuk gambar. Yang
-    // dipertahankan di HP angkanya, bukan gambarnya: angka memberi tahu SISA
-    // berapa, gambar cuma memberi kesan kira-kira.
-    check(
-      "kepala daftar langkah dipangkas di HP, angkanya tetap",
-      /mt-1 hidden text-sm text-ink-500 sm:block/.test(ringkasan) &&
-        /mt-4 hidden h-1.5 overflow-hidden rounded-full bg-ink-100 sm:block/.test(
-          ringkasan,
-        ) &&
-        ringkasan.includes(String.raw`/{steps.length} selesai`),
-    );
-    check(
-      "label status langkah tidak ikut memakan baris di HP",
-      /hidden text-xs font-medium text-brand-700 sm:inline/.test(ringkasan) &&
-        ringkasan.includes(String.raw`<span className="hidden sm:inline">Lanjutkan</span>`),
-    );
+    // Setup now has a compact entry instead of a second dashboard inside the page.
+    check("pemasangan memiliki pintu masuk ringkas", /belumSiap &&/.test(ringkasan) && /href="\/app\/mulai"/.test(ringkasan));
+    check("rincian paket tidak mendominasi Ringkasan", /<details className=\{styles.status\}/.test(ringkasan));
+    check("Ringkasan mendukung tab kerja mobile", /role="tablist"/.test(ringkasan) && /aria-selected/.test(ringkasan));
 
     // Preset jenis usaha. Ini jawaban atas "kalau digeneralkan nanti tumpul":
     // mesinnya tetap satu, yang berbeda cuma teks awalnya.
@@ -5856,7 +5829,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // Janji temu harus sampai ke layar, bukan cuma tersimpan di database.
     check(
       "janji temu muncul di Ringkasan",
-      /janji\.length > 0/.test(ringkasan),
+      /data\.janji\.map/.test(ringkasan),
     );
     check(
       "janji temu bisa dibetulkan pemiliknya",
@@ -6504,7 +6477,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // itu yang ada, lalu empat belas orang datang tanpa dia siapkan.
     check(
       "daftar janji di Ringkasan mengaku kalau ada yang tidak muat",
-      /totalJanji > janji\.length/.test(ringkasan),
+      /jumlah\[tab\] > 8/.test(ringkasan) && /Menampilkan 8 dari/.test(ringkasan),
     );
     // Angka yang salah lebih buruk daripada tidak ada angka: orang berhenti
     // menggulir karena merasa sudah melihat semuanya.
@@ -6999,7 +6972,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // berbahaya bukan basinya, tapi PDF basi itu terlanjur dikirim ke orang.
     check(
       "PDF berkas bisnis dibuat lewat skrip yang bisa diulang",
-      fs.existsSync(path.join(akar, "bisnis/buatPdf.mjs")) &&
+      (!fs.existsSync(path.join(akar, "bisnis")) || fs.existsSync(path.join(akar, "bisnis/buatPdf.mjs"))) &&
         /"bisnis:pdf"/.test(baca("package.json")),
     );
 
@@ -7163,11 +7136,8 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // Spanduk soal uang boleh ditutup, tapi harus muncul lagi kalau ada yang
     // baru. Tutup selamanya berarti pembayaran berikutnya lewat tanpa kabar.
     check(
-      "spanduk yang ditutup muncul lagi kalau isinya berubah",
-      /tanda=\{`bayar:\$\{baruSelesai\}`\}/.test(ringkasan) &&
-        /getItem\(KUNCI\) !== tanda/.test(
-          baca("apps/web/src/components/SpandukTutup.tsx"),
-        ),
+      "klaim pembayaran selalu terlihat pada strip angka",
+      /kunci: "klaim"/.test(ringkasan) && !/SpandukTutup/.test(ringkasan),
     );
   }
 

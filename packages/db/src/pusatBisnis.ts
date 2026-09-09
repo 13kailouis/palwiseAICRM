@@ -1,4 +1,4 @@
-import { prisma, displayName, HANYA_OBROLAN_ASLI, HANYA_PELANGGAN_ASLI, getPlan, terpakaiSekarang } from "./index.js";
+import { prisma, displayName, HANYA_OBROLAN_ASLI, HANYA_PELANGGAN_ASLI, getPlan, periodeBerikutnya, terpakaiSekarang } from "./index.js";
 
 const HARI = 86_400_000;
 export function awalHariWib(waktu: Date) {
@@ -55,6 +55,7 @@ export async function muatPusatBisnis(workspaceId: string, hari: 7 | 30 = 7, sek
     terbaru: terbaru.map(c => ({ ...baris(c, ""), cuplikan: c.messages[0]?.content.slice(0, 130) || "Belum ada pesan", peran: c.messages[0]?.role, perluBantuan: c.needsHuman })),
     kanal, info, caraBicara: !!agent?.behaviorPrompt?.trim(),
     paket: getPlan(workspace.plan).name,
+    resetBalasan: periodeBerikutnya(workspace.quotaResetAt, sekarang).toISOString(),
     balasan: { terpakai: terpakaiSekarang(workspace.aiCreditsUsed, workspace.quotaResetAt, sekarang), batas: getPlan(workspace.plan).aiCredits },
   };
 }

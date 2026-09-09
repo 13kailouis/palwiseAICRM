@@ -768,6 +768,7 @@ function namaAlat(kode: string): string {
     daftar_pelanggan: "tahap pelanggan",
     daftar_masalah: "daftar keluhan",
     daftar_nunggu: "yang nunggu dibalas",
+    ringkasan_bisnis: "kondisi bisnis", prioritas_bisnis: "prioritas kerja", peluang_follow_up: "peluang follow up",
     daftar_janji: "janji temu",
     cari_kontak: "data pelanggan",
     lihat_kontak: "riwayat pelanggan",

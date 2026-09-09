@@ -38,6 +38,7 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
   const jumlah = { prioritas: data.jumlahPrioritas, peluang: data.jumlahPeluang, janji: data.jumlahJanji };
   const labelTab = { prioritas: "Perlu perhatian", peluang: "Peluang", janji: "Janji" };
   const max = Math.max(1, ...data.tahap.map(t => t.jumlah));
+  const bentrok = new Set(data.janji.filter(j => data.janji.some(k => k.id !== j.id && Math.abs(new Date(k.waktu).getTime() - new Date(j.waktu).getTime()) < 30 * 60_000)).map(j => j.id));
   const total = data.tahap.reduce((s, t) => s + t.jumlah, 0);
   const belumSiap = !data.info || !data.caraBicara || !data.kanal.length;
   return <div className={styles.page}>
@@ -75,7 +76,7 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
           {tab !== "janji" ? data[tab].map(c => <div className={styles.row} key={c.id}>
             <Link className={styles.person} href={`/app/inbox?c=${c.id}`}><span className={styles.avatar}>{c.nama.slice(0, 1).toUpperCase()}</span><span><b>{c.nama}</b><small>{c.alasan}</small></span></Link>
             <Link className={styles.rowAction} href={tanyaBisnis(`Siapkan draf ${tab === "prioritas" ? "balasan" : "follow up"} untuk ${JSON.stringify(c.nama)}${c.nomor ? ` (nomor ${c.nomor})` : ""}. Baca obrolan terakhir dulu dan sesuaikan dengan kebutuhan pelanggan.`)}>Bantu balas <TanyaIcon nama="kanan" size={16} /></Link>
-          </div>) : data.janji.map(j => <Link className={styles.row} key={j.id} href={`/app/kontak/${j.id}`}><div className={styles.appointment}><b>{j.nama}</b><small>{waktu(j.waktu)} WIB · {j.catatan || "Tanpa catatan"}</small></div><span className={styles.badge}>{j.dipastikan ? "Dipastikan" : "Perlu dipastikan"}</span></Link>)}
+          </div>) : data.janji.map(j => <Link className={styles.row} key={j.id} href={`/app/kontak/${j.id}`}><div className={styles.appointment}><b>{j.nama}</b><small>{waktu(j.waktu)} WIB · {j.catatan || "Tanpa catatan"}</small></div><span className={styles.badge}>{bentrok.has(j.id) ? "Cek bentrok jamnya" : j.dipastikan ? "Dipastikan" : "Perlu dipastikan"}</span></Link>)}
           {jumlah[tab] > 8 && <p className={styles.explanation}>Menampilkan 8 dari {angka(jumlah[tab])}. <Link href={tab === "janji" ? "/app/kontak?stage=janji" : "/app/inbox"}>Lihat semua →</Link></p>}
         </div>
       </section>
@@ -97,7 +98,7 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
       </section>
     </div>
     <details className={styles.status}><summary>Paket & kesiapan <span>{data.paket}</span></summary><div>
-      <p>{angka(data.balasan.terpakai)} / {angka(data.balasan.batas)} balasan WhatsApp terpakai. <Link href="/app/tagihan">Kelola paket ↗</Link></p>
+      <p>{angka(data.balasan.terpakai)} / {angka(data.balasan.batas)} balasan WhatsApp terpakai. Reset {waktu(data.resetBalasan)} WIB. <Link href="/app/tagihan">Kelola paket ↗</Link></p>
       <p>{data.info} info bisnis siap digunakan. <Link href="/app/knowledge">Kelola info bisnis ↗</Link></p>
       <p><Link href="/panduan">Buka panduan penggunaan ↗</Link></p>
       <p>Status terakhir tercatat: {data.kanal.map(k => `${k.name} — ${k.status === "connected" ? "tersambung" : "belum tersambung"}`).join("; ") || "belum ada nomor"}. <Link href={tanyaBisnis("Apa WhatsApp saya masih tersambung?")}>Periksa sekarang ↗</Link></p>
