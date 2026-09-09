@@ -76,6 +76,7 @@ export * from "./teks.js";
 export * from "./tanya.js";
 export * from "./jatahTanya.js";
 export * from "./ideTanya.js";
+export * from "./pusatBisnis.js";
 
 /** Helper kecil untuk kolom JSON yang disimpan sebagai string di SQLite. */
 export function parseJsonArray(value: string | null | undefined): string[] {

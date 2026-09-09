@@ -1048,10 +1048,12 @@ router.post("/tanya/lakukan", async (req, res) => {
         });
         if (!punya) return void (await gagal("Catatannya sudah tidak ada."));
 
-        await prisma.knowledgeSource.update({
-          where: { id: punya.id },
+        // An old approval must not overwrite changes saved elsewhere since its preview.
+        const disimpan = await prisma.knowledgeSource.updateMany({
+          where: { id: punya.id, agent: { workspaceId }, content: usul.isiLama },
           data: { title: usul.judul, content: usul.isi, status: "pending", error: null },
         });
+        if (!disimpan.count) return void (await gagal("Catatan sudah berubah sejak pratinjau dibuat. Minta perubahan baru agar isi terbaru tetap aman."));
         sourceId = punya.id;
       }
 

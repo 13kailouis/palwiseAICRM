@@ -8,6 +8,8 @@ import {
   prisma,
   terpakaiSekarang,
   tanyaStatusWhatsApp,
+  muatPusatBisnis,
+  teksPusatBisnis,
   type HasilBacaTanya,
 } from "@palwise/db";
 import { log } from "../lib/log.js";
@@ -15,7 +17,7 @@ import { parseJsonLoose, sekarangIndonesia } from "./agent.js";
 import { getLlm } from "./provider.js";
 import { formatKnowledge, searchKnowledge } from "./rag.js";
 import { LlmMessage, textMessage } from "./types.js";
-import { hasilUntukChat, hasilDijanjikanTanpaIsi, janjiPemeriksaan, konteksGiliranTanya, rentangHitunganLangsung, tahapYangDiminta, TAHAP_TANYA, type GiliranTanya } from "./tanyaBacaan.js";
+import { hasilUntukChat, hasilDijanjikanTanpaIsi, janjiPemeriksaan, konteksGiliranTanya, permintaanAnalisis, rentangHitunganLangsung, tahapYangDiminta, TAHAP_TANYA, type GiliranTanya } from "./tanyaBacaan.js";
 import { koneksiTanya } from "./tanyaKoneksi.js";
 
 /**
@@ -195,6 +197,12 @@ function baris(k: {
  * yang menjawab pertanyaan pemilik toko itu kueri di sini, bukan modelnya.
  */
 export const ALAT: Alat[] = [
+  ...["ringkasan_bisnis", "prioritas_bisnis", "peluang_follow_up"].map(nama => ({
+    nama,
+    untuk: nama === "ringkasan_bisnis" ? "Perbandingan 7/30 hari, pesan, pelanggan, klaim pembayaran, tahap CRM dan kesiapan bisnis. Gunakan sebelum memberi strategi pertumbuhan. Tidak memuat omzet." : nama === "prioritas_bisnis" ? "Brief kerja: obrolan yang membutuhkan manusia/keluhan, janji mulai hari ini, dan peluang follow up beserta alasan." : "Cari peluang follow up dari prospek yang tidak aktif 1–30 hari, tanpa masalah atau jeda. Bukan izin mengirim; baca kontak sebelum membuat draf.",
+    argumen: "{ hari?: 7 | 30 }",
+    jalankan: async (ctx: Konteks, arg: Record<string, unknown>) => teksPusatBisnis(await muatPusatBisnis(ctx.workspaceId, arg.hari === 30 ? 30 : 7)),
+  })),
   {
     nama: "status_whatsapp",
     untuk: "Status sambungan WhatsApp saat ini, termasuk nomor yang putus. Baca ini saat ditanya apakah WhatsApp sudah tersambung; riwayat lama bukan bukti koneksi aktif.",
@@ -528,14 +536,19 @@ export const ALAT: Alat[] = [
   {
     nama: "lihat_info",
     untuk:
-      "Isi lengkap satu catatan Info bisnis. WAJIB dipakai sebelum mengusulkan perubahan catatan.",
+      "Baca catatan Info bisnis. WAJIB sebelum mengubah catatan. Tambahkan argumen bagian (kata/judul seperti KONTAK) untuk mencari bagian dalam catatan panjang.",
     argumen: `{"catatanId":"..."}`,
     async jalankan({ workspaceId }, arg) {
       const k = await prisma.knowledgeSource.findFirst({
         where: { id: String(arg?.catatanId ?? ""), agent: { workspaceId } },
       });
       if (!k) return "Catatan dengan id itu tidak ada.";
-      return `Judul: ${k.title}\nJenis: ${k.type}\n\n${k.content.slice(0, 6000)}`;
+      const bagian = String(arg.bagian ?? "").trim();
+      const posisi = bagian ? k.content.toLowerCase().indexOf(bagian.toLowerCase()) : 0;
+      if (posisi < 0) return `Bagian "${bagian}" tidak ditemukan. Coba kata lain atau lihat dari awal.`;
+      const mulai = Math.max(0, posisi - 200);
+      const potongan = k.content.slice(mulai, mulai + 6000);
+      return `Judul: ${k.title}\nJenis: ${k.type}\nPanjang: ${k.content.length} karakter. Menampilkan ${mulai + 1}–${mulai + potongan.length}. Untuk edit sebagian gunakan ubah_bagian_info dengan cari yang disalin PERSIS dari teks; bagian lain dipertahankan server.\n\n${potongan}`;
     },
   },
 
@@ -644,6 +657,10 @@ ${usulKirim}
 6) Mengusulkan PERUBAHAN catatan yang sudah ada (wajib lihat_info dulu):
 {"jawab":"kalimat singkat","usul":{"jenis":"ubah_info","catatanId":"...","judul":"judul barunya","isi":"seluruh isi barunya, bukan cuma bagian yang berubah"}}
 
+6b) Utamakan ini untuk MENAMBAH, MENGGANTI atau MENGHAPUS BAGIAN dalam catatan, termasuk hasil impor website panjang:
+{"jawab":"Ringkas perubahan yang diminta","usul":{"jenis":"ubah_bagian_info","catatanId":"...","cari":"kutipan persis yang muncul satu kali pada catatan","ganti":"teks pengganti untuk kutipan itu saja"}}
+Untuk MENAMBAH email, cari berisi baris kontak lama, ganti berisi baris lama + email baru. Untuk MENGHAPUS bagian, ganti boleh string kosong. Server mempertahankan seluruh bagian lain. Jika kutipan muncul beberapa kali, sertakan baris di sekitarnya agar unik. lihat_info menerima argumen bagian untuk mencari judul/kata dalam catatan panjang.
+
 7) Mengusulkan cara bicara asisten:
 {"jawab":"kalimat singkat","usul":{"jenis":"ubah_asisten","isi":"seluruh teks cara bicaranya"}}
 
@@ -660,7 +677,7 @@ Hasil alat baca ditampilkan sebagai kartu data di bawah jawabanmu. Jangan menaru
 Pelanggan tertarik adalah tahap tertarik di CRM: pakai daftar_pelanggan. daftar_nunggu hanya untuk obrolan yang meminta bantuan manusia. Menunggu balasan TIDAK berarti kesal, komplain, atau tertarik. Jangan menyimpulkan perasaan tanpa bukti. Jika pemilik berkata "mana?" atau daftar belum tampil, baca ulang data yang diminta semula, bukan mengulang kalimat jawabanmu.
 
 MENYIMPAN SESUATU
-Kamu tidak pernah menyimpan sendiri. Kamu menyusun usul, dan pemiliknya yang menekan tombol Simpan. Untuk mengubah catatan yang sudah ada, kamu WAJIB menjalankan lihat_info dulu dan menulis ulang SELURUH isinya, bukan potongannya, karena yang tersimpan menggantikan yang lama.
+Kamu tidak pernah menyimpan sendiri. Kamu menyusun usul, dan pemiliknya yang menekan tombol Simpan. Untuk mengubah catatan, jalankan lihat_info dulu. Utamakan ubah_bagian_info untuk perubahan sebagian; bagian lain otomatis dipertahankan. ubah_info hanya untuk penggantian seluruh catatan yang sudah terbaca lengkap. Perintah tambah email, hapus bagian, rubah harga, edit bagian X merujuk catatan yang sedang dibahas, BUKAN draf pelanggan. Jika target belum jelas, tanyakan catatan mana. Mengedit hasil impor hanya mengubah salinan Palwise, bukan website asal.
 
 MENYAMBUNGKAN WHATSAPP
 Kalau pemilik meminta QR, scan WhatsApp, atau Perangkat tertaut, pakai sambungkan_whatsapp. QR penautan BUKAN gambar yang disimpan di galeri; jangan pakai daftar_gambar atau mengarang kode QR. Kartu akan menampilkan QR dan status langsung di chat, tanpa harus pindah halaman. Pemilik yang menekan Tampilkan QR lalu memindai dari WhatsApp di HP-nya.`;
@@ -688,7 +705,7 @@ Untuk follow up atau draf balasan, WAJIB baca lihat_kontak agar isinya sesuai ob
 
 ${bentukJawaban("perintah")}
 
-YANG TIDAK BISA KAMU LAKUKAN, dan katakan apa adanya kalau diminta: menghapus apa pun, mengubah paket atau apa pun yang menyangkut uang, dan mengirim ke banyak orang sekaligus. Untuk yang terakhir, jelaskan bahwa mengirim serentak berisiko membuat nomor WhatsApp-nya diblokir, jadi itu tidak dibuka lewat perintah chat.`;
+YANG TIDAK BISA KAMU LAKUKAN, dan katakan apa adanya kalau diminta: menghapus seluruh akun, pelanggan atau catatan, mengubah paket atau transaksi uang, dan mengirim ke banyak orang sekaligus. Untuk yang terakhir, jelaskan bahwa mengirim serentak berisiko membuat nomor WhatsApp-nya diblokir, jadi itu tidak dibuka lewat perintah chat.`;
 }
 
 /**
@@ -738,7 +755,7 @@ ${daftarAlatUntukPrompt("pasang")}
 
 ${bentukJawaban("pasang")}
 
-Di utas ini kamu TIDAK bisa mengirim pesan ke pelanggan atau menghapus apa pun. Kamu bisa menampilkan kartu sambungan WhatsApp; pemilik sendiri yang mengizinkan penautannya lewat scan QR.`;
+Di utas ini kamu TIDAK bisa mengirim pesan ke pelanggan atau menghapus seluruh catatan. Menghapus bagian catatan boleh diusulkan melalui ubah_bagian_info. Kamu bisa menampilkan kartu sambungan WhatsApp; pemilik sendiri yang mengizinkan penautannya lewat scan QR.`;
 }
 
 function systemPrompt(namaUsaha: string, mode: ModeTanya): string {
@@ -834,11 +851,13 @@ export async function jalankanTanya({
     };
   }
   await sebelumModel?.();
+  const analisis = mode === "perintah" && permintaanAnalisis(pesan);
   const llm = getLlm();
   let system = systemPrompt(ws.name, mode);
   system += "\n\nUntuk hitungan chat, selalu sebut data yang TERCATAT di Palwise. Bila hasil alat menyebut WhatsApp terputus, sampaikan bahwa data belum lengkap; angka nol bukan bukti tidak ada chat di WhatsApp. Status tersambung di riwayat lama harus diperiksa ulang dengan status_whatsapp.";
   system += "\nJangan mengakhiri giliran dengan janji seperti 'saya lihat dulu', 'sebentar saya cek', atau 'akan saya siapkan'. Tidak ada pekerjaan latar belakang setelah jawaban dikirim. Jika perlu membaca, panggil alat sekarang, lalu berikan hasil dan langkah konkret dalam giliran yang sama. Jika data kurang, tanyakan satu hal spesifik. Untuk permintaan saran bisnis, berikan saran yang dapat dikerjakan sesuai data yang tersedia.";
-  system += "\nRevisi seperti 'jangan gitu', 'lebih santai', 'untuk relationship', atau 'mana/mna' mengacu pada draf dan permintaan sebelumnya. Sertakan usul BARU dengan isi lengkap dan penerima yang sama bila tidak diminta berubah. Jangan hanya menulis 'ini drafnya'. Status usulan lama bukan izin mengirim ulang. Untuk menjaga hubungan, jangan menyisipkan penawaran jika pemilik meminta percakapan personal. Jangan mengarang keadaan pelanggan. Jika penerima belum jelas, tanyakan namanya.";
+  system += "\nUTAMAKAN PERMINTAAN TERBARU. Riwayat hanya konteks, bukan tugas yang harus diteruskan. Pertanyaan strategi, analisis atau topik baru harus dijawab sesuai pertanyaannya; jangan tiba-tiba membuat draf untuk penerima dari riwayat. Hanya jika pemilik benar-benar meminta REVISI atau merujuk hasil sebelumnya ('jangan gitu', 'lebih santai', 'mana/mna'), gunakan draf terdahulu dan sertakan isi revisi lengkap. Usulan lama bukan izin mengirim ulang. Jangan mengarang keadaan pelanggan. Jika penerima belum jelas, tanyakan namanya.";
+  if (analisis) system += "\nTUGAS SAAT INI: analisis/saran bisnis, BUKAN revisi draf. usul harus null. Jawab pertanyaan terbaru dengan temuan, 2–3 langkah konkret, dan ukuran keberhasilan yang bisa dicatat. Jangan menjanjikan penjualan atau mengarang omzet. Jangan menyapa penerima dari draf lama. Gunakan laporan yang disertakan; cari info bisnis jika relevansi produk dibutuhkan.";
   if (mode === "pasang") {
     const pemasangan = ALAT.find(a => a.nama === "keadaan_pemasangan")!;
     system += "\n\nSTATUS PEMASANGAN SAAT INI (dibaca dari data tersimpan, utamakan ini daripada sapaan lama):\n" + await pemasangan.jalankan(ctx, {});
@@ -852,7 +871,7 @@ export async function jalankanTanya({
     ...riwayat
       .slice(-RIWAYAT_GILIRAN)
       .map((r) =>
-        textMessage(r.peran === "pemilik" ? "user" : "assistant", konteksGiliranTanya(r).slice(0, 3000)),
+        textMessage(r.peran === "pemilik" ? "user" : "assistant", (analisis ? r.teks : konteksGiliranTanya(r)).slice(0, 3000)),
       ),
     textMessage("user", pesan),
   ];
@@ -863,6 +882,16 @@ export async function jalankanTanya({
   const kontakDibaca = new Set<string>();
   let janjiDiperbaiki = false;
   let hasilDiperbaiki = false;
+  if (analisis) {
+    try {
+      const isi = await teksPusatBisnis(await muatPusatBisnis(workspaceId, /30|bulan/i.test(pesan) ? 30 : 7));
+      dipakai.push("ringkasan_bisnis");
+      hasilBaca.push(hasilUntukChat("ringkasan_bisnis", isi, {}));
+      pesanModel.push(textMessage("user", `DATA UNTUK PERMINTAAN TERBARU:\n${isi}\nPertanyaan yang wajib dijawab: ${pesan}`));
+    } catch {
+      pesanModel.push(textMessage("user", "Data bisnis belum bisa dibaca. Tetap jawab pertanyaan terbaru dengan saran umum yang jelas ditandai, jangan mengarang angka atau pelanggan."));
+    }
+  }
 
   for (let langkah = 0; langkah <= ALAT_MAKS; langkah++) {
     let mentah: string;
@@ -945,6 +974,12 @@ export async function jalankanTanya({
     // Count claims are grounded in the returned counts and their sync caveat, never a model's 'no chats' inference.
     const hitungan = hasilBaca.find(h => h.alat === "hitung_obrolan" && !h.gagal);
     const teks = hitungan ? hitungan.isi.split("\n")[0] : String(jawaban.jawab ?? "").trim();
+    if (analisis && (jawaban.usul || /\b(?:ini|berikut)\b.{0,40}\b(?:draf|draft)\b/i.test(teks))) {
+      if (langkah === ALAT_MAKS) return { teks: "Saran bisnisnya belum berhasil disusun. Data yang sudah diperiksa tersedia di bawah; coba ulangi analisisnya.", usul: null, alat: dipakai, hasilBaca };
+      pesanModel.push(textMessage("assistant", mentah));
+      pesanModel.push(textMessage("user", `Jawaban melenceng. Pemilik bertanya: ${pesan}. Jawab pertanyaan ini dengan langkah bisnis konkret berdasarkan laporan. Jangan membuat draf atau usul tindakan dan jangan melanjutkan pelanggan dari riwayat. usul: null.`));
+      continue;
+    }
     const usul = await bacaUsul(ctx, jawaban.usul, mode);
 
     // Invalid proposals used to disappear silently while their announcement remained.
@@ -952,12 +987,12 @@ export async function jalankanTanya({
       (hasilDijanjikanTanpaIsi(teks) && (!hasilBaca.length || /\b(?:draf|draft)(?:nya)?\b/i.test(teks))));
     if (hasilHilang) {
       if (hasilDiperbaiki || langkah === ALAT_MAKS) return {
-        teks: "Draf atau hasilnya belum berhasil dibuat. Coba ulangi permintaan dengan nama pelanggan dan perubahan yang kamu inginkan.",
+        teks: /info|catatan|bagian|email|kontak.*@/i.test(pesan) || /info|asisten/.test(String(jawaban.usul?.jenis ?? "")) ? "Perubahan belum berhasil disusun. Sebutkan judul catatan dan bagian yang ingin diubah; isi yang tersimpan belum berubah." : "Draf atau hasilnya belum berhasil dibuat. Coba ulangi permintaan dengan nama pelanggan dan perubahan yang kamu inginkan.",
         usul: null, alat: dipakai, hasilBaca,
       };
       hasilDiperbaiki = true;
       pesanModel.push(textMessage("assistant", mentah));
-      pesanModel.push(textMessage("user", "Hasil yang dijanjikan belum ada atau usul tidak valid. Jawab permintaan semula sampai selesai sekarang. Untuk draf pelanggan, keluarkan usul kirim_pesan berisi kontakId yang sudah diverifikasi dan teks lengkap. Gunakan draf terdahulu untuk revisi, baca pelanggan bila perlu. Untuk jawaban langsung, tulis isi sebenarnya. Jika data belum cukup, tanyakan satu hal spesifik; jangan mengulang pengantar tanpa isi."));
+      pesanModel.push(textMessage("user", "Hasil yang dijanjikan belum ada atau usul tidak valid. Jawab permintaan semula sampai selesai sekarang. Jika permintaan menyangkut info bisnis, jangan meminta nama pelanggan. Jalankan lihat_info dengan bagian yang diminta, lalu gunakan ubah_bagian_info dengan cari persis dan ganti sesuai permintaan. Untuk draf pelanggan, keluarkan usul kirim_pesan berisi kontakId yang sudah diverifikasi dan teks lengkap. Gunakan draf terdahulu untuk revisi, baca pelanggan bila perlu. Untuk jawaban langsung, tulis isi sebenarnya. Jika data belum cukup, tanyakan satu hal spesifik; jangan mengulang pengantar tanpa isi."));
       continue;
     }
 
@@ -1110,6 +1145,20 @@ export async function bacaUsul(
     return { jenis: "tambah_info", judul, isi };
   }
 
+  if (jenis === "ubah_bagian_info") {
+    const catatanId = String(mentah.catatanId ?? "").trim();
+    const catatan = await prisma.knowledgeSource.findFirst({ where: { id: catatanId, agent: { workspaceId: ctx.workspaceId } } });
+    const cari = typeof mentah.cari === "string" ? mentah.cari : "";
+    const ganti = typeof mentah.ganti === "string" ? mentah.ganti : null;
+    if (!catatan || !cari.trim() || ganti === null || cari === ganti) return null;
+    const posisi = catatan.content.indexOf(cari);
+    if (posisi < 0 || catatan.content.indexOf(cari, posisi + 1) !== -1) return null;
+    const isi = catatan.content.slice(0, posisi) + ganti + catatan.content.slice(posisi + cari.length);
+    // Never truncate a long imported source while editing a small section.
+    if (isi.trim().length < 20 || isi.length > Math.max(catatan.content.length, MAKS_ISI_CATATAN) + 6000) return null;
+    return { jenis: "ubah_info", catatanId, judul: catatan.title, isiLama: catatan.content, isi };
+  }
+
   if (jenis === "ubah_info") {
     const catatanId = String(mentah.catatanId ?? "").trim();
     if (!catatanId) return null;
@@ -1122,8 +1171,8 @@ export async function bacaUsul(
       return null;
     }
 
-    const isi = String(mentah.isi ?? "").trim().slice(0, MAKS_ISI_CATATAN);
-    if (isi.length < 20) return null;
+    const isi = String(mentah.isi ?? "").trim();
+    if (isi.length < 20 || isi.length > MAKS_ISI_CATATAN || catatan.content.length > 6000) return null;
     // Perubahan yang tidak mengubah apa-apa tidak usah jadi kartu. Tombol yang
     // ditekan lalu tidak mengubah apa pun bikin orang mengira produknya rusak.
     if (isi === catatan.content) return null;

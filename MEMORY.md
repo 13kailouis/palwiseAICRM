@@ -32,3 +32,12 @@ File ini menyimpan preferensi proyek, bukan izin umum untuk tindakan produksi pa
 - Di HP, composer berada di bawah baik saat obrolan kosong maupun berjalan. Saran berada di atasnya. Membuka sidebar riwayat memfokuskan tombol tutup, bukan pencarian, agar keyboard tidak terbuka otomatis.
 - Landing page menonjolkan dua sisi Palwise: chat AI untuk pemilik bisnis dan asisten WhatsApp untuk pelanggan. Tunjukkan contoh cek pelanggan, draf, dan kabar bisnis. Data ilustrasi wajib ditandai; jangan gunakan identitas pelanggan produksi dalam demo publik.
 - Jawaban lama yang terlanjur tanpa hasil dapat dilengkapi lewat tindakan pengguna, dengan kuota yang sama; tidak ada pemrosesan ulang otomatis yang diam-diam memotong kuota.
+
+## Bisnis, Ringkasan, dan edit bagian — 10 September 2026
+
+- Tanya harus memahami pergantian topik. Pertanyaan strategi menambah pelanggan tidak boleh meneruskan draf/penerima dari obrolan sebelumnya. Berikan hasil yang menjawab pertanyaan terbaru.
+- Bantuan bisnis diutamakan untuk prioritas kerja, peluang follow up, perbandingan perkembangan, dan pengelolaan info bisnis; gunakan data nyata, alasan yang terlihat, dan langkah yang dapat dikerjakan.
+- Ringkasan menjadi ruang kerja ringkas dengan periode 7/30 hari, perbandingan durasi sama, tab perhatian/peluang/janji, tahap pelanggan, dan akses langsung ke obrolan atau bantuan Tanya. Informasi paket dan panduan cukup dibuka saat diperlukan.
+- Tindakan dari Ringkasan menyiapkan permintaan di obrolan baru, tanpa otomatis memanggil AI atau mengirim pesan. Kuota keempat paket tetap berlaku.
+- Info bisnis bisa ditambah, diedit, diganti atau dihapus sebagian lewat chat. Pada catatan panjang hasil impor, ubah bagian yang diminta dan pertahankan sisanya; jangan memaksa model menulis ulang seluruh dokumen.
+- Tampilkan perubahan sebelum Simpan. Jika sumber sudah berubah setelah pratinjau, jangan menimpa versi terbaru. Edit salinan Palwise tidak mengubah website asal.

@@ -10,6 +10,13 @@ export interface GiliranTanya {
   usulStatus?: string | null;
 }
 
+/** Advice is a new task, even when an older turn contains a customer draft. */
+export function permintaanAnalisis(pesan: string): boolean {
+  pesan = pesan.replace(/\b(?:jangan|tidak perlu|tanpa)\s+(?:buat|membuat|susun|menyusun|atau|kirim|mengirim|draf|draft|pesan|pelanggan|dulu|otomatis|\s)+[.!]?/gi, " ");
+  if (/\b(?:draf|draft|kirim\w*|tulis\w*|buat\w* pesan|susun\w* pesan|balas\w*)\b/i.test(pesan)) return false;
+  return /\b(?:strategi|strateginya|analisis|evaluasi|banding\w*|prioritas|peluang|rencana|rekomendasi|tingkat\w*|meningkat\w*|ningkat\w*|tambah\w* pelanggan|nambah\w* pelanggan|banyak pelanggan|kembangkan|mengembangkan|pertumbuhan|akuisisi|retensi)\b/i.test(pesan);
+}
+
 /** A claimed deliverable needs either its actual contents or a validated proposal. */
 export function hasilDijanjikanTanpaIsi(teks: string): boolean {
   const pembuka = /\b(?:ini|berikut|inilah)\b.{0,70}\b(?:draf|draft|pesan|daftar|hasil)(?:nya)?\b|\b(?:draf|draft)(?:nya)?\s+(?:sudah|telah)\s+(?:siap|dibuat)/i;
@@ -52,6 +59,7 @@ export function tahapYangDiminta(pesan: string, riwayat: GiliranTanya[] = []): s
 }
 
 const JUDUL: Record<string, string> = {
+  ringkasan_bisnis: "Kondisi bisnis", prioritas_bisnis: "Prioritas kerja", peluang_follow_up: "Peluang follow up",
   status_whatsapp: "Status WhatsApp",
   hitung_obrolan: "Ringkasan chat", daftar_pelanggan: "Daftar pelanggan",
   daftar_masalah: "Keluhan yang masih terbuka", daftar_nunggu: "Menunggu balasan tim",

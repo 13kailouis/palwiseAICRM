@@ -5690,7 +5690,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     const kotakMasuk = baca("apps/web/src/components/Inbox.tsx");
     const halamanKontak = baca("apps/web/src/app/app/kontak/page.tsx");
     const kartuKontak = baca("apps/web/src/components/KontakKartu.tsx");
-    const ringkasan = baca("apps/web/src/app/app/page.tsx");
+    const ringkasan = baca("apps/web/src/components/RingkasanBisnis.tsx");
 
     check(
       "bacaan AI atas lampiran ikut dikirim ke kotak masuk",
@@ -5730,7 +5730,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     );
     check(
       "yang mengaku sudah bayar muncul di Ringkasan",
-      /baruSelesai\s*>\s*0/.test(ringkasan),
+      /kunci: "klaim"/.test(ringkasan) && /klaim-bayar/.test(ringkasan),
     );
 
     // Halaman profil pelanggan. Sebelum ada ini, satu-satunya cara mengenal
@@ -8351,7 +8351,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "panduan bisa ditemukan dari halaman jualan dan dashboard",
       /href="\/panduan"/.test(depan) &&
         /\{ href: "\/panduan"/.test(baca("apps/web/src/components/HalamanTeks.tsx")) &&
-        /href="\/panduan"/.test(baca("apps/web/src/app/app/page.tsx")),
+        /href="\/panduan"/.test(baca("apps/web/src/components/RingkasanBisnis.tsx")),
     );
     check(
       "panduan terdaftar di sitemap",
@@ -10423,7 +10423,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       );
 
       const halamanRingkas = fs.readFileSync(
-        path.join(akarUjiTanya, "apps/web/src/app/app/page.tsx"),
+        path.join(akarUjiTanya, "apps/web/src/components/RingkasanBisnis.tsx"),
         "utf8",
       );
       check(

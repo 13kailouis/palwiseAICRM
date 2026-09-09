@@ -7,6 +7,7 @@ import { Logo } from "@/components/Logo";
 import { HapusObrolanModal } from "@/components/HapusObrolanModal";
 import Link from "next/link";
 import { TanyaIcon } from "@/components/TanyaIcon";
+import { BANTUAN_BISNIS } from "./bantuanBisnis";
 import styles from "./Tanya.module.css";
 import { WhatsAppDalamChat } from "@/components/WhatsAppDalamChat";
 import type { HasilBacaTanya, IdeTanya, JatahTanya } from "@palwise/db";
@@ -89,13 +90,13 @@ const JENIS_USAHA = [
 
 // ── Halaman ───────────────────────────────────────────────────────────────────
 
-export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
+export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; pesanAwal?: string }) {
   const router = useRouter();
 
   const [daftar, setDaftar] = useState<Sesi[]>([]);
   const [sesiId, setSesiId] = useState<string | null>(sesiAwal);
   const [pesan, setPesan] = useState<Pesan[]>([]);
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(pesanAwal.slice(0, 2000));
   const [ideAkun, setIdeAkun] = useState<{ usaha: string; ide: IdeTanya[] }>({ usaha: "", ide: [] });
   const permintaanIde = useRef(0);
   const muatIde = useCallback(async () => {
@@ -241,7 +242,7 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
       const dituju =
         sesiAwal && list.some((s) => s.id === sesiAwal)
           ? sesiAwal
-          : list[0]?.id;
+          : pesanAwal ? undefined : list[0]?.id;
       if (dituju) {
         setSesiId(dituju);
         await muatUtas(dituju);
@@ -1171,6 +1172,9 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
           <span className={styles.suggestionIcon}><Ikon nama={c.ikon} size={17} /></span><span><strong>{c.judul}</strong></span>
         </button>)}
       </div>}
+      {ideBuka && <div className={styles.suggestions} aria-label="Bantuan bisnis">
+        {BANTUAN_BISNIS.map(f => <button key={f.judul} type="button" className={styles.suggestion} title={f.detail} onClick={() => pilihIde(f.pesan)}><TanyaIcon nama="analisis" size={17} /><strong>{f.judul}</strong></button>)}
+      </div>}
       <form onSubmit={e => { e.preventDefault(); kirim(draft); }} className={styles.composer}>
         <textarea ref={isianRef} rows={1} maxLength={2000} value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => {
@@ -1178,7 +1182,7 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
           }} placeholder={sibuk ? "Tulis pertanyaan berikutnya..." : "Tanya Palwise..."}
           className={styles.textarea} aria-label="Pesan untuk Palwise" />
         <div className={styles.composerToolbar}>
-          {!kosong && <button type="button" onClick={togelIde} className={styles.ideaButton} title="Saran untuk bisnismu" aria-label="Saran untuk bisnismu" aria-expanded={ideBuka} aria-controls="ide-tanya"><TanyaIcon nama="ide" size={18} /></button>}
+          <button type="button" onClick={togelIde} className={styles.ideaButton} title="Saran untuk bisnismu" aria-label="Saran untuk bisnismu" aria-expanded={ideBuka} aria-controls="ide-tanya"><TanyaIcon nama="ide" size={18} /></button>
           <button type="button" onClick={bukaWhatsapp} className={styles.ideaButton} title="Sambungkan WhatsApp" aria-label="Sambungkan WhatsApp di chat"><Ikon nama="whatsapp" size={19} /></button>
           {jatah && <KuotaTanya jatah={jatah} />}
           <button type="submit" disabled={terkunci || !draft.trim()} className={styles.send} aria-label="Kirim pesan" title="Kirim pesan">

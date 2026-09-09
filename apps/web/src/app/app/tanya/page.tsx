@@ -14,14 +14,14 @@ export const dynamic = "force-dynamic";
 export default async function TanyaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ s?: string }>;
+  searchParams: Promise<{ s?: string; q?: string }>;
 }) {
   await requireUser();
-  const { s } = await searchParams;
+  const { s, q } = await searchParams;
 
   return (
     <div className="h-full">
-      <Tanya sesiAwal={s ?? null} />
+      <Tanya key={q || "tanya"} sesiAwal={q ? null : s ?? null} pesanAwal={typeof q === "string" ? q.slice(0, 2000) : ""} />
     </div>
   );
 }

@@ -1,8 +1,8 @@
 /** Focused regression checks. Uses a disposable local workspace and no AI/WhatsApp calls. */
 import assert from "node:assert/strict";
-import { bacaHasilTanya, mintaSambunganWhatsApp, muatIdeTanya, prisma, sapaanPemasangan, SAPAAN_PASANG, tanyaStatusWhatsApp } from "@palwise/db";
-import { ALAT, ALAT_PASANG_UJI, jalankanTanya, muatRiwayatTanya, rentangWaktu } from "../ai/tanya.js";
-import { hasilDijanjikanTanpaIsi, janjiPemeriksaan, rentangHitunganLangsung, tahapYangDiminta } from "../ai/tanyaBacaan.js";
+import { awalHariWib, muatPusatBisnis, bacaHasilTanya, mintaSambunganWhatsApp, muatIdeTanya, prisma, sapaanPemasangan, SAPAAN_PASANG, tanyaStatusWhatsApp } from "@palwise/db";
+import { bacaUsul, ALAT, ALAT_PASANG_UJI, jalankanTanya, muatRiwayatTanya, rentangWaktu } from "../ai/tanya.js";
+import { permintaanAnalisis, hasilDijanjikanTanpaIsi, janjiPemeriksaan, rentangHitunganLangsung, tahapYangDiminta } from "../ai/tanyaBacaan.js";
 import { koneksiTanya } from "../ai/tanyaKoneksi.js";
 import { getLlm } from "../ai/provider.js";
 import "../env.js";
@@ -126,7 +126,7 @@ async function main() {
       return JSON.stringify({ jawab: "Maya tertarik sepatu. Mulai dengan follow up sesuai kebutuhannya." });
     };
     const lanjut = await jalankanTanya({ workspaceId: workspace.id, riwayat: [], pesan: "Gimana caranya meningkatkan banyak pelanggan, apa kamu bisa?" });
-    assert.equal(janjiCalls, 3); assert.match(lanjut.hasilBaca[0].isi, /Maya Uji/); assert.match(lanjut.teks, /follow up/); checks += 3;
+    assert.equal(janjiCalls, 3); assert.match(lanjut.hasilBaca.find(h => h.alat === "daftar_pelanggan")!.isi, /Maya Uji/); assert.match(lanjut.teks, /follow up/); checks += 3;
     llm.complete = async () => JSON.stringify({ jawab: "Sebentar saya cek dulu datanya." });
     const macet = await jalankanTanya({ workspaceId: workspace.id, riwayat: [], pesan: "Bantu periksa bisnis saya" });
     assert.match(macet.teks, /belum berhasil dijalankan/); assert.ok(!janjiPemeriksaan(macet.teks)); checks += 2;
@@ -203,6 +203,46 @@ async function main() {
       assert.ok(hasil.usul && "teks" in hasil.usul && hasil.usul.teks.includes("apa kabar"));
       assert.ok(hasil.alat.includes("lihat_kontak")); checks += 4;
     }
+
+    // A new strategy request must not inherit an earlier recipient or proposal.
+    for (const pesan of ["gimana caranya ningkatin banyak pelanggan apa kmu bisa", "Susun prioritas kerja hari ini. Jangan buat draf pesan dulu.", "Analisis peluang follow up. Jangan buat atau kirim pesan dulu."]) {
+      assert.equal(permintaanAnalisis(pesan), true, pesan); checks++;
+      let calls = 0;
+      llm.complete = async input => {
+        calls++;
+        assert.match(input.system, /TUGAS SAAT INI: analisis/);
+        assert.doesNotMatch(JSON.stringify(input.messages.slice(0, -2)), /USUL YANG/);
+        return calls === 1 ? JSON.stringify({jawab: "Ini draf untuk Maya.", usul: {jenis:"kirim_pesan", kontakId:tertarik.id, teks:"Halo Maya"}}) : JSON.stringify({jawab:"Fokus pada kebutuhan pelanggan. Coba satu penawaran yang relevan, lalu catat berapa pelanggan baru yang menghubungi tiap minggu."});
+      };
+      const hasil = await jalankanTanya({workspaceId:workspace.id, riwayat:riwayatDraf, pesan});
+      assert.equal(hasil.usul,null); assert.equal(calls,2); assert.ok(hasil.alat.includes("ringkasan_bisnis")); assert.doesNotMatch(hasil.teks,/Maya|draf/); checks += 4;
+    }
+    assert.equal(permintaanAnalisis("Buat draf pesan untuk strategi follow up Maya"),false); checks++;
+    assert.equal(awalHariWib(new Date("2026-09-10T18:00:00Z")).toISOString(),"2026-09-10T17:00:00.000Z"); checks++;
+    const laporan = await muatPusatBisnis(workspace.id);
+    assert.equal(laporan.kini.pesan,1); assert.equal(laporan.kini.aktif,1);
+    assert.equal(laporan.tahap.reduce((n,t)=>n+t.jumlah,0),2);
+    assert.equal(laporan.jumlahPrioritas,1); assert.equal(laporan.prioritas[0].nama,"Budi Uji"); checks += 5;
+    // A section at the end of a long imported website must remain editable without a full rewrite.
+    const konten = "BAGIAN LAIN\n" + "Informasi produk yang harus tetap utuh.\n".repeat(400) + "\nKONTAK\nEmail: support@example.test\nAKHIR\n";
+    const cat = await prisma.knowledgeSource.create({data:{agentId:agent.id,type:"website",title:"Situs bisnis",content:konten,status:"ready"}});
+    const ctx = {workspaceId:workspace.id,agentId:agent.id};
+    const baca = await ALAT.find(a=>a.nama === "lihat_info")!.jalankan(ctx,{catatanId:cat.id,bagian:"KONTAK"});
+    assert.match(baca,/support@example.test/); checks++;
+    for (const ganti of ["Email: support@example.test\nEmail lain: halo@example.test, partnership@example.test", "Email: baru@example.test", ""]) {
+      const usul = await bacaUsul(ctx,{jenis:"ubah_bagian_info",catatanId:cat.id,cari:"Email: support@example.test",ganti},"perintah");
+      assert.equal(usul?.jenis,"ubah_info");
+      assert.ok(usul && "isi" in usul && usul.isi === konten.replace("Email: support@example.test",ganti)); checks += 2;
+    }
+    for (const cari of ["teks tidak ada", "Informasi produk", ""]) {
+      assert.equal(await bacaUsul(ctx,{jenis:"ubah_bagian_info",catatanId:cat.id,cari,ganti:"Baru"},"perintah"),null); checks++;
+    }
+    assert.equal(await bacaUsul({workspaceId:tetangga.id,agentId:null},{jenis:"ubah_bagian_info",catatanId:cat.id,cari:"Email: support@example.test",ganti:"Email: asing@example.test"},"perintah"),null); checks++;
+    let editCalls = 0;
+    llm.complete = async () => ++editCalls === 1 ? JSON.stringify({alat:"lihat_info",argumen:{catatanId:cat.id,bagian:"KONTAK"}}) : JSON.stringify({jawab:"Dua email ditambahkan pada bagian Kontak. Cek perubahan sebelum disimpan.",usul:{jenis:"ubah_bagian_info",catatanId:cat.id,cari:"Email: support@example.test",ganti:"Email: support@example.test\nEmail lain: halo@example.test, partnership@example.test"}});
+    const edit = await jalankanTanya({workspaceId:workspace.id,riwayat:[],pesan:"Tambahkan kontak halo@example.test dan partnership@example.test pada info bisnis"});
+    assert.equal(edit.usul?.jenis,"ubah_info"); assert.equal(editCalls,2); assert.equal((await prisma.knowledgeSource.findUniqueOrThrow({where:{id:cat.id}})).content,konten); checks += 3;
+
     llm.complete = async () => JSON.stringify({ jawab: "Maaf, ini draf pesan untuk menjaga hubungan baik dengan Kak Maya." });
     const takAdaDraf = await jalankanTanya({ workspaceId: workspace.id, riwayat: riwayatDraf, pesan: "Mna" });
     assert.equal(takAdaDraf.usul, null); assert.match(takAdaDraf.teks, /belum berhasil dibuat/); checks += 2;
