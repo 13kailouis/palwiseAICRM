@@ -41,3 +41,5 @@ File ini menyimpan preferensi proyek, bukan izin umum untuk tindakan produksi pa
 - Tindakan dari Ringkasan menyiapkan permintaan di obrolan baru, tanpa otomatis memanggil AI atau mengirim pesan. Kuota keempat paket tetap berlaku.
 - Info bisnis bisa ditambah, diedit, diganti atau dihapus sebagian lewat chat. Pada catatan panjang hasil impor, ubah bagian yang diminta dan pertahankan sisanya; jangan memaksa model menulis ulang seluruh dokumen.
 - Tampilkan perubahan sebelum Simpan. Jika sumber sudah berubah setelah pratinjau, jangan menimpa versi terbaru. Edit salinan Palwise tidak mengubah website asal.
+
+Rilis preferensi di atas aktif pada 10 September 2026, kode `a56f1ef`; hasil verifikasi dicatat di [docs/rilis-ringkasan-tanya.md](docs/rilis-ringkasan-tanya.md).
