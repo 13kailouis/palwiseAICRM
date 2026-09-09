@@ -14,3 +14,12 @@ Dicatat dari arahan pemilik pada 8 September 2026.
 - Periksa detail lintas keadaan: memuat, kosong, galat, terputus, tersambung, layar sempit, riwayat panjang, dan keyboard HP. Pengiriman pesan sungguhan tetap melalui persetujuan pemilik di produk.
 
 File ini menyimpan preferensi proyek, bukan izin umum untuk tindakan produksi pada tugas mendatang.
+
+## Kuota Tanya — 9 September 2026
+
+- Pemilik meminta fitur Tanya dibatasi agar biaya AI terkendali, mencakup empat paket: Coba Gratis, Starter, Growth, Pro.
+- Skema awal: 20/200/600/1.200 pertanyaan AI per bulan per bisnis, dengan batas harian 10/20/40/80. Gratis sebelum email pemilik diverifikasi mendapat 5 percobaan sekali, bukan kuota yang berulang.
+- Kuota Tanya terpisah dari balasan WhatsApp. Riwayat, QR, dan pengecekan yang dijalankan tanpa model tidak memotongnya. Pemasangan melalui AI tetap dihitung.
+- Hitungan harus disimpan di server, tahan terhadap permintaan bersamaan, dan tidak terulang saat membuat atau menghapus obrolan. Kegagalan dikembalikan sekali; percobaan berulang tetap dibatasi.
+- Sisa kuota cukup berupa indikator kecil; rincian dibuka saat ditekan. Saat habis, jelaskan waktu reset atau verifikasi/naik paket tanpa menghilangkan draf.
+- Angka ini membatasi biaya, bukan jaminan seluruh usaha untung. Evaluasi ulang menggunakan pemakaian token dan harga provider aktual sebelum melonggarkan kuota atau mengganti model.

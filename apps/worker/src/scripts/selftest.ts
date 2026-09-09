@@ -6325,15 +6325,9 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // gratis, tapi tidak disebut di kartunya, dan "Data pelanggan tersimpan
     // rapi" cuma muncul di Starter. Orang yang mencoba gratis lalu menemukan
     // CRM-nya jalan akan bertanya apa lagi yang ditulis tidak benar di situ.
-    const paket = baca("packages/db/src/plans.ts");
-    const bagianGratis = paket.slice(
-      paket.indexOf("free: {"),
-      paket.indexOf("starter: {"),
-    );
-    const bagianStarter = paket.slice(
-      paket.indexOf("starter: {"),
-      paket.indexOf("growth: {"),
-    );
+    // Inspect the actual feature copy, not the first similarly named config object.
+    const bagianGratis = PLANS.free.features.join("\n");
+    const bagianStarter = PLANS.starter.features.join("\n");
     check(
       "paket gratis mengakui CRM, janji temu, dan ringkasan yang memang dia dapat",
       /Data pelanggan, janji temu, dan ringkasan AI/.test(bagianGratis),
@@ -6430,12 +6424,10 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       ["growth", "200"],
       ["pro", "1.000"],
     ] as const) {
-      const mulai = paket.indexOf(`${nama}: {`);
-      const akhir = paket.indexOf("  },", mulai);
       check(
         `paket ${nama} menyebut batas catatan info bisnisnya`,
         new RegExp(`Info bisnis sampai ${batas.replace(".", "\\.")} catatan`).test(
-          paket.slice(mulai, akhir),
+          PLANS[nama].features.join("\n"),
         ),
       );
     }

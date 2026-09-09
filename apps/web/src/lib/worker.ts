@@ -21,7 +21,9 @@ const BASE = (process.env.WORKER_URL || "http://127.0.0.1:4000").replace(
 );
 const TOKEN = process.env.INTERNAL_TOKEN || "palwise-dev-token";
 
-export class WorkerError extends Error {}
+export class WorkerError extends Error {
+  constructor(message: string, readonly status = 502, readonly data?: unknown) { super(message); }
+}
 
 /**
  * Panggil worker (proses yang memegang koneksi WhatsApp & AI).
@@ -50,7 +52,7 @@ export async function callWorker<T = any>(
     const json = text ? safeParse(text) : {};
 
     if (!res.ok) {
-      throw new WorkerError(json?.error ?? `Worker error ${res.status}`);
+      throw new WorkerError(json?.error ?? `Worker error ${res.status}`, res.status, json);
     }
     return json as T;
   } catch (err) {

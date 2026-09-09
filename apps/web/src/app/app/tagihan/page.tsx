@@ -8,6 +8,7 @@ import {
   SEMUA_PAKET,
   SUMBER_BULAN_GRATIS,
   akibatPindahPaket,
+  ambilJatahTanya,
   formatIDR,
   kalimatAkibat,
   kalimatGantiPaket,
@@ -70,6 +71,7 @@ export default async function TagihanPage({
     where: { id: user.workspaceId },
   });
   const plan = getPlan(workspace.plan);
+  const jatahTanya = await ambilJatahTanya(workspace.id);
   const langganan = statusLangganan(workspace);
   const ajak = await ringkasanAjak(workspace.id);
 
@@ -127,6 +129,12 @@ export default async function TagihanPage({
       />
 
       <div className="space-y-6 p-4 sm:p-6">
+        <div className="card-pad flex flex-wrap items-center justify-between gap-3">
+          <div><h2 className="font-semibold text-ink-900">Kuota Tanya</h2>
+            <p className="mt-1 text-sm text-ink-600">{jatahTanya.terpakai} / {jatahTanya.batas} pertanyaan AI {jatahTanya.belumKonfirmasi ? "percobaan" : "bulan ini"} · Maksimal {jatahTanya.harian.batas} per hari.</p>
+            <p className="mt-1 text-xs text-ink-500">{jatahTanya.belumKonfirmasi ? "Verifikasi email untuk membuka kuota bulanan." : `Terisi lagi ${new Date(jatahTanya.resetBulanan).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long" })}, 00.00 WIB.`} Terpisah dari balasan WhatsApp.</p>
+          </div><Link className="text-sm text-brand-700 underline underline-offset-4" href={jatahTanya.belumKonfirmasi ? "/app/akun" : "/app/tanya"}>{jatahTanya.belumKonfirmasi ? "Verifikasi email" : "Buka Tanya"}</Link>
+        </div>
         {/* Baru kembali dari halaman bayar.
 
             Sengaja TIDAK bilang "pembayaran berhasil". Halaman ini cuma bukti

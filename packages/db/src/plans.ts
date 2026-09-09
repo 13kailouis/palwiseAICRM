@@ -133,6 +133,20 @@ export function pesanTerkunci(fitur: Fitur, planSekarang: string): string {
  */
 export const BALASAN_GRATIS = 51;
 
+/** Kuota Tanya per workspace, terpisah dari balasan WhatsApp. */
+export const KUOTA_TANYA: Record<PlanId, { bulanan: number; harian: number }> = {
+  free: { bulanan: 20, harian: 10 },
+  starter: { bulanan: 200, harian: 20 },
+  growth: { bulanan: 600, harian: 40 },
+  pro: { bulanan: 1200, harian: 80 },
+};
+export const TANYA_BELUM_VERIFIKASI = 5;
+
+function fiturTanya(id: PlanId): string {
+  const q = KUOTA_TANYA[id];
+  return `${q.bulanan.toLocaleString("id-ID")} pertanyaan AI di Tanya per bulan, maksimal ${q.harian} per hari${id === "free" ? " setelah verifikasi email" : ""}`;
+}
+
 export interface Plan {
   id: PlanId;
   name: string;
@@ -170,6 +184,7 @@ export const PLANS: Record<PlanId, Plan> = {
       // Diturunkan dari tetapannya, JANGAN diketik ulang. Kartu paket dan
       // jatah yang benar-benar ditegakkan wajib menyebut angka yang sama.
       `${BALASAN_GRATIS} balasan per bulan`,
+      fiturTanya("free"),
       "1 nomor WhatsApp",
       "Isi harga, layanan, dan aturan usahamu",
       // Batas dua menitnya ikut disebut, bukan disembunyikan.
@@ -207,6 +222,7 @@ export const PLANS: Record<PlanId, Plan> = {
     features: [
       "Semua yang ada di Coba Gratis",
       "3.000 balasan per bulan",
+      fiturTanya("starter"),
       // Bukan cuma foto. Galeri menerima JPG, PNG, WebP, MP4, dan PDF, dan
       // worker mengirim PDF sebagai dokumen WhatsApp, bukan gambar. Menulis
       // "foto produk" saja bikin orang mengira daftar harga PDF dan katalognya
@@ -227,6 +243,7 @@ export const PLANS: Record<PlanId, Plan> = {
     features: [
       "3 nomor WhatsApp",
       "15.000 balasan per bulan",
+      fiturTanya("growth"),
       "Semua yang ada di Starter",
       "Tiap nomor bisa punya asisten sendiri",
       // Satu kalimat untuk satu kemampuan yang sama di kode (fitur
@@ -276,6 +293,7 @@ export const PLANS: Record<PlanId, Plan> = {
       // Diturunkan dari angkanya, JANGAN diketik ulang. Kartu harga dan jatah
       // yang benar-benar ditegakkan wajib menyebut angka yang sama.
       "30.000 balasan per bulan",
+      fiturTanya("pro"),
       "Semua yang ada di Growth",
       // Pro TIDAK tanpa batas, dan angkanya harus disebut sendiri.
       //
@@ -307,23 +325,6 @@ export function getPlan(id: string): Plan {
 
 /** Jatah harian khusus ruang coba, terpisah dari kuota balasan pelanggan. */
 export const JATAH_RUANG_COBA_HARIAN = 30;
-
-/**
- * Jatah harian ruang perintah (halaman Tanya), juga terpisah dari kuota
- * balasan pelanggan.
- *
- * Lebih besar dari ruang coba karena pemakaiannya beda bentuk: ruang coba
- * dibuka beberapa kali waktu memasang lalu jarang disentuh lagi, sedangkan
- * ruang perintah dipakai tiap hari sambil berdiri di toko. Empat puluh
- * perintah sehari itu jauh di atas pemakaian normal, jadi yang kena cuma
- * pemakaian yang memang tidak wajar.
- *
- * Angkanya perintah, BUKAN panggilan model. Satu perintah bisa memanggil model
- * sampai empat kali, dan yang dihitung tetap satu, karena yang dimengerti
- * pemilik toko itu "aku sudah nanya berapa kali", bukan berapa kali mesinnya
- * berpikir.
- */
-export const JATAH_TANYA_HARIAN = 40;
 
 export function formatIDR(value: number): string {
   return "Rp " + value.toLocaleString("id-ID");

@@ -40,6 +40,19 @@
 .ideaButton:hover, .ideaButton[aria-expanded="true"] { background: #f6f6f6; color: #171717; }
 .send { margin-left: auto; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px; background: #1a73e8; color: #fff; transition: background 140ms; }
 .send:hover { background: #1557b0; }
+.quotaDetails { position: relative; margin-left: auto; font-size: 11px; color: #6b7075; }
+.quotaDetails summary { display: flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 8px; cursor: pointer; border-radius: 10px; list-style: none; white-space: nowrap; }
+.quotaDetails summary::-webkit-details-marker { display: none; }
+.quotaDetails summary:hover, .quotaDetails[open] summary { background: #f1f3f4; color: #202124; }
+.quotaDetails summary:focus-visible { outline: 2px solid #1a73e8; outline-offset: 2px; }
+.quotaDetails + .send { margin-left: 4px; }
+.quotaPopover { position: absolute; z-index: 30; right: -42px; bottom: calc(100% + 10px); width: min(280px, calc(100vw - 44px)); padding: 16px; border: 1px solid #e3e5e8; border-radius: 14px; box-shadow: 0 8px 32px #20212418; background: white; font-size: 12px; line-height: 1.6; color: #5f6368; }
+.quotaPopover strong { color: #202124; }
+.quotaPopover p { margin-top: 8px; }
+.quotaPopover a, .quotaNotice a { color: #1557b0; text-decoration: underline; text-underline-offset: 3px; }
+.quotaPopover a { display: inline-flex; align-items: center; min-height: 44px; }
+.quotaNotice { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 8px; padding: 10px 12px; border-radius: 12px; background: #f5f6f7; color: #45494e; font-size: 12px; line-height: 1.5; }
+.quotaNotice a { flex-shrink: 0; min-height: 32px; display: inline-flex; align-items: center; }
 .send:disabled { background: #ededed; color: #9aa0a6; cursor: default; }
 .composerHint { min-height: 28px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 20px; padding-top: 12px; color: #6b7075; font-size: 10px; text-align: center; line-height: 1.6; }
 .keyboardHint { color: #868b91; }

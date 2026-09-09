@@ -39,18 +39,8 @@ model Workspace {
   playgroundUsed    Int      @default(0)
   playgroundResetAt DateTime @default(now())
 
-  /// Ruang perintah (halaman Tanya) punya jatah harian SENDIRI, sama seperti
-  /// ruang coba, dan sama sekali tidak memotong jatah balasan pelanggan.
-  ///
-  /// Alasannya sama persis: yang dibayar pemilik toko itu balasan ke
-  /// pelanggannya. Kalau bertanya "hari ini ada berapa yang chat" memotong
-  /// jatah yang sama, pemilik warung yang penasaran menghabiskan jatahnya
-  /// sendiri sebelum satu pelanggan pun dibalas.
-  ///
-  /// Dan ini BUKAN jatah kosmetik. Satu perintah bisa memanggil model dua
-  /// sampai empat kali (pilih alat, baca hasil, susun jawaban), jadi tanpa
-  /// meteran sendiri biayanya tidak kelihatan di mana pun sampai tagihannya
-  /// datang.
+  /// Penghitung lama sebelum kuota per paket. Dipertahankan untuk kompatibilitas
+  /// rollback; kuota baru menggunakan PemakaianTanya dan tidak membaca kolom ini.
   tanyaUsed    Int      @default(0)
   tanyaResetAt DateTime @default(now())
 
@@ -111,6 +101,19 @@ model Workspace {
   conversations Conversation[]
   pembayaran    Pembayaran[]
   sesiTanya     SesiTanya[]
+  pemakaianTanya PemakaianTanya[]
+}
+
+/// Satu reservasi pertanyaan AI. Tidak terkait sesi: hapus obrolan tidak
+/// mengembalikan kuota. Gagal disimpan untuk pembatasan percobaan, bukan ditagih.
+model PemakaianTanya {
+  id          String   @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  status      String   @default("reserved") // reserved | success | failed
+  selesaiPada DateTime?
+  @@index([workspaceId, createdAt])
 }
 
 /// Masukan, saran, dan laporan bug dari pengguna.

@@ -32,6 +32,7 @@
     "uji:model": "tsx apps/worker/src/scripts/ujiModel.ts",
     "uji:rasa": "tsx apps/worker/src/scripts/ujiRasa.ts",
     "uji:tanya": "tsx apps/worker/src/scripts/ujiTanya.ts",
+    "uji:kuota-tanya": "tsx apps/worker/src/scripts/ujiJatahTanya.ts",
     "contoh:rasa": "tsx apps/worker/src/scripts/contohRasa.ts",
     "ukur:rasa": "tsx apps/worker/src/scripts/ukurRasa.ts",
     "models": "tsx apps/worker/src/scripts/models.ts"

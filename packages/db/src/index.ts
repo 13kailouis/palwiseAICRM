@@ -74,6 +74,7 @@ export * from "./langganan.js";
 export * from "./seedBantuan.js";
 export * from "./teks.js";
 export * from "./tanya.js";
+export * from "./jatahTanya.js";
 export * from "./ideTanya.js";
 
 /** Helper kecil untuk kolom JSON yang disimpan sebagai string di SQLite. */

@@ -10,7 +10,6 @@ import {
   tanyaStatusWhatsApp,
   type HasilBacaTanya,
 } from "@palwise/db";
-import { env } from "../env.js";
 import { log } from "../lib/log.js";
 import { parseJsonLoose, sekarangIndonesia } from "./agent.js";
 import { getLlm } from "./provider.js";
@@ -761,6 +760,24 @@ const ALAT_MAKS = 3;
 /** Berapa giliran lama yang ikut dikirim. Riwayat panjang itu token yang dibayar tiap pesan. */
 const RIWAYAT_GILIRAN = 8;
 
+/** Bound every model request, including long tool output and saved history. */
+export function batasiKonteksTanya(messages: LlmMessage[], permintaan?: LlmMessage): LlmMessage[] {
+  const awal = permintaan ? [textMessage("user", permintaan.parts.map(p => p.text ?? "").join("\n").slice(0, 2000))] : [];
+  let sisa = 24_000 - (awal[0]?.parts[0].text?.length ?? 0);
+  const keluar: LlmMessage[] = [];
+  for (const message of [...messages].reverse()) {
+    if (message === permintaan) { keluar.unshift(...awal); continue; }
+    if (sisa <= 0) continue;
+    const teks = message.parts.map(p => p.text ?? "").join("\n");
+    const batas = Math.min(sisa, 8000);
+    const penanda = "\n[Data dipotong; persempit pencarian]";
+    const isi = teks.length > batas ? (batas >= penanda.length ? teks.slice(0, batas - penanda.length) + penanda : teks.slice(0, batas)) : teks;
+    sisa -= isi.length;
+    keluar.unshift(textMessage(message.role, isi));
+  }
+  return keluar;
+}
+
 export async function muatRiwayatTanya(sesiId: string, workspaceId: string): Promise<GiliranTanya[]> {
   const terbaru = await prisma.pesanTanya.findMany({
     where: { sesiId, sesi: { workspaceId } },
@@ -777,6 +794,8 @@ export interface JalankanTanyaInput {
   pesan: string;
   /** Mode utasnya. Menentukan prompt DAN alat mana yang boleh dipakai. */
   mode?: ModeTanya;
+  /** Reservasi hanya jika jalur ini benar-benar membutuhkan model. */
+  sebelumModel?: () => Promise<void>;
 }
 
 export async function jalankanTanya({
@@ -784,6 +803,7 @@ export async function jalankanTanya({
   riwayat,
   pesan,
   mode = "perintah",
+  sebelumModel,
 }: JalankanTanyaInput): Promise<HasilTanya> {
   const [ws, agent] = await Promise.all([
     prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId } }),
@@ -810,6 +830,7 @@ export async function jalankanTanya({
       hasilBaca: [hasilUntukChat(alat.nama, isi, { tahap })],
     };
   }
+  await sebelumModel?.();
   const llm = getLlm();
   let system = systemPrompt(ws.name, mode);
   system += "\n\nUntuk hitungan chat, selalu sebut data yang TERCATAT di Palwise. Bila hasil alat menyebut WhatsApp terputus, sampaikan bahwa data belum lengkap; angka nol bukan bukti tidak ada chat di WhatsApp. Status tersambung di riwayat lama harus diperiksa ulang dengan status_whatsapp.";
@@ -827,10 +848,11 @@ export async function jalankanTanya({
     ...riwayat
       .slice(-RIWAYAT_GILIRAN)
       .map((r) =>
-        textMessage(r.peran === "pemilik" ? "user" : "assistant", konteksGiliranTanya(r)),
+        textMessage(r.peran === "pemilik" ? "user" : "assistant", konteksGiliranTanya(r).slice(0, 3000)),
       ),
     textMessage("user", pesan),
   ];
+  const permintaan = pesanModel[pesanModel.length - 1];
 
   const dipakai: string[] = [];
   const hasilBaca: HasilBacaTanya[] = [];
@@ -841,11 +863,11 @@ export async function jalankanTanya({
     let mentah: string;
     try { mentah = await llm.complete({
       system,
-      messages: pesanModel,
+      messages: batasiKonteksTanya(pesanModel, permintaan),
       temperature: 0.2,
       json: true,
       maxTokens: 1400,
-      model: env.GEMINI_MODEL,
+      // Use the configured provider's default; a Gemini model ID is invalid for other providers.
     }); } catch (error) {
       if (!hasilBaca.length) throw error;
       return { teks: "Ringkasan belum selesai dibuat. Hasil pemeriksaan tetap ada di bawah.", usul: null, alat: dipakai, hasilBaca };

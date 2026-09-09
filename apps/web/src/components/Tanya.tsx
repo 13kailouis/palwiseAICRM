@@ -9,7 +9,7 @@ import Link from "next/link";
 import { TanyaIcon } from "@/components/TanyaIcon";
 import styles from "./Tanya.module.css";
 import { WhatsAppDalamChat } from "@/components/WhatsAppDalamChat";
-import type { HasilBacaTanya, IdeTanya } from "@palwise/db";
+import type { HasilBacaTanya, IdeTanya, JatahTanya } from "@palwise/db";
 
 /** A dedicated AI workspace, with a searchable history and a responsive composer. */
 
@@ -120,10 +120,22 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
   const [jauhDariBawah, setJauhDariBawah] = useState(false);
   const [ideBuka, setIdeBuka] = useState(false);
   const [whatsappBuka, setWhatsappBuka] = useState(false);
-  const [jatah, setJatah] = useState<{
-    terpakai: number;
-    batas: number;
-  } | null>(null);
+  const [jatah, setJatah] = useState<JatahTanya | null>(null);
+  useEffect(() => {
+    let aktif = true;
+    const muat = async () => {
+      if (document.visibilityState === "hidden") return;
+      try {
+        const res = await fetch("/api/tanya/jatah", { cache: "no-store" });
+        if (res.ok) { const data = await res.json(); if (aktif) setJatah(data); }
+      } catch { /* Server still enforces limits when the usage indicator is offline. */ }
+    };
+    void muat();
+    const timer = setInterval(muat, 60_000);
+    window.addEventListener("focus", muat);
+    document.addEventListener("visibilitychange", muat);
+    return () => { aktif = false; clearInterval(timer); window.removeEventListener("focus", muat); document.removeEventListener("visibilitychange", muat); };
+  }, []);
   const [mode, setMode] = useState<string>("perintah");
   const [pasang, setPasang] = useState<Pemasangan | null>(null);
 
@@ -351,6 +363,7 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
   async function kirim(teks: string) {
     const isi = teks.trim();
     if (!isi || sibuk || memuat || operasiRef.current || !sesiId) return;
+    if (isi.length > 2000) { setGalat("Pesan maksimal 2.000 karakter. Ringkas dulu ya."); return; }
     operasiRef.current = true;
     ikutiRef.current = true;
     setJauhDariBawah(false);
@@ -380,14 +393,14 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
         body: JSON.stringify({ sesiId, pesan: isi }),
       });
       const data = await res.json();
-
+      if (data.jatah) setJatah(data.jatah);
       if (!res.ok || data?.error) {
         // Perintahnya gagal, jadi gelembung sementaranya dicabut lagi dan
         // teksnya dikembalikan ke kotak ketik. Membiarkannya menggantung di
         // layar bikin orang mengira perintahnya sudah masuk.
         setPesan((p) => p.filter((x) => x.id !== sementara.id));
         setDraft(sekarang => sekarang.trim() ? `${isi}\n\n${sekarang}` : isi);
-        setGalat(data?.error ?? "Gagal menjalankan perintah.");
+        setGalat(data?.code === "TANYA_LIMIT" && data.jatah ? null : data?.error ?? "Gagal menjalankan perintah.");
         return;
       }
 
@@ -396,8 +409,6 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
         ...(data.pesan ?? []),
       ]);
       if ((data.pesan ?? []).some((p: Pesan) => p.alat?.includes("sambungkan_whatsapp"))) setWhatsappBuka(true);
-      if (data.jatah)
-        setJatah({ terpakai: data.jatah.terpakai, batas: data.jatah.batas });
       // A history refresh failure must not restore an already delivered draft.
       await Promise.allSettled([muatDaftar(), ...(mode === "pasang" ? [muatPemasangan()] : [])]);
     } catch {
@@ -1115,13 +1126,12 @@ function Sambutan({ usaha }: { usaha: string }) {
 
 function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, kosong, ide, ideBuka, togelIde, pilihIde, galat, cobaLagi, bukaWhatsapp }: {
   isianRef: React.RefObject<HTMLTextAreaElement | null>; draft: string; setDraft: (v: string) => void;
-  sibuk: boolean; terkunci: boolean; kirim: (teks: string) => void; jatah: { terpakai: number; batas: number } | null;
+  sibuk: boolean; terkunci: boolean; kirim: (teks: string) => void; jatah: JatahTanya | null;
   kosong: boolean; ideBuka: boolean; togelIde: () => void; pilihIde: (teks: string) => void;
   ide: IdeTanya[];
   galat: string | null; cobaLagi: () => void;
   bukaWhatsapp: () => void;
 }) {
-  const sisa = jatah ? Math.max(0, jatah.batas - jatah.terpakai) : null;
   useEffect(() => {
     const el = isianRef.current;
     if (!el) return;
@@ -1141,8 +1151,11 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
   return <div className={styles.composerDock}>
     <div className={styles.composerInner}>
       {galat && <div className={styles.error} role="alert"><span>{galat}</span><button type="button" onClick={cobaLagi} disabled={sibuk}>Muat ulang</button></div>}
+      {jatah?.habis && <div className={styles.quotaNotice} role="status"><span>{jatah.pesan}</span>
+        {jatah.alasan === "verifikasi" ? <Link href="/app/akun">Verifikasi email</Link> : jatah.alasan === "bulanan" && jatah.paket !== "pro" ? <Link href="/app/tagihan">Lihat paket</Link> : null}
+      </div>}
       <form onSubmit={e => { e.preventDefault(); kirim(draft); }} className={styles.composer}>
-        <textarea ref={isianRef} rows={1} value={draft} onChange={e => setDraft(e.target.value)}
+        <textarea ref={isianRef} rows={1} maxLength={2000} value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(hover: hover) and (pointer: fine)").matches) { e.preventDefault(); kirim(draft); }
           }} placeholder={sibuk ? "Tulis pertanyaan berikutnya..." : "Tanya Palwise..."}
@@ -1150,6 +1163,7 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
         <div className={styles.composerToolbar}>
           {!kosong && <button type="button" onClick={togelIde} className={styles.ideaButton} title="Saran untuk bisnismu" aria-label="Saran untuk bisnismu" aria-expanded={ideBuka} aria-controls="ide-tanya"><TanyaIcon nama="ide" size={18} /></button>}
           <button type="button" onClick={bukaWhatsapp} className={styles.ideaButton} title="Sambungkan WhatsApp" aria-label="Sambungkan WhatsApp di chat"><Ikon nama="whatsapp" size={19} /></button>
+          {jatah && <KuotaTanya jatah={jatah} />}
           <button type="submit" disabled={terkunci || !draft.trim()} className={styles.send} aria-label="Kirim pesan" title="Kirim pesan">
             {sibuk ? <span className={styles.spinner} /> : <TanyaIcon nama="atas" size={21} />}
           </button>
@@ -1164,7 +1178,28 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
         <span>Draf diperiksa sebelum dikirim.</span>
         {!kosong && <span className={styles.keyboardHint}>Enter kirim · Shift + Enter baris baru</span>}
       </div>
-      {sisa !== null && sisa <= 10 && <p className="pt-2 text-center text-xs text-ink-600" role="status">Sisa {sisa} perintah hari ini.</p>}
     </div>
   </div>;
+}
+
+function KuotaTanya({ jatah }: { jatah: JatahTanya }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => { if (!ref.current?.contains(event.target as Node)) ref.current?.removeAttribute("open"); };
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape" && ref.current?.open) { ref.current.open = false; ref.current.querySelector("summary")?.focus(); } };
+    document.addEventListener("pointerdown", outside); document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); };
+  }, []);
+  const tanggal = new Date(jatah.resetBulanan).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long" });
+  return <details ref={ref} className={styles.quotaDetails}>
+    <summary aria-label={`Sisa ${jatah.sisa} pertanyaan AI. Lihat kuota Tanya`} title="Kuota Tanya">{jatah.sisa} AI</summary>
+    <div className={styles.quotaPopover}>
+      <strong>Tanya · {jatah.namaPaket}</strong>
+      <p>{jatah.terpakai} / {jatah.batas} pertanyaan {jatah.belumKonfirmasi ? "percobaan" : "bulan ini"}</p>
+      <p>{Math.min(jatah.harian.sisa, jatah.sisa)} tersedia hari ini.</p>
+      <p>{jatah.belumKonfirmasi ? "Verifikasi email untuk kuota bulanan." : `Kuota bulanan terisi ${tanggal}, 00.00 WIB.`}</p>
+      <p>Kuota bersama satu bisnis, terpisah dari balasan WhatsApp. QR, riwayat, dan pengecekan tanpa AI tidak memakai kuota.</p>
+      <Link href={jatah.belumKonfirmasi ? "/app/akun" : "/app/tagihan"}>{jatah.belumKonfirmasi ? "Verifikasi email" : "Lihat paket"}</Link>
+    </div>
+  </details>;
 }

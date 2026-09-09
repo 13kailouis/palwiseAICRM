@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { mintaSambunganWhatsApp, prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
-import { callWorker } from "@/lib/worker";
+import { callWorker, WorkerError } from "@/lib/worker";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
   if (!pesan) {
     return NextResponse.json({ error: "Perintahnya kosong" }, { status: 400 });
   }
+  if (pesan.length > 2000) return NextResponse.json({ error: "Pesan maksimal 2.000 karakter. Ringkas dulu ya." }, { status: 400 });
 
   // Utasnya dipastikan milik akun ini DI SINI, sebelum apa pun dikirim ke
   // worker. Worker memeriksa lagi, dan dua pemeriksaan itu memang disengaja:
@@ -54,6 +55,9 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(hasil);
   } catch (err) {
+    if (err instanceof WorkerError && err.status === 429) {
+      return NextResponse.json(err.data ?? { error: err.message }, { status: 429 });
+    }
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Gagal menjalankan perintah" },
       { status: 502 },

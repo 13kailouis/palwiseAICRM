@@ -17,10 +17,11 @@ import {
 import { pilihSikap, ringkasSikap, type LabelRasa } from "@palwise/rasa";
 import {
   ambilJatahTanya,
-  getQuota,
-  kembalikanJatahTanya,
+  BatasTanyaError,
+  selesaikanJatahTanya,
   pesanJatahTanya,
-} from "./core/quota.js";
+} from "@palwise/db";
+import { getQuota } from "./core/quota.js";
 import { ringkasPelanggan } from "./core/ringkasan.js";
 import { jalankanTanya, judulDariPesan, muatRiwayatTanya, type Usul } from "./ai/tanya.js";
 import {
@@ -860,6 +861,8 @@ router.post("/jobs/followup", async (_req, res) => {
  * belakangnya adalah tombol yang tidak mengerjakan apa-apa.
  */
 router.post("/tanya", async (req, res) => {
+  let reservasi: string | null = null;
+  let jawabanTersimpan = false;
   try {
     const workspaceId = String(req.body?.workspaceId ?? "");
     const sesiId = String(req.body?.sesiId ?? "");
@@ -888,84 +891,40 @@ router.post("/tanya", async (req, res) => {
       return;
     }
 
-    const jatah = await ambilJatahTanya(workspaceId);
-    if (jatah.habis) {
-      // Habisnya HARUS bersuara. Jalur yang diam waktu kehabisan jatah bikin
-      // orang mengira produknya rusak, dan itu lebih mahal daripada batasnya
-      // sendiri.
-      res.status(429).json({
-        error: jatah.belumKonfirmasi
-          ? `Jatah ${jatah.batas} perintahnya sudah habis. Konfirmasi dulu emailmu lewat tautan yang kami kirim, nanti jatahnya lahir lagi tiap hari.`
-          : `Jatah ${jatah.batas} perintah hari ini sudah habis. Besok jatahnya penuh lagi.`,
-      });
-      return;
-    }
-    if (!(await pesanJatahTanya(workspaceId))) {
-      res.status(429).json({ error: "Jatah perintah hari ini sudah habis." });
-      return;
-    }
-
     const riwayat = await muatRiwayatTanya(sesiId, workspaceId);
-
-    const dariPemilik = await prisma.pesanTanya.create({
-      data: { sesiId, peran: "pemilik", teks: pesan },
+    const hasil = await jalankanTanya({
+      workspaceId, riwayat, pesan,
+      mode: sesi.mode === "pasang" ? "pasang" : "perintah",
+      sebelumModel: async () => { reservasi = await pesanJatahTanya(workspaceId); },
     });
 
-    // Judul diisi dari perintah pertama, dan cuma sekali. Utas yang sudah punya
-    // judul tidak berubah judulnya cuma karena pertanyaan kelima kebetulan
-    // lebih panjang.
-    if (!sesi.judul) {
-      await prisma.sesiTanya.update({
-        where: { id: sesiId },
-        data: { judul: judulDariPesan(pesan) },
-      });
-    }
-
-    let hasil;
-    try {
-      hasil = await jalankanTanya({
-        workspaceId,
-        riwayat,
-        pesan,
-        // Modenya diambil dari BARIS UTASNYA, tidak pernah dari badan
-        // permintaan. Kalau klien yang menentukan, utas pemasangan tinggal
-        // dipanggil dengan mode "perintah" dan seluruh pembatasan alatnya
-        // hilang dalam satu baris.
-        mode: sesi.mode === "pasang" ? "pasang" : "perintah",
-      });
-    } catch (err) {
-      // Jatahnya dikembalikan. Perintah yang tidak pernah dijawab tidak boleh
-      // ikut memotong, dan tanpa ini gangguan di pihak Google memakan jatah
-      // pemilik toko.
-      await kembalikanJatahTanya(workspaceId);
-      await prisma.pesanTanya.delete({ where: { id: dariPemilik.id } }).catch(() => {});
-      throw err;
-    }
-
-    const dariPalwise = await prisma.pesanTanya.create({
-      data: {
-        sesiId,
-        peran: "palwise",
-        teks: hasil.teks,
-        alat: JSON.stringify(hasil.alat),
-        hasilBaca: JSON.stringify(hasil.hasilBaca),
-        usul: hasil.usul ? JSON.stringify(hasil.usul) : null,
+    // Store both bubbles together: quota errors never leave a phantom user message.
+    const [dariPemilik, dariPalwise] = await prisma.$transaction(async tx => {
+      const pemilik = await tx.pesanTanya.create({ data: { sesiId, peran: "pemilik", teks: pesan } });
+      const palwise = await tx.pesanTanya.create({ data: {
+        sesiId, peran: "palwise", teks: hasil.teks, alat: JSON.stringify(hasil.alat),
+        hasilBaca: JSON.stringify(hasil.hasilBaca), usul: hasil.usul ? JSON.stringify(hasil.usul) : null,
         usulStatus: hasil.usul ? "menunggu" : null,
-      },
+      } });
+      await tx.sesiTanya.update({ where: { id: sesiId }, data: {
+        updatedAt: new Date(), ...(!sesi.judul ? { judul: judulDariPesan(pesan) } : {}),
+      } });
+      if (reservasi) await tx.pemakaianTanya.update({ where: { id: reservasi }, data: { status: "success", selesaiPada: new Date() } });
+      return [pemilik, palwise];
     });
-
-    // Menyentuh utasnya supaya dia naik ke atas daftar riwayat.
-    await prisma.sesiTanya.update({
-      where: { id: sesiId },
-      data: { updatedAt: new Date() },
-    });
+    jawabanTersimpan = true;
 
     res.json({
       ok: true,
       pesan: [dariPemilik, dariPalwise].map(bentukPesanTanya),
-      jatah: await ambilJatahTanya(workspaceId),
+      jatah: await ambilJatahTanya(workspaceId).catch(() => null),
     });
   } catch (err) {
+    if (reservasi && !jawabanTersimpan) await selesaikanJatahTanya(reservasi, false).catch(error => log.error(`Refund kuota Tanya gagal: ${error}`));
+    if (err instanceof BatasTanyaError) {
+      res.status(429).json({ error: err.message, code: "TANYA_LIMIT", jatah: err.jatah });
+      return;
+    }
     fail(res, err);
   }
 });
