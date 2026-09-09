@@ -1,0 +1,39 @@
+.demo { scroll-margin-top: 88px; text-align: left; border: 1px solid #e4e7eb; border-radius: 18px; overflow: hidden; background: white; box-shadow: 0 4px 10px #17171704, 0 24px 70px #1717170a; }
+.top { min-height: 58px; padding: 12px 22px; border-bottom: 1px solid #eceef0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.top > span { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.top small { font-size: 11px; color: #6b7075; }
+.layout { display: grid; grid-template-columns: 240px 1fr; }
+.choices { padding: 26px 18px; background: #f8f9fb; border-right: 1px solid #eceef0; }
+.choices p { font-size: 20px; font-weight: 600; line-height: 1.5; margin: 0 10px 24px; letter-spacing: -.6px; }
+.choices button { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid transparent; border-radius: 10px; text-align: left; font-size: 13px; color: #595f66; margin-top: 6px; }
+.choices button:hover { background: #eef0f3; }
+.choices button[aria-pressed="true"] { background: white; color: #1557b0; border-color: #e2e6ed; }
+.choices button:focus-visible { outline: 2px solid #1a73e8; outline-offset: 2px; }
+.chat { min-width: 0; min-height: 380px; padding: 26px 30px 20px; display: flex; flex-direction: column; gap: 24px; font-size: 14px; line-height: 1.7; }
+.question { align-self: flex-end; max-width: 90%; border-radius: 18px 18px 5px 18px; background: #f1f2f4; padding: 10px 16px; }
+.answer { display: flex; align-items: flex-start; gap: 10px; }
+.answer > img { flex-shrink: 0; }
+.answer > div { min-width: 0; flex: 1; }
+.answer strong { font-size: 12px; }
+.answer p { margin-top: 10px; color: #45494e; }
+.answer ul { list-style: none; border-left: 2px solid #e2e6ed; padding-left: 14px; margin-top: 14px; }
+.answer li { padding: 5px 0; }
+.draft { padding: 12px 14px; border: 1px solid #e2e6ed; border-radius: 12px; margin-top: 12px; }
+.draft small, .draft span { font-size: 11px; color: #6b7075; }
+.draft span { display: flex; align-items: center; gap: 7px; margin-top: 12px; }
+.draft p { margin-top: 6px; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.stats span { padding: 8px 12px; background: #f5f6f8; border-radius: 10px; font-size: 12px; }
+.note { margin-top: auto; padding-top: 10px; font-size: 12px; color: #6b7075; }
+@media(max-width: 640px) {
+  .top { padding: 12px 14px; flex-wrap: wrap; gap: 4px; }
+  .top small { font-size: 10px; }
+  .layout { display: flex; flex-direction: column; }
+  .choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 8px; gap: 4px; border: 0; border-bottom: 1px solid #eceef0; }
+  .choices p { display: none; }
+  .choices button { flex-direction: column; justify-content: center; width: auto; min-width: 0; min-height: 56px; padding: 6px 3px; font-size: 10px; margin: 0; gap: 5px; }
+  .choices button svg { width: 15px; }
+  .chat { padding: 20px 14px 14px; min-height: 330px; gap: 20px; font-size: 13px; }
+  .answer { gap: 8px; }
+  .question { max-width: 96%; }
+}

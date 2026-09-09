@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   PLANS,
   SEMUA_PAKET,
+  KUOTA_TANYA,
   formatIDR,
   paketMinimalTiapFitur,
   pricePerReply,
@@ -13,10 +14,10 @@ import { DataTerstruktur } from "@/components/DataTerstruktur";
 import { IDENTITAS, tautanBantuanWa } from "@/lib/identitas";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { PRESET } from "@/lib/preset";
+import { ContohTanya } from "@/components/ContohTanya";
 import { ContohChat } from "@/components/ContohChat";
 import { SorotanTab, type IsiSorotan } from "@/components/SorotanTab";
 import {
-  MockupDashboard,
   MockupInfoBisnis,
   MockupJanji,
   MockupRasa,
@@ -179,6 +180,7 @@ const FEATURES: {
    */
   hpSembunyi?: true;
 }[] = [
+  { ikon: "chat", title: "Minta bantuan lewat satu chat", body: "Cari pelanggan, baca kabar bisnis, dan revisi draf follow up lewat Tanya. Kamu tetap menyetujui pengiriman dan perubahan data." },
   {
     ikon: "qr" as NamaIkon,
     title: "Mulai jualan dalam semenit",
@@ -276,8 +278,8 @@ const LANGKAH = [
   {
     ikon: "info" as NamaIkon,
     judul: "Kasih tahu dia jualan kamu",
-    body: "Pilih contoh yang paling deket sama bidangmu, terus tempel daftar harga dan aturanmu. Atau cukup kasih alamat website kamu dan biar dia baca sendiri.",
-    pendek: "Tempel daftar harga dan aturanmu, atau kasih alamat website dan biar dia baca sendiri.",
+    body: "Ceritakan bisnismu lewat Tanya. Periksa cara bicara dan info yang disusun Palwise, lalu simpan. Daftar harga atau alamat website juga bisa jadi sumber informasi.",
+    pendek: "Ceritakan bisnismu lewat Tanya, periksa hasilnya, lalu simpan.",
   },
   {
     ikon: "chat" as NamaIkon,
@@ -346,6 +348,8 @@ const JAMINAN: { ikon: NamaIkon; judul: string; body: string }[] = [
  * paragraf lima baris di dalam panel lipat praktis tidak terbaca.
  */
 const TANYA_JAWAB: { t: string; j: string }[] = [
+  { t: "Tanya Palwise itu bisa bantu apa?", j: "Tanya adalah ruang chat AI untuk pemilik bisnis. Minta daftar pelanggan, ringkasan data chat, draf pesan, atau bantuan menyiapkan asisten. Hasilnya memakai data bisnis yang tersedia. Draf kirim dan perubahan data menunggu persetujuanmu." },
+  { t: "Chat dengan Palwise ada batasnya?", j: `Ada. Empat paket menyediakan ${KUOTA_TANYA.free.bulanan}, ${KUOTA_TANYA.starter.bulanan}, ${KUOTA_TANYA.growth.bulanan}, dan ${KUOTA_TANYA.pro.bulanan} pertanyaan AI per bulan, dengan batas harian. Gratis sebelum verifikasi mendapat 5 percobaan. Kuota Tanya terpisah dari balasan WhatsApp; lihat rincian di paket dan indikator kuota.` },
   {
     t: "Saya harus install apa?",
     j: "Nggak ada. Semuanya jalan di browser. HP kamu cuma dipakai sekali buat scan QR.",
@@ -588,6 +592,7 @@ export default async function LandingPage() {
               halamannya terbaca berat sebelah. Di HP semuanya hilang dan
               digantikan baris pintasan di bawah hero. */}
           <nav className="hidden items-center gap-1 text-sm lg:flex">
+            <a href="#tanya-ai" className="rounded-lg px-3 py-2 text-ink-600 hover:bg-ink-50">Tanya AI</a>
             <a href="#cara" className="rounded-lg px-3 py-2 text-ink-600 transition hover:bg-ink-50 hover:text-ink-900">
               Cara kerjanya
             </a>
@@ -653,202 +658,22 @@ export default async function LandingPage() {
           className={`${KOLOM} relative pb-10 pt-10 sm:pb-20 sm:pt-20 lg:pb-24 lg:pt-24`}
         >
           <div className="mx-auto max-w-4xl text-center">
-            {/* LENCANA MENYEBUT PEMBEDA KEDUA. HARGANYA PINDAH, BUKAN DIBUANG.
-
-                Sampai 4 September 2026 lencana ini berbunyi "Ngerti kapan
-                pelanggan lagi kesel · sepertujuh harga sebelah", dan harganya
-                cuma hidup di situ: tulisan 12px yang di layar 375px membungkus
-                jadi dua baris. Padahal harga itu SELURUH tesis produk ini, satu
-                -satunya alasan orang pindah dari sebelah, dan angka sebenarnya
-                baru muncul di layar kesebelas.
-
-                Jadi harganya turun satu blok, jadi angka yang bisa dibaca
-                (lihat strip di bawah tombol), dan lencana ini tinggal memikul
-                pembeda yang bukan angka. Dua-duanya tetap di layar pertama,
-                cuma yang paling menjual sekarang berbentuk angka, bukan
-                bisikan.
-
-                Yang SENGAJA TIDAK ditulis: janji bahwa AI-nya punya perasaan.
-                Itu janji yang tidak bisa dibuktikan ke siapa pun, dan lebih
-                buruk lagi, dia menakuti pembeli kami sendiri: pemilik toko yang
-                mendengarnya membayangkan asistennya ngambek ke pelanggan waktu
-                dia tidur. */}
-            <span className="badge border border-ink-200 bg-white px-3 py-1 text-ink-700 shadow-[0_1px_2px_rgba(15,15,15,0.05)]">
-              <span className="mr-0.5 h-1.5 w-1.5 rounded-full bg-brand-600" />
-              Ngerti kapan pelanggan lagi kesel
-            </span>
-
-            {/* JUDULNYA ASPIRIN, BUKAN VITAMIN.
-
-                Versi lama "Sales WhatsApp yang gercep 24 jam, tanpa nambah
-                gaji" menyebut apa PRODUKNYA, dan produk itu vitamin: bagus
-                kalau punya, gampang ditunda. Orang membeli aspirin, obat untuk
-                sakit yang sudah terasa sekarang.
-
-                Sakitnya bukan "belum punya sales 24 jam". Tidak ada yang bangun
-                pagi merasa kekurangan itu. Yang betulan terasa: dia tahu ada
-                yang chat semalam, dan sebagian sudah beli di tempat lain
-                sebelum dia sempat balas. Itu uang yang sudah hilang minggu ini.
-
-                "WhatsApp" tetap wajib di judul supaya orang yang datang dari
-                pencarian atau dari tautan yang dibagikan teman langsung tahu
-                ini kategori apa.
-
-                Pemenggalan barisnya cuma di layar lebar. <br /> yang dipaksakan
-                di layar 375px bertabrakan dengan pemenggalan alami browser, dan
-                hasilnya baris yang panjangnya loncat-loncat justru di perangkat
-                tempat sebagian besar orang membukanya.
-
-                Ukurannya juga turun di HP, bukan cuma ikut lebar: 36px di layar
-                375px bikin judul ini empat baris tebal yang memenuhi hampir
-                separuh layar pertama, dan tombolnya terdorong ke bawah
-                lipatan. */}
-            {/* text-balance bikin browser membagi rata panjang tiap barisnya,
-                jadi tidak ada lagi baris terakhir berisi satu kata sendirian.
-                Judul yang berakhir dengan satu kata menggantung terbaca seperti
-                salah ketik, dan itu kalimat pertama yang dibaca orang. */}
-            <h1 className="mt-4 text-balance text-[30px] font-bold leading-[1.14] tracking-[-0.03em] text-ink-950 sm:mt-6 sm:text-[46px] sm:leading-[1.08] lg:text-[54px]">
-              Ada yang chat WhatsApp kamu jam 11 malam.
-              <br className="hidden sm:inline" />{" "}
-              <span className="text-ink-400">Besoknya, dia udah beli di sebelah.</span>
+            <span className="badge border border-ink-200 bg-white px-3 py-1 text-ink-700">Asisten AI untuk kamu dan pelangganmu</span>
+            <h1 className="mt-4 text-balance text-[30px] font-bold leading-[1.14] tracking-[-0.03em] text-ink-950 sm:mt-6 sm:text-[46px] lg:text-[54px]">
+              Urus bisnis lewat chat.<br className="hidden sm:inline" /> <span className="text-ink-500">WhatsApp juga terlayani.</span>
             </h1>
-
-            {/* SATU kalimat, bukan dua paragraf.
-
-                Di hero tiap baris tambahan menunda tombolnya, dan tombol yang
-                tertunda tidak ditekan. Judul menyebut sakitnya, kalimat ini
-                menyebut obatnya, dan urutan itu yang benar: orang harus
-                mengenali dirinya dulu sebelum dia peduli kamu jual apa.
-
-                Kalimatnya menyebut PERTANYAAN yang tiap hari masuk ke HP-nya,
-                bukan nama halaman dari dalam dashboard. Orang yang baru pertama
-                kali mendengar Palwise tidak tahu apa itu istilah produk kita. */}
-            {/* Ukurannya turun di HP, bukan cuma ikut lebar layar. Tiap baris
-                tambahan di hero menunda tombolnya, dan tombol yang tertunda
-                tidak ditekan. */}
-            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-600 sm:mt-7 sm:text-[19px] sm:leading-[1.6]">
-              {/* Ditulis dalam SATU baris di kode, jangan dipenggal editor.
-                  Selftest mencari frasa "tanpa nambah gaji" utuh di berkas ini,
-                  dan penggalan baris JSX di tengah frasa membuatnya gagal
-                  menuduh copy yang justru sudah benar. */}
-              Palwise jadi sales WhatsApp kamu: bales dalam hitungan detik, 24 jam, pakai harga dan jadwal yang kamu isi sendiri, tanpa nambah gaji.
+            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-600 sm:mt-6 sm:text-[18px]">
+              Tanya kabar pelanggan, siapkan draf follow up, dan atur asistenmu sambil ngobrol. Palwise membantu membalas WhatsApp dari info bisnismu, tanpa nambah gaji.
             </p>
-
-            {/* Tombolnya selebar layar di HP, bukan dua tombol berdampingan.
-                Dua tombol yang membungkus jadi dua baris dengan lebar berbeda
-                terbaca sebagai berantakan, dan sasaran selebar layar itu yang
-                paling gampang kena jempol. */}
-            <div className="mt-6 flex flex-col items-stretch gap-2.5 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-3">
-              <Link href={keApp("/daftar")} className="btn-primary btn-besar">
-                Mulai gratis
-              </Link>
-              {/* Tombol "chat orangnya" muncul CUMA kalau nomornya sudah diisi.
-                  Sebagian pemilik usaha di sini tidak percaya mendaftar sendiri
-                  sebelum bicara dengan manusia, jadi tombol ini masuk akal.
-                  Tapi tombol chat yang tidak ada yang membalas jauh lebih
-                  merusak daripada tidak ada tombolnya, jadi dia menunggu
-                  IDENTITAS.waBantuan diisi. */}
-              {tautanBantuanWa(
-                "Halo, saya mau tanya soal Palwise untuk usaha saya.",
-              ) ? (
-                <a
-                  href={
-                    tautanBantuanWa(
-                      "Halo, saya mau tanya soal Palwise untuk usaha saya.",
-                    )!
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-ghost btn-besar"
-                >
-                  Tanya dulu lewat WhatsApp
-                </a>
-              ) : (
-                /* TOMBOL KEDUA MENGARAH KE BUKTI, BUKAN KE PENJELASAN.
-
-                   Dulu "Lihat cara kerjanya", yang membawa orang ke tiga
-                   langkah pemasangan. Itu menjawab pertanyaan yang belum dia
-                   punya: dia belum mau tahu cara masangnya, dia masih menimbang
-                   apakah barangnya beneran bisa. Yang menjawab itu bagian
-                   ngetes sendiri, dan itu aset terkuat halaman ini yang selama
-                   ini terkubur di layar keempat belas.
-
-                   Kalimatnya TIDAK boleh berbunyi "tanpa daftar". Halaman Coba
-                   dulu ada di dalam dashboard, jadi orangnya tetap harus punya
-                   akun. Yang benar dan tetap menjual: dia bisa mengetesnya
-                   sepuasnya SEBELUM nomor WhatsApp aslinya disambungkan, dan
-                   akunnya sendiri gratis tanpa kartu kredit. */
-                <a href="#bukti" className="btn-ghost btn-besar">
-                  Tes dulu sebelum nyambungin nomor
-                </a>
-              )}
+            <div className="mt-6 flex flex-col items-stretch gap-2.5 sm:flex-row sm:justify-center sm:gap-3">
+              <Link href={keApp("/daftar")} className="btn-primary btn-besar">Mulai gratis</Link>
+              <a href="#tanya-ai" className="btn-ghost btn-besar">Lihat contoh chat</a>
             </div>
-
-            <Dua
-              hp="Gratis, tanpa kartu kredit. Pasangnya scan QR dari HP kamu."
-              lebar="Tanpa kartu kredit. Pasangnya cukup scan QR dari HP kamu, semenit kelar."
-              className="mt-4 text-sm text-ink-500"
-            />
-
-            {/* ─── Strip harga, DI LAYAR PERTAMA ──────────────────────────
-                Harga adalah satu-satunya pembeda kami yang tidak bisa
-                dibantah, dan sampai hari ini angkanya baru muncul di layar
-                kesebelas. Orang yang datang dari pencarian harga, golongan
-                yang paling siap membeli, harus melewati sepuluh layar dulu
-                sebelum menemukan alasan dia datang.
-
-                Angka dua-duanya DITURUNKAN, tidak diketik: yang kiri dari
-                daftar paket, yang kanan dari RIVAL_PRICE yang juga dipakai
-                tabel pembanding di bawah. Dua tempat yang mengetik angka
-                sendiri-sendiri selalu berakhir berbeda, dan yang membaca
-                tidak punya cara tahu mana yang benar.
-
-                Sumbernya ikut disebut. Angka pembanding yang tidak bisa dicek
-                itu persis jenis omongan yang bikin halaman jualan berhenti
-                dipercaya, dan kami sedang menjual kepercayaan pada angka. */}
-            <div className="mx-auto mt-7 w-full max-w-md sm:mt-9">
-              <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-ink-200 bg-white text-left shadow-[0_1px_2px_rgba(15,15,15,0.05)]">
-                <div className="px-4 py-3 sm:px-5 sm:py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-                    Palwise mulai
-                  </p>
-                  <p className="mt-1 text-[19px] font-bold tracking-[-0.02em] text-ink-950 sm:text-[22px]">
-                    {formatIDR(PLANS.starter.pricePerMonth)}
-                  </p>
-                  <p className="text-[11.5px] text-ink-500">
-                    per bulan · {formatIDR(pricePerReply(growth))} per balasan
-                  </p>
-                </div>
-                <div className="border-l border-ink-200 bg-ink-50/70 px-4 py-3 sm:px-5 sm:py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-400">
-                    Yang sebelah mulai
-                  </p>
-                  {/* Dicoret, bukan cuma dikelabukan. Angka yang cuma abu-abu
-                      terbaca sebagai keterangan tambahan; angka yang dicoret
-                      terbaca sebagai harga yang tidak perlu kamu bayar. */}
-                  <p className="mt-1 text-[19px] font-bold tracking-[-0.02em] text-ink-400 line-through decoration-ink-300 sm:text-[22px]">
-                    {formatIDR(RIVAL_PRICE)}
-                  </p>
-                  <p className="text-[11.5px] text-ink-400">
-                    per bulan ·{" "}
-                    {formatIDR(Math.round(RIVAL_PRICE / RIVAL_CREDITS))} per
-                    balasan
-                  </p>
-                </div>
-              </div>
-              {/* KEDUA ANGKANYA HARGA TERMURAH MASING-MASING, dan itu wajib
-                  ditulis. Paket Rp 199.000 dapat 3.000 balasan, yang sebelah
-                  15.000, jadi menyandingkannya begitu saja tanpa keterangan
-                  sama dengan membandingkan dua barang yang berbeda. Yang
-                  benar-benar sebanding harga per balasannya, dan itu ikut
-                  disebut di baris angkanya sendiri.
-
-                  Nama pesaingnya tidak ditulis, cuma "platform sejenis".
-                  Sumber angkanya dicatat di komentar RIVAL_PRICE di atas. */}
-              <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-500">
-                Harga masuk termurah masing-masing, dibanding daftar harga
-                publik platform sejenis.
-              </p>
+            <p className="mt-3 text-xs leading-relaxed text-ink-500">Tanpa kartu kredit. Draf kamu periksa sebelum dikirim.</p>
+            <div className="mx-auto mt-5 flex max-w-xl flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-ink-600">
+              <span>{KUOTA_TANYA.free.bulanan} pertanyaan AI/bulan setelah verifikasi</span>
+              <span>{PLANS.free.aiCredits} balasan WhatsApp gratis/bulan</span>
+              <a href="#harga" className="underline underline-offset-4">4 paket · mulai {formatIDR(PLANS.starter.pricePerMonth)}/bulan</a>
             </div>
           </div>
 
@@ -860,9 +685,7 @@ export default async function LandingPage() {
               saja selalu terbaca sebagai stiker yang ditempel, bukan sebagai
               layar yang berdiri di atas halaman. */}
           <div className="relative mx-auto mt-10 max-w-5xl sm:mt-14">
-            <div className="rounded-2xl border border-ink-200 bg-white p-1.5 bayangan-produk sm:p-2">
-              <MockupDashboard />
-            </div>
+            <ContohTanya />
           </div>
 
           {/* Pintasan, CUMA DI HP.
@@ -877,6 +700,7 @@ export default async function LandingPage() {
             className="thin-scroll -mx-5 mt-7 flex gap-2 overflow-x-auto px-5 pb-1 sm:hidden"
           >
             {[
+              ["#tanya-ai", "Tanya AI"],
               ["#cara", "Cara kerjanya"],
               ["#fitur", "Fitur"],
               ["#harga", "Harga"],

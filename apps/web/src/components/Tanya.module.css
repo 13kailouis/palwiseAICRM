@@ -87,6 +87,22 @@
 .resultHeading small { color: #b42318; font-size: 11px; margin-left: 8px; }
 .resultCard[open] > .resultHeading { margin-bottom: 10px; }
 .resultCard:first-child { margin-top: 0; }
+.results { margin-top: 10px; border-left: 2px solid #e9eaed; padding-left: 12px; }
+.results .resultCard { padding: 0; border: 0; border-radius: 0; background: transparent; margin: 0; }
+.results .resultHeading { min-height: 44px; padding: 10px 0; }
+.results .resultCard[open] > .resultHeading { margin-bottom: 0; }
+.resultContent { max-height: 260px; overflow: auto; padding: 0 4px 10px 0; overscroll-behavior: contain; }
+.supportingResults { margin-top: 8px; color: #6b7075; font-size: 12px; }
+.supportingResults > summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
+.supportingResults .results { margin-top: 0; }
+.proposal { margin-top: 12px; border: 1px solid #e4e7eb; border-radius: 14px; overflow: hidden; }
+.proposalHeading { display: flex; align-items: center; gap: 8px; padding: 10px 12px 0; }
+.proposalBody { padding: 10px 12px; }
+.proposalBody > * + * { margin-top: 10px; }
+.proposalText { max-height: 240px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.7; color: #30343a; }
+.proposalActions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 0 12px 8px; }
+.proposalActions button { min-height: 44px; padding: 0 14px; font-size: 12px; }
+.takeOver { display: flex; align-items: center; gap: 6px; margin-left: auto; min-height: 44px; font-size: 11px; color: #6b7075; cursor: pointer; }
 .resultCard .answerText { font-size: 13px; line-height: 1.8; }
 .copy { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; margin-left: -8px; border-radius: 8px; color: #6b7075; font-size: 10px; }
 .copy:hover { color: #171717; background: #f6f6f6; }
@@ -263,3 +279,20 @@
   .setupChecklist { right: -42px; }
   .dialogActions button { flex: 1; }
 }
+/* Keep the empty chat input in the same place as an ongoing chat on phones. */
+@media (max-width: 1023px) {
+  .workspaceEmpty { padding: 0; overflow: hidden; justify-content: flex-start; }
+  .workspaceEmpty .conversationArea { flex: 1; min-height: 0; }
+  .workspaceEmpty .scrollArea { display: flex; flex: 1; overflow-y: auto; }
+  .workspaceEmpty .thread { margin: auto; padding: 24px 16px; }
+  .workspaceEmpty .composerDock { padding: 6px 10px max(8px, env(safe-area-inset-bottom)); }
+  .composerInner { display: flex; flex-direction: column; }
+  .suggestions { margin: 0 0 10px; max-height: 110px; overflow-y: auto; justify-content: flex-start; }
+  .suggestion, .ideaButton, .send { min-height: 44px; }
+  .send, .ideaButton { min-width: 44px; }
+  .takeOver { margin-left: 0; }
+  :global(html[data-tanya-keyboard="1"]) .workspaceEmpty { padding: 0; }
+}
+.recoverAnswer { display: inline-flex; min-height: 44px; align-items: center; margin-top: 8px; padding: 0 12px; border: 1px solid #e2e6ed; border-radius: 10px; color: #1557b0; font-size: 12px; }
+.recoverAnswer:hover { background: #f6f8fb; }
+@media (min-width: 1024px) { .suggestions { margin: 0 0 14px; } }

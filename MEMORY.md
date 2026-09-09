@@ -23,3 +23,12 @@ File ini menyimpan preferensi proyek, bukan izin umum untuk tindakan produksi pa
 - Hitungan harus disimpan di server, tahan terhadap permintaan bersamaan, dan tidak terulang saat membuat atau menghapus obrolan. Kegagalan dikembalikan sekali; percobaan berulang tetap dibatasi.
 - Sisa kuota cukup berupa indikator kecil; rincian dibuka saat ditekan. Saat habis, jelaskan waktu reset atau verifikasi/naik paket tanpa menghilangkan draf.
 - Angka ini membatasi biaya, bukan jaminan seluruh usaha untung. Evaluasi ulang menggunakan pemakaian token dan harga provider aktual sebelum melonggarkan kuota atau mengganti model.
+
+## Chat lengkap dan tampilan ringkas — 9 September 2026
+
+- Draf/revisi wajib membawa isi lengkap, penerima yang benar, dan konteks draf sebelumnya. Kalimat seperti “ini drafnya” bukan hasil. Usul yang ditolak tidak boleh meninggalkan narasi seolah hasil sudah tersedia.
+- Satu giliran menyelesaikan pembacaan dan jawaban; perbaikan otomatis tetap dibatasi empat panggilan model. Jika gagal, tampilkan kegagalan yang jelas. Jangan mengirim pesan pelanggan otomatis.
+- Saat ada draf, tampilkan draf terlebih dahulu. Gabungkan hasil pencarian dan riwayat dalam rincian yang bisa dibuka. Daftar yang merupakan jawaban utama tetap terlihat; transkrip panjang punya area gulir terbatas.
+- Di HP, composer berada di bawah baik saat obrolan kosong maupun berjalan. Saran berada di atasnya. Membuka sidebar riwayat memfokuskan tombol tutup, bukan pencarian, agar keyboard tidak terbuka otomatis.
+- Landing page menonjolkan dua sisi Palwise: chat AI untuk pemilik bisnis dan asisten WhatsApp untuk pelanggan. Tunjukkan contoh cek pelanggan, draf, dan kabar bisnis. Data ilustrasi wajib ditandai; jangan gunakan identitas pelanggan produksi dalam demo publik.
+- Jawaban lama yang terlanjur tanpa hasil dapat dilengkapi lewat tindakan pengguna, dengan kuota yang sama; tidak ada pemrosesan ulang otomatis yang diam-diam memotong kuota.

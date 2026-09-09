@@ -510,8 +510,9 @@ export function Tanya({ sesiAwal }: { sesiAwal: string | null }) {
               {memuat ? <div className={styles.loading} role="status"><span className={styles.spinner} />Menyiapkan obrolan...</div> :
                 <div className={styles.thread}>
                   {kosong ? <Sambutan usaha={ideAkun.usaha} /> : <div className={styles.messages} role="log" aria-label="Percakapan dengan Palwise" aria-live="polite" aria-relevant="additions">
-                    {pesan.map((p) => p.peran === "pemilik" ? <DariPemilik key={p.id} teks={p.teks} /> :
-                      <DariPalwise key={p.id} pesan={p} jalankan={(opsi) => jalankanUsul(p.id, opsi)} />)}
+                    {pesan.map((p, index) => p.peran === "pemilik" ? <DariPemilik key={p.id} teks={p.teks} /> :
+                      <DariPalwise key={p.id} pesan={p} jalankan={(opsi) => jalankanUsul(p.id, opsi)}
+                        lengkapi={index === pesan.length - 1 && !terkunci ? () => kirim("Lengkapi jawaban sebelumnya dengan hasil atau draf lengkap yang bisa saya periksa. Jangan hanya menulis pengantar atau janji.") : undefined} />)}
                   </div>}
                   {barusanMulai && !sibuk && <div className="mt-5 flex flex-wrap gap-2">
                     {JENIS_USAHA.map((j) => <button key={j.label} type="button" disabled={terkunci} onClick={() => kirim(`Jualan ${j.label.toLowerCase()}`)}
@@ -616,7 +617,7 @@ function RelRiwayat({ daftar, sesiId, buka, ciut, tutup, pilih, hapus, terkunci 
   useEffect(() => {
     if (!buka) return;
     const sebelumnya = document.activeElement as HTMLElement | null;
-    cariRef.current?.focus();
+    panelRef.current?.querySelector<HTMLButtonElement>('button[aria-label="Tutup riwayat"]')?.focus({ preventScroll: true });
     function keyboard(event: KeyboardEvent) {
       if (document.querySelector("dialog[open]")) return;
       if (event.key === "Escape") { event.preventDefault(); tutupRef.current(); }
@@ -716,26 +717,29 @@ function TeksJawaban({ teks }: { teks: string }) {
   return <div className={styles.answerText}>{hasil}</div>;
 }
 
-function DariPalwise({ pesan, jalankan }: {
+function DariPalwise({ pesan, jalankan, lengkapi }: {
   pesan: Pesan; jalankan: (opsi: { batal?: boolean; ambilAlih?: boolean }) => Promise<string | null>;
+  lengkapi?: () => void;
 }) {
   const [salinan, setSalinan] = useState<"awal" | "selesai" | "gagal">("awal");
   useEffect(() => { if (salinan === "awal") return; const timer = setTimeout(() => setSalinan("awal"), 2500); return () => clearTimeout(timer); }, [salinan]);
   async function salin() {
-    const lengkap = [pesan.teks, ...(pesan.hasilBaca ?? []).map(h => `${h.judul}\n${h.isi}`)].join("\n\n");
+    const lengkap = [pesan.teks, pesan.usul ? ("teks" in pesan.usul ? pesan.usul.teks : pesan.usul.isi) : "", ...(pesan.hasilBaca ?? []).map(h => `${h.judul}\n${h.isi}`)].filter(Boolean).join("\n\n");
     try { await navigator.clipboard.writeText(lengkap); setSalinan("selesai"); }
     catch { setSalinan("gagal"); }
   }
   return <article className={styles.answer + " anim-naik"}>
     <div className={styles.answerIdentity}><TandaPalwise /><span>Palwise</span><span className={styles.aiBadge}>AI</span></div>
     <div className={styles.answerBody}>
-      {!(pesan.hasilBaca?.[0]?.isi.startsWith(pesan.teks) && pesan.teks) && <TeksJawaban teks={pesan.teks} />}
-      {(pesan.hasilBaca ?? []).map((hasil, index) => <details key={`${hasil.alat}-${index}`} className={styles.resultCard} aria-label={hasil.judul}
-        open={!new Set(["lihat_kontak", "lihat_info", "lihat_asisten", "cari_info_bisnis"]).has(hasil.alat)}>
-        <summary className={styles.resultHeading}><span>{hasil.judul}</span>{hasil.gagal && <small>Belum berhasil dibaca</small>}</summary>
-        <TeksJawaban teks={hasil.isi} />
-      </details>)}
-      {pesan.usul && <div className="mt-4"><KartuUsul usul={pesan.usul} status={pesan.usulStatus} kabar={pesan.usulPesan} jalankan={jalankan} /></div>}
+      {!(!pesan.usul && pesan.hasilBaca?.[0]?.isi.startsWith(pesan.teks) && pesan.teks) && <TeksJawaban teks={pesan.teks} />}
+      {pesan.usul && <KartuUsul usul={pesan.usul} status={pesan.usulStatus} kabar={pesan.usulPesan} jalankan={jalankan} />}
+      {(pesan.hasilBaca?.length ?? 0) > 0 && (pesan.usul ? <details className={styles.supportingResults}>
+        <summary>Rincian yang dipakai · {pesan.hasilBaca!.length}{pesan.hasilBaca!.some(h => h.gagal) ? " · Ada data gagal dibaca" : ""}</summary>
+        <HasilPembacaan hasil={pesan.hasilBaca!} ringkas />
+      </details> : <HasilPembacaan hasil={pesan.hasilBaca!} />)}
+      {lengkapi && !pesan.usul && !pesan.hasilBaca?.length && pesan.teks.length < 400 &&
+        /(?:ini|berikut).{0,40}\b(?:draf|draft)|\b(?:saya|aku)\s+(?:akan\s+)?(?:lihat|cek|siapkan)\s+(?:dulu|data|draf)/i.test(pesan.teks) &&
+        !/[\n:][\s\S]{20}/.test(pesan.teks) && <button type="button" className={styles.recoverAnswer} onClick={lengkapi} title="Buat jawaban lengkap menggunakan kuota AI">Lengkapi jawaban</button>}
       <div className={styles.answerFooter}>
         <button type="button" className={styles.copy} onClick={salin} aria-label="Salin jawaban" title={salinan === "selesai" ? "Tersalin" : "Salin jawaban"}>
           <Ikon nama={salinan === "selesai" ? "centang" : "salin"} size={16} /><span className="sr-only" aria-live="polite">{salinan === "selesai" ? "Tersalin" : salinan === "gagal" ? "Gagal menyalin, coba lagi" : ""}</span>
@@ -746,6 +750,14 @@ function DariPalwise({ pesan, jalankan }: {
   </article>;
 }
 
+
+function HasilPembacaan({ hasil, ringkas = false }: { hasil: HasilBacaTanya[]; ringkas?: boolean }) {
+  return <div className={styles.results}>{hasil.map((item, index) => <details key={`${item.alat}-${index}`} className={styles.resultCard} aria-label={item.judul}
+    open={!ringkas && !["lihat_kontak", "lihat_info", "lihat_asisten", "cari_info_bisnis"].includes(item.alat)}>
+    <summary className={styles.resultHeading}><span>{item.judul}</span>{item.gagal && <small>Belum berhasil dibaca</small>}</summary>
+    <div className={styles.resultContent} tabIndex={0} aria-label={`Isi ${item.judul}`}><TeksJawaban teks={item.isi} /></div>
+  </details>)}</div>;
+}
 
 /** Nama alat dalam bahasa yang dimengerti pemilik toko. */
 function namaAlat(kode: string): string {
@@ -1021,15 +1033,15 @@ function KartuUsul({
     isiLama.length > 200 && isiBaru.length < isiLama.length * 0.6;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white">
-      <div className="flex items-start gap-2.5 border-b border-ink-100 bg-ink-50 px-4 py-3">
+    <div className={styles.proposal}>
+      <div className={styles.proposalHeading}>
         <Ikon nama={kepala.ikon} size={14} className="shrink-0 text-ink-400" />
         <p className="min-w-0 flex-1 break-words text-[12px] leading-relaxed text-ink-600">
           {kepala.isi}
         </p>
       </div>
 
-      <div className="space-y-3 p-4">
+      <div className={styles.proposalBody}>
         {usul.jenis === "kirim_berkas" && (
           <p className="flex items-center gap-2 rounded-lg bg-ink-50 px-2.5 py-1.5 text-[13px] text-ink-700">
             <Ikon nama="berkas" size={14} className="shrink-0 text-ink-400" />
@@ -1043,7 +1055,7 @@ function KartuUsul({
           <Perubahan lama={isiLama} baru={isiBaru} />
         ) : (
           isiBaru && (
-            <p className="thin-scroll max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg bg-ink-50 px-2.5 py-2 text-[13px] leading-relaxed text-ink-800">
+            <p className={styles.proposalText} tabIndex={0}>
               {isiBaru}
             </p>
           )
@@ -1064,7 +1076,7 @@ function KartuUsul({
       </div>
 
       {menunggu ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-ink-100 px-4 py-3">
+        <div className={styles.proposalActions}>
           <button
             type="button"
             disabled={proses}
@@ -1087,7 +1099,7 @@ function KartuUsul({
               Kalau asisten dimatikan diam-diam, Budi bertanya lagi besok dan
               tidak ada yang menjawab. */}
           {mengirim && (
-            <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-[12px] text-ink-500">
+            <label className={styles.takeOver}>
               <input
                 type="checkbox"
                 checked={ambilAlih}
@@ -1154,6 +1166,11 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
       {jatah?.habis && <div className={styles.quotaNotice} role="status"><span>{jatah.pesan}</span>
         {jatah.alasan === "verifikasi" ? <Link href="/app/akun">Verifikasi email</Link> : jatah.alasan === "bulanan" && jatah.paket !== "pro" ? <Link href="/app/tagihan">Lihat paket</Link> : null}
       </div>}
+      {(kosong || ideBuka) && ide.length > 0 && <div id="ide-tanya" className={styles.suggestions} aria-label="Saran untuk bisnismu">
+        {ide.map(c => <button key={c.judul} type="button" onClick={() => pilihIde(c.pesan)} className={styles.suggestion} title={c.pesan}>
+          <span className={styles.suggestionIcon}><Ikon nama={c.ikon} size={17} /></span><span><strong>{c.judul}</strong></span>
+        </button>)}
+      </div>}
       <form onSubmit={e => { e.preventDefault(); kirim(draft); }} className={styles.composer}>
         <textarea ref={isianRef} rows={1} maxLength={2000} value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => {
@@ -1169,11 +1186,6 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
           </button>
         </div>
       </form>
-      {(kosong || ideBuka) && ide.length > 0 && <div id="ide-tanya" className={styles.suggestions} aria-label="Saran untuk bisnismu">
-        {ide.map(c => <button key={c.judul} type="button" onClick={() => pilihIde(c.pesan)} className={styles.suggestion} title={c.pesan}>
-          <span className={styles.suggestionIcon}><Ikon nama={c.ikon} size={17} /></span><span><strong>{c.judul}</strong></span>
-        </button>)}
-      </div>}
       <div className={styles.composerHint}>
         <span>Draf diperiksa sebelum dikirim.</span>
         {!kosong && <span className={styles.keyboardHint}>Enter kirim · Shift + Enter baris baru</span>}

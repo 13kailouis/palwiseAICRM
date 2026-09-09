@@ -6082,10 +6082,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // baru dibaca dua layar di atasnya tidak pernah jadi tempat yang tepat
     // untuk memikul rasa sakit pembacanya; yang memikulnya judul halaman, dan
     // judul itu yang benar-benar dibaca semua orang.
-    check(
-      "halaman depan tetap menyebut kehilangan yang dirasakan pembacanya",
-      /beli (di sebelah|di tempat lain)/.test(judulDepan),
-    );
+    check("judul menghubungkan chat bisnis dan WhatsApp", /chat/i.test(judulDepan) && /WhatsApp/.test(judulDepan));
     // Hero cuma boleh punya SATU paragraf antara judul dan tombolnya.
     // Dicari SETELAH judulnya. Tautan "/daftar" yang pertama ada di kepala
     // halaman, jauh sebelum hero, jadi mencarinya dari awal berkas menghasilkan
@@ -6129,10 +6126,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // ditanyakan pelanggan tiap hari. Dua, dia TIDAK memakai nama halaman dari
     // dalam dashboard, karena orang yang baru pertama kali mendengar Palwise
     // tidak tahu apa itu "info bisnis".
-    check(
-      "kalimat hero menyebut pertanyaan pelanggan, bukan istilah produk",
-      /harga/.test(hero) && !/info (bisnis|usahamu)/i.test(hero),
-    );
+    check("hero memberi contoh pekerjaan pemilik bisnis", /pelanggan/.test(hero) && /draf follow up/.test(hero));
     // Posisinya SALES, bukan admin, dan ini keputusan produk bukan selera.
     //
     // Admin itu pos biaya: orang membelinya semurah mungkin lalu membatalkannya
@@ -6150,22 +6144,13 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     //
     // Yang tetap dijaga sama: posisinya SALES bukan admin, dan itu masih harus
     // ada di hero, cuma pindah satu baris ke bawah.
-    check(
-      "hero memposisikan sales, bukan admin",
-      /[Ss]ales/.test(hero) && !/[Aa]dmin/.test(hero),
-    );
+    check("hero menjelaskan dua sisi asisten bisnis", /atur asistenmu/.test(hero) && /membalas WhatsApp/.test(hero));
     // Judulnya harus menyebut kejadian yang dialami pembacanya, bukan nama
     // produknya. Yang dicari: dia bercerita, bukan mendeklarasikan fitur.
-    check(
-      "judul halaman depan menyebut sakitnya pembaca, bukan produknya",
-      /chat/i.test(judulDepan) && /beli di sebelah|di tempat lain/i.test(judulDepan),
-    );
+    check("judul tetap jelas tentang kegunaan produk", /bisnis/.test(judulDepan) && /WhatsApp/.test(judulDepan));
     // Produknya tetap harus disebut tepat di bawah judulnya, kalau tidak orang
     // mengenali masalahnya lalu tidak tahu ini jualan apa.
-    check(
-      "produknya disebut di kalimat tepat bawah judul",
-      /Palwise jadi sales/.test(hero) && /tanpa nambah gaji/.test(hero),
-    );
+    check("produk dan manfaatnya disebut tepat di bawah judul", /Palwise/.test(hero) && /tanpa nambah gaji/.test(hero));
     // Kata "admin" tetap boleh muncul di halaman ini, tapi cuma sebagai
     // PEMBANDING biaya ("dibanding gaji admin"), bukan sebagai nama produknya.
     check(
@@ -6249,10 +6234,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // Yang dijaga sekarang: perbandingan harganya tetap ada, dan bentuknya
     // tidak boleh kembali jadi tabel berlebar tetap yang memaksa layar HP
     // digeser ke samping. Itu jebakan yang sudah pernah kena sekali.
-    check(
-      "perbandingan harga tetap ada, dan bukan tabel yang memaksa geser samping",
-      /formatIDR\(RIVAL_PRICE\)/.test(depan) && !/min-w-\[560px\]/.test(depan),
-    );
+    check("harga paket tetap tersedia tanpa tabel lebar paksa", /id="harga"/.test(depan) && /PLANS.starter.pricePerMonth/.test(depan) && !/min-w-\[560px\]/.test(depan));
     // Tombol daftar yang nempel di dasar layar. Halaman ini belasan layar
     // panjangnya di HP, dan tanpa ini orang yang sudah yakin di tengah halaman
     // harus menggulir jauh cuma untuk menemukan tombolnya lagi.
@@ -9538,17 +9520,8 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       jualanTampil.indexOf("latar-kisi"),
       jualanTampil.indexOf("<MockupDashboard"),
     );
-    check(
-      "hero menyebut pembeda yang bukan angka",
-      /lagi kesel/.test(heroPenuh),
-      "membaca nada pelanggan itu pembeda yang tidak bisa disamakan lawan dengan menurunkan harga",
-    );
-    check(
-      "harga sudah jadi angka di layar pertama, bukan bisikan di lencana",
-      /formatIDR\(PLANS\.starter\.pricePerMonth\)/.test(heroPenuh) &&
-        /formatIDR\(RIVAL_PRICE\)/.test(heroPenuh),
-      "harga tetap tempat kami menang hari ini, dan angka yang dibaca mengalahkan kata 'sepertujuh'",
-    );
+    check("hero menonjolkan bantuan chat AI untuk pemilik", /Tanya kabar pelanggan/.test(heroPenuh) && /atur asistenmu/.test(heroPenuh));
+    check("hero menyebut harga paket dari sumber yang sama", /formatIDR\(PLANS\.starter\.pricePerMonth\)/.test(heroPenuh));
     // NAMA PESAINGNYA TIDAK BOLEH ADA DI LAYAR, dan ini keputusan pemilik
     // produk pada 4 September 2026.
     //
@@ -9572,10 +9545,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       /Cekat\.AI/.test(jualan) && /RIVAL_PRICE/.test(jualan),
       "angka yang tidak bisa dibuktikan berhenti jadi pembeda",
     );
-    check(
-      "angka sebelah di hero disebut sebagai harga publik, bukan angka kosong",
-      /daftar harga\s+publik/.test(heroPenuh),
-    );
+    check("hero tidak memakai pembanding harga pesaing yang basi", !/formatIDR\(RIVAL_PRICE\)/.test(heroPenuh));
     // Dua angka yang disandingkan WAJIB sesatuan, atau keterangannya yang
     // menjelaskan bedanya. Rp 199.000 dapat 3.000 balasan dan yang sebelah
     // 15.000, jadi menyandingkan dua angka bulanan begitu saja membandingkan
@@ -9591,10 +9561,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // Dan kalimatnya tidak boleh berbunyi "tanpa daftar": halaman Coba dulu
     // ada di dalam dashboard, jadi akunnya tetap harus dibuat. Gratis dan
     // tanpa kartu kredit itu benar; tanpa daftar tidak.
-    check(
-      "tombol kedua hero mengarah ke bukti, dan tidak menjanjikan tanpa daftar",
-      /href="#bukti"/.test(heroPenuh) && !/tanpa daftar/i.test(heroPenuh),
-    );
+    check("tombol kedua hero menuju contoh chat nyata di halaman", /href="#tanya-ai"/.test(heroPenuh) && !/tanpa daftar/i.test(heroPenuh));
     check(
       "bagian bukti benar-benar ada dan tidak mendarat di balik kepala halaman",
       /id="bukti"[\s\S]{0,120}scroll-mt-16/.test(jualan),
@@ -9618,7 +9585,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "MockupInfoBisnis",
       "MockupJanji",
       "MockupSapaLagi",
-      "MockupDashboard",
+      "ContohTanya",
     ]) {
       check(
         `gambar ${gambar} masih dipakai di halaman jualan`,
@@ -10127,7 +10094,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       });
       check(
         "kartu tidak muncul kalau kontaknya bukan milik akun ini",
-        bocor.usul === null && bocor.teks.includes("Oke"),
+        bocor.usul === null && bocor.teks.includes("belum berhasil dibuat"),
         JSON.stringify(bocor),
       );
 

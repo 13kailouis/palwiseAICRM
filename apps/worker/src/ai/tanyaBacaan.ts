@@ -6,13 +6,22 @@ export interface GiliranTanya {
   peran: string;
   teks: string;
   hasilBaca?: HasilBacaTanya[];
+  usul?: Record<string, unknown> | null;
+  usulStatus?: string | null;
+}
+
+/** A claimed deliverable needs either its actual contents or a validated proposal. */
+export function hasilDijanjikanTanpaIsi(teks: string): boolean {
+  const pembuka = /\b(?:ini|berikut|inilah)\b.{0,70}\b(?:draf|draft|pesan|daftar|hasil)(?:nya)?\b|\b(?:draf|draft)(?:nya)?\s+(?:sudah|telah)\s+(?:siap|dibuat)/i;
+  return pembuka.test(teks) && !/[\n:][\s\S]*\S[\s\S]{20}/.test(teks) && teks.length < 280;
 }
 
 /** A final response cannot promise read-only work that no background job will perform. */
 export function janjiPemeriksaan(teks: string): boolean {
   if (/\b(mau|bolehkah|boleh|ingin) (aku|saya)|\b(kalau|jika)\b/i.test(teks) && /\?\s*$/.test(teks)) return false;
   return /\b(aku|saya|kami)\s+(?:(?:akan|mau|coba|sedang|lagi)\s+)?(?:cek|periksa|lihat|baca|cari|mengecek|memeriksa|melihat|membaca|mencari)\b/i.test(teks) ||
-    /\b(?:sebentar|tunggu)\b.{0,40}\b(?:cek|periksa|lihat|cari)\b/i.test(teks);
+    /\b(?:sebentar|tunggu)\b.{0,40}\b(?:cek|periksa|lihat|cari|siapkan|susun)\b/i.test(teks) ||
+    /\b(?:akan|sedang)\s+(?:saya|aku|kami)\s+(?:cek|periksa|lihat|baca|cari|siapkan|susun)\b|\b(?:saya|aku)\s+(?:akan\s+)?(?:siapkan|susun)\s+(?:dulu|draf|draft|pesan)/i.test(teks);
 }
 
 export function rentangHitunganLangsung(pesan: string): string | null {
@@ -66,5 +75,7 @@ export function hasilUntukChat(alat: string, isi: string, argumen: Record<string
 
 export function konteksGiliranTanya(r: GiliranTanya): string {
   const hasil = (r.hasilBaca ?? []).map(h => `${h.judul}${h.gagal ? " (gagal dibaca)" : ""}:\n${h.isi}`).join("\n\n");
-  return r.teks + (hasil ? `\n\nData yang ditampilkan saat itu (baca ulang untuk keadaan terbaru):\n${hasil.slice(0, 6000)}` : "");
+  // Put the draft before potentially long tool transcripts so truncation keeps the edit target.
+  const usul = r.usul ? `\n\nUsulan sebelumnya (${r.usulStatus ?? "status tidak diketahui"}; bukan izin mengirim):\n${JSON.stringify(r.usul).slice(0, 2200)}` : "";
+  return r.teks + usul + (hasil ? `\n\nData yang ditampilkan saat itu (baca ulang untuk keadaan terbaru):\n${hasil.slice(0, 6000)}` : "");
 }

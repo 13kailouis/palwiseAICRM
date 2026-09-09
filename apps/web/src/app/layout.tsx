@@ -45,22 +45,10 @@ const huruf = localFont({
   ],
 });
 
-/**
- * "Sales", bukan "asisten".
- *
- * Judul ini yang muncul di hasil pencarian dan di kartu tautan waktu dibagikan
- * lewat WhatsApp, jadi dia harus menjual barang yang sama dengan halamannya.
- * "Asisten" dan "admin" menjanjikan pekerjaan tata usaha, dan itu pos biaya yang
- * orang cari semurah mungkin lalu batalkan. Yang sebenarnya dikerjakan produk ini
- * pekerjaan sales, dan sales itu pos penghasilan.
- *
- * Kata "asisten" tetap dipakai DI DALAM dashboard, dan itu memang disengaja: di
- * sana orangnya sudah membeli, dan yang dia atur memang satu asisten yang
- * menjawab. Yang berubah cuma cara menjualnya ke orang yang belum kenal.
- */
-const JUDUL = "Palwise, sales WhatsApp AI untuk usaha di Indonesia";
+/** Search and sharing copy follows the chat workspace and WhatsApp offering. */
+const JUDUL = "Palwise, chat AI bisnis dan sales WhatsApp";
 const RINGKAS =
-  "Chat pelanggan dibalas 24 jam pakai harga dan jadwal dari info usahamu sendiri, sampai orangnya mau pesan. Janji temu ikut tercatat. Mulai gratis, pasang cukup scan QR.";
+  "Tanya kabar pelanggan, siapkan draf follow up, dan atur asisten lewat chat AI. Palwise juga membantu membalas WhatsApp dari info bisnismu. Mulai gratis.";
 
 export const metadata: Metadata = {
   // Template judul: tiap halaman menambahkan namanya sendiri di depan, dan

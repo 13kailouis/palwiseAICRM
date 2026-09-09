@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { bacaHasilTanya, mintaSambunganWhatsApp, muatIdeTanya, prisma, sapaanPemasangan, SAPAAN_PASANG, tanyaStatusWhatsApp } from "@palwise/db";
 import { ALAT, ALAT_PASANG_UJI, jalankanTanya, muatRiwayatTanya, rentangWaktu } from "../ai/tanya.js";
-import { janjiPemeriksaan, rentangHitunganLangsung, tahapYangDiminta } from "../ai/tanyaBacaan.js";
+import { hasilDijanjikanTanpaIsi, janjiPemeriksaan, rentangHitunganLangsung, tahapYangDiminta } from "../ai/tanyaBacaan.js";
 import { koneksiTanya } from "../ai/tanyaKoneksi.js";
 import { getLlm } from "../ai/provider.js";
 import "../env.js";
@@ -40,6 +40,11 @@ async function main() {
   assert.ok(ALAT_PASANG_UJI.has("sambungkan_whatsapp")); checks++;
   assert.ok(!ALAT_PASANG_UJI.has("daftar_gambar")); checks++;
 
+  for (const teks of ["Ini drafnya.", "Berikut daftarnya.", "Drafnya sudah siap.", "Ini draf yang lebih santai untuk Maya."]) {
+    assert.equal(hasilDijanjikanTanpaIsi(teks), true); checks++;
+  }
+  assert.equal(hasilDijanjikanTanpaIsi("Ini drafnya:\nHalo Maya, apa kabar? Semoga harimu menyenangkan ya."), false); checks++;
+  assert.equal(janjiPemeriksaan("Akan saya siapkan draf pesannya."), true); checks++;
   const workspace = await prisma.workspace.create({ data: { name: "__uji_tanya_" + Date.now() } });
   const tetangga = await prisma.workspace.create({ data: { name: "__uji_tanya_tetangga_" + Date.now() } });
   const llm = getLlm();
@@ -180,6 +185,31 @@ async function main() {
     assert.ok(draf.usul && "teks" in draf.usul && draf.usul.teks.includes("ukuran 39"));
     assert.ok(draf.alat.includes("lihat_kontak"));
     assert.equal(await prisma.message.count({ where: { conversation: { workspaceId: workspace.id }, role: { in: ["ai", "human"] } } }), 0); checks += 5;
+    // Revisions must carry the actual saved draft, then return a new complete proposal.
+    await prisma.pesanTanya.create({ data: { sesiId: sesi.id, peran: "palwise", teks: "Ini drafnya.", usul: JSON.stringify(draf.usul), usulStatus: "menunggu" } });
+    const riwayatDraf = await muatRiwayatTanya(sesi.id, workspace.id);
+    assert.equal(riwayatDraf.at(-1)?.usul?.kontakId, tertarik.id); checks++;
+    for (const revisi of ["Jngn gitu, untuk relationship", "Mna", "Lebih santai dong"]) {
+      let calls = 0;
+      llm.complete = async input => {
+        calls++;
+        assert.match(JSON.stringify(input.messages), /ukuran 39/);
+        assert.match(JSON.stringify(input.messages), new RegExp(tertarik.id));
+        if (calls === 1) return JSON.stringify({ jawab: "Ini draf buat Maya untuk menjaga hubungan baik, Kak." });
+        return JSON.stringify({ jawab: "Ini draf yang lebih santai.", usul: { jenis: "kirim_pesan", kontakId: tertarik.id, teks: "Halo Maya, apa kabar? Semoga harimu menyenangkan ya." } });
+      };
+      const hasil = await jalankanTanya({ workspaceId: workspace.id, riwayat: riwayatDraf, pesan: revisi });
+      assert.equal(calls, 3); assert.equal(hasil.usul?.jenis, "kirim_pesan");
+      assert.ok(hasil.usul && "teks" in hasil.usul && hasil.usul.teks.includes("apa kabar"));
+      assert.ok(hasil.alat.includes("lihat_kontak")); checks += 4;
+    }
+    llm.complete = async () => JSON.stringify({ jawab: "Maaf, ini draf pesan untuk menjaga hubungan baik dengan Kak Maya." });
+    const takAdaDraf = await jalankanTanya({ workspaceId: workspace.id, riwayat: riwayatDraf, pesan: "Mna" });
+    assert.equal(takAdaDraf.usul, null); assert.match(takAdaDraf.teks, /belum berhasil dibuat/); checks += 2;
+    llm.complete = async () => JSON.stringify({ jawab: "Ini drafnya.", usul: { jenis: "kirim_pesan", kontakId: "kontak-milik-orang-lain", teks: "Halo" } });
+    const invalid = await jalankanTanya({ workspaceId: workspace.id, riwayat: [], pesan: "Siapkan pesan" });
+    assert.equal(invalid.usul, null); assert.match(invalid.teks, /belum berhasil dibuat/); checks += 2;
+    assert.equal(await prisma.message.count({ where: { conversation: { workspaceId: workspace.id }, role: { in: ["ai", "human"] } } }), 0); checks++;
     let emptyCalls = 0;
     llm.complete = async () => ++emptyCalls === 1 ? JSON.stringify({ alat: "daftar_masalah" }) : JSON.stringify({ jawab: "Ini daftar pelanggan yang komplain. Mau balas siapa?" });
     const benarKosong = await jalankanTanya({ workspaceId: workspace.id, riwayat: [], pesan: "Siapa yang komplain?" });

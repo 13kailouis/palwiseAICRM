@@ -15,7 +15,7 @@ import { parseJsonLoose, sekarangIndonesia } from "./agent.js";
 import { getLlm } from "./provider.js";
 import { formatKnowledge, searchKnowledge } from "./rag.js";
 import { LlmMessage, textMessage } from "./types.js";
-import { hasilUntukChat, janjiPemeriksaan, konteksGiliranTanya, rentangHitunganLangsung, tahapYangDiminta, TAHAP_TANYA, type GiliranTanya } from "./tanyaBacaan.js";
+import { hasilUntukChat, hasilDijanjikanTanpaIsi, janjiPemeriksaan, konteksGiliranTanya, rentangHitunganLangsung, tahapYangDiminta, TAHAP_TANYA, type GiliranTanya } from "./tanyaBacaan.js";
 import { koneksiTanya } from "./tanyaKoneksi.js";
 
 /**
@@ -784,7 +784,10 @@ export async function muatRiwayatTanya(sesiId: string, workspaceId: string): Pro
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 40,
   });
-  return terbaru.reverse().map(r => ({ peran: r.peran, teks: r.teks, hasilBaca: bacaHasilTanya(r.hasilBaca) }));
+  return terbaru.reverse().map(r => {
+    const usul = r.usul ? parseJsonLoose(r.usul) : null;
+    return { peran: r.peran, teks: r.teks, hasilBaca: bacaHasilTanya(r.hasilBaca), usul: usul && typeof usul === "object" && !Array.isArray(usul) ? usul : null, usulStatus: r.usulStatus };
+  });
 }
 
 export interface JalankanTanyaInput {
@@ -835,6 +838,7 @@ export async function jalankanTanya({
   let system = systemPrompt(ws.name, mode);
   system += "\n\nUntuk hitungan chat, selalu sebut data yang TERCATAT di Palwise. Bila hasil alat menyebut WhatsApp terputus, sampaikan bahwa data belum lengkap; angka nol bukan bukti tidak ada chat di WhatsApp. Status tersambung di riwayat lama harus diperiksa ulang dengan status_whatsapp.";
   system += "\nJangan mengakhiri giliran dengan janji seperti 'saya lihat dulu', 'sebentar saya cek', atau 'akan saya siapkan'. Tidak ada pekerjaan latar belakang setelah jawaban dikirim. Jika perlu membaca, panggil alat sekarang, lalu berikan hasil dan langkah konkret dalam giliran yang sama. Jika data kurang, tanyakan satu hal spesifik. Untuk permintaan saran bisnis, berikan saran yang dapat dikerjakan sesuai data yang tersedia.";
+  system += "\nRevisi seperti 'jangan gitu', 'lebih santai', 'untuk relationship', atau 'mana/mna' mengacu pada draf dan permintaan sebelumnya. Sertakan usul BARU dengan isi lengkap dan penerima yang sama bila tidak diminta berubah. Jangan hanya menulis 'ini drafnya'. Status usulan lama bukan izin mengirim ulang. Untuk menjaga hubungan, jangan menyisipkan penawaran jika pemilik meminta percakapan personal. Jangan mengarang keadaan pelanggan. Jika penerima belum jelas, tanyakan namanya.";
   if (mode === "pasang") {
     const pemasangan = ALAT.find(a => a.nama === "keadaan_pemasangan")!;
     system += "\n\nSTATUS PEMASANGAN SAAT INI (dibaca dari data tersimpan, utamakan ini daripada sapaan lama):\n" + await pemasangan.jalankan(ctx, {});
@@ -858,6 +862,7 @@ export async function jalankanTanya({
   const hasilBaca: HasilBacaTanya[] = [];
   const kontakDibaca = new Set<string>();
   let janjiDiperbaiki = false;
+  let hasilDiperbaiki = false;
 
   for (let langkah = 0; langkah <= ALAT_MAKS; langkah++) {
     let mentah: string;
@@ -942,6 +947,20 @@ export async function jalankanTanya({
     const teks = hitungan ? hitungan.isi.split("\n")[0] : String(jawaban.jawab ?? "").trim();
     const usul = await bacaUsul(ctx, jawaban.usul, mode);
 
+    // Invalid proposals used to disappear silently while their announcement remained.
+    const hasilHilang = !usul && (jawaban.usul ||
+      (hasilDijanjikanTanpaIsi(teks) && (!hasilBaca.length || /\b(?:draf|draft)(?:nya)?\b/i.test(teks))));
+    if (hasilHilang) {
+      if (hasilDiperbaiki || langkah === ALAT_MAKS) return {
+        teks: "Draf atau hasilnya belum berhasil dibuat. Coba ulangi permintaan dengan nama pelanggan dan perubahan yang kamu inginkan.",
+        usul: null, alat: dipakai, hasilBaca,
+      };
+      hasilDiperbaiki = true;
+      pesanModel.push(textMessage("assistant", mentah));
+      pesanModel.push(textMessage("user", "Hasil yang dijanjikan belum ada atau usul tidak valid. Jawab permintaan semula sampai selesai sekarang. Untuk draf pelanggan, keluarkan usul kirim_pesan berisi kontakId yang sudah diverifikasi dan teks lengkap. Gunakan draf terdahulu untuk revisi, baca pelanggan bila perlu. Untuk jawaban langsung, tulis isi sebenarnya. Jika data belum cukup, tanyakan satu hal spesifik; jangan mengulang pengantar tanpa isi."));
+      continue;
+    }
+
     if (!usul && janjiPemeriksaan(String(jawaban.jawab ?? ""))) {
       if (janjiDiperbaiki || langkah === ALAT_MAKS) return {
         teks: hasilBaca.length ? "Berikut hasil pemeriksaan yang tersedia. Saran lanjutannya belum berhasil disusun; coba tanyakan langkah yang ingin kamu bahas." : "Pemeriksaannya belum berhasil dijalankan. Coba sebutkan data pelanggan yang ingin diperiksa, misalnya pelanggan tertarik.",
@@ -954,7 +973,7 @@ export async function jalankanTanya({
     }
 
     // A personalized draft cannot skip the customer's actual conversation.
-    if (usul && "kontakId" in usul && /follow[ -]?up|draf|balasan/i.test(pesan) && !kontakDibaca.has(usul.kontakId)) {
+    if (usul && "kontakId" in usul && !kontakDibaca.has(usul.kontakId)) {
       const alat = petaAlat.get("lihat_kontak")!;
       let isi: string;
       try { isi = await alat.jalankan(ctx, { kontakId: usul.kontakId }); }
