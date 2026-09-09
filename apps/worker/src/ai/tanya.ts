@@ -903,7 +903,7 @@ export async function jalankanTanya({
       maxTokens: 1400,
       // Use the configured provider's default; a Gemini model ID is invalid for other providers.
     }); } catch (error) {
-      if (!hasilBaca.length) throw error;
+      if (!hasilBaca.length || (analisis && langkah === 0)) throw error;
       return { teks: "Ringkasan belum selesai dibuat. Hasil pemeriksaan tetap ada di bawah.", usul: null, alat: dipakai, hasilBaca };
     }
 
