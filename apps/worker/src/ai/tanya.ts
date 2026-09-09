@@ -985,7 +985,7 @@ export async function jalankanTanya({
       dipakai.push(alat.nama);
       hasilBaca.push(hasilUntukChat(alat.nama, isi, {}));
       pesanModel.push(textMessage("assistant", mentah));
-      pesanModel.push(textMessage("user", `HASIL ALAT lihat_kontak:\n${isi}\n\nPerbaiki draf berdasarkan obrolan ini. Jika obrolan kosong, jelaskan konteks belum cukup dan tanyakan satu hal, jangan mengarang kebutuhan pelanggan.`));
+      pesanModel.push(textMessage("user", `HASIL ALAT lihat_kontak:\n${isi}\n\nPerbaiki draf dengan konteks obrolan ini, tetapi UTAMAKAN arahan terbaru pemilik pada permintaan awal. Riwayat produk bukan kewajiban untuk menyebut produk lagi. Jika pemilik meminta menjaga hubungan atau melarang jualan, cukup sapa dengan hangat tanpa penawaran, stok, atau ajakan belanja. Jangan mengarang keadaan pribadi pelanggan. Jika konteks yang diperlukan kosong, tanyakan satu hal spesifik.`));
       continue;
     }
 
