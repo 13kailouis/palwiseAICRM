@@ -137,6 +137,8 @@
 
 /* Label twins: the long label on tablet/desktop, the short one on phones. Both are in the HTML, CSS picks. */
 .lbPendek{display:none}
+/* Number + change: stacked on tablet/desktop (wrapper disappears), side by side on phones. */
+.nilai{display:contents}
 .dotKlaim{display:none;width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0}
 .chipIkon{display:contents}
 
@@ -158,13 +160,17 @@
 
   .metrics{grid-template-columns:repeat(4,minmax(0,1fr));border-radius:14px}
   .metric{align-items:center;gap:4px;padding:14px 4px 13px;text-align:center}
-  .metric strong{order:-1;font-size:21px;letter-spacing:-.4px}
+  .nilai{display:flex;align-items:flex-start;justify-content:center;gap:3px;order:-1}
+  .metric strong{font-size:21px;letter-spacing:-.4px}
   .metricLabel{justify-content:center;gap:4px;font-size:11px}
   .metricLabel svg{display:none}
   .lbPanjang{display:none}
   .lbPendek{display:inline}
   .dotKlaim{display:inline-block}
-  .delta{font-size:10px}
+  /* Small change marker to the right of the number, arrow carries the sign. */
+  .delta{gap:1px;margin-top:3px;font-size:11px;font-weight:600;color:#404346}
+  .delta svg{width:10px;height:10px}
+  .tanda{display:none}
   .delta[data-arah=tetap],.delta em{display:none}
 
   .grid{gap:16px;margin-top:16px}
