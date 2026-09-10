@@ -105,6 +105,8 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
       {belumSiap && <Link className={styles.alert} href="/app/mulai"><i aria-hidden="true" />Lengkapi asisten<TanyaIcon nama="kanan" size={15} /></Link>}
     </div>}
 
+    {/* Phone-only section titles: they separate the groups the way big-app home screens do. Hidden from 640px up. */}
+    <div className={styles.judulHp}><h2>Angka {data.hari} hari terakhir</h2></div>
     <section aria-label="Angka bisnis" className={styles.metrics} aria-busy={memuat}>{metrik.map(m => {
       const nilai = data.kini[m.kunci];
       const selisih = nilai - data.lalu[m.kunci];
@@ -119,6 +121,7 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
     })}</section>
 
     <div className={styles.grid}>
+      <div className={`${styles.judulHp} ${styles.judulFokus}`}><span aria-hidden="true">Perlu dikerjakan</span><Link href="/app/inbox" className={styles.judulLink}>Semua<TanyaIcon nama="kanan" size={13} /></Link></div>
       <section className={`${styles.card} ${styles.focus}`} aria-labelledby="judul-fokus">
         <h2 id="judul-fokus" className={styles.srOnly}>Fokus hari ini</h2>
         <div className={styles.tabs} role="tablist" aria-label="Fokus hari ini">{tabs.map(t => <button key={t} type="button" id={`tab-${t}`} role="tab" aria-selected={tab === t} aria-controls="panel-fokus" tabIndex={tab === t ? 0 : -1} onClick={() => pilihTab(t)} onKeyDown={e => {
@@ -167,6 +170,7 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
 
       <div className={styles.side}>
         <section className={`${styles.card} ${styles.ask}`} aria-label="Tanya Palwise">
+          <div className={styles.judulHp}><h2>Kerjakan bersama AI</h2></div>
           <Link href="/app/tanya" className={styles.askBar} aria-label="Tanya Palwise">
             <TanyaIcon nama="chat" size={18} />
             <span className={styles.askText} aria-hidden="true"><span key={contoh} className={styles.askHint}>{contohTanya[contoh]}</span></span>

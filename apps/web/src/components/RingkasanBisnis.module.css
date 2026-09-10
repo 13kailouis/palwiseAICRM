@@ -140,6 +140,7 @@
 /* Label twins: the long label on tablet/desktop, the short one on phones. Both are in the HTML, CSS picks. */
 .lbPendek{display:none}
 .chipIkon{display:contents}
+.judulHp{display:none}
 
 /* Phone-only layout, modelled on big-company mobile home screens: a stat strip, a shortcut grid,
    pill filters and dense rows. Desktop and tablet never see these rules. */
@@ -167,13 +168,19 @@
   .lbPanjang{display:none}
   .lbPendek{display:inline}
 
-  .grid{gap:16px;margin-top:16px}
+  /* Section rhythm: 24px between groups, 10px from a title to its content. */
+  .judulHp{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:24px;margin:8px 0 10px;font-size:15px;font-weight:700;letter-spacing:-.2px;color:#0f0f0f}
+  .judulHp h2{font:inherit}
+  .judulLink{display:inline-flex;align-items:center;gap:3px;min-height:32px;font-size:13px;font-weight:600;letter-spacing:0;color:#1a73e8}
+  .grid{gap:24px;margin-top:24px}
+  .judulFokus{order:3;margin:0 0 -14px}
   .side{display:contents}
   /* The ask block sits on the page ground, no card: a search field plus bare shortcuts, like a big-app home. */
   .ask{order:1;padding:0 0 2px;border:0;border-radius:0;background:transparent;overflow:visible}
-  .focus{order:2}
-  .stages{order:3}
-  .status{order:4}
+  .ask .judulHp{margin-top:0}
+  .focus{order:4}
+  .stages{order:5}
+  .status{order:6}
   .card,.status{border-radius:14px}
 
   .askBar{min-height:46px;padding:0 8px 0 16px;background:#fff;border-color:#e6e6e6}
