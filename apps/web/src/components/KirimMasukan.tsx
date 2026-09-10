@@ -133,8 +133,6 @@ function FormMasukan({ action, judulId, halaman, isi, setIsi, jenis, setJenis, t
           <button type="submit" disabled={pending || kosong} className={styles.send} aria-label={pending ? "Mengirim" : "Kirim masukan"} title="Kirim (Ctrl+Enter)" aria-busy={pending}>{pending ? <span className={styles.titik} aria-hidden="true"><i /><i /><i /></span> : <Ikon nama="kirim" size={17} />}</button>
         </div>
       </div>
-      {state.error && <p id={`${id}-error`} role="alert" className={styles.error}>{state.error}</p>}
-      <p className={styles.privacy}><Ikon nama="gembok" size={13} />Halaman ini dan email akun ikut terkirim, chat pelanggan tidak.</p>
-    </form>}
+      {state.error && <p id={`${id}-error`} role="alert" className={styles.error}>{state.error}</p>}    </form>}
   </>;
 }

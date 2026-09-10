@@ -30,6 +30,8 @@ type Tab = typeof tabs[number];
 const labelTab: Record<Tab, string> = { prioritas: "Perhatian", peluang: "Peluang", janji: "Janji", terbaru: "Terbaru" };
 const hitungTab = (d: PusatBisnis): Record<Tab, number> => ({ prioritas: d.jumlahPrioritas, peluang: d.jumlahPeluang, janji: d.jumlahJanji, terbaru: d.terbaru.length });
 const ikonBantuan: NamaIkon[] = ["kalender", "pelanggan", "ringkasan", "info"];
+// Phone shortcut labels sit under an icon tile, so they get one or two words.
+const pendekBantuan = ["Rencana", "Cari peluang", "Strategi", "Info bisnis"];
 const TAHAP = [
   { nama: "baru", warna: "#d4d4d4" },
   { nama: "tertarik", warna: "#9aa0a6" },
@@ -71,10 +73,10 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
   }
 
   const metrik = [
-    { label: "Pelanggan chat", kunci: "aktif", href: "/app/inbox", ikon: "pelanggan" },
-    { label: "Pelanggan baru", kunci: "baru", href: "/app/kontak", ikon: "sapa" },
-    { label: "Pesan masuk", kunci: "pesan", href: "/app/inbox", ikon: "chat" },
-    { label: "Klaim bayar", kunci: "klaim", href: "/app/kontak?stage=klaim-bayar", ikon: "paket" },
+    { label: "Pelanggan chat", pendek: "Pelanggan", kunci: "aktif", href: "/app/inbox", ikon: "pelanggan" },
+    { label: "Pelanggan baru", pendek: "Baru", kunci: "baru", href: "/app/kontak", ikon: "sapa" },
+    { label: "Pesan masuk", pendek: "Pesan", kunci: "pesan", href: "/app/inbox", ikon: "chat" },
+    { label: "Klaim bayar", pendek: "Klaim", kunci: "klaim", href: "/app/kontak?stage=klaim-bayar", ikon: "paket" },
   ] as const;
   const jumlah = hitungTab(data);
   const bentrok = new Set(data.janji.filter(j => data.janji.some(k => k.id !== j.id && Math.abs(new Date(k.waktu).getTime() - new Date(j.waktu).getTime()) < 30 * 60_000)).map(j => j.id));
@@ -108,7 +110,7 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
       const selisih = nilai - data.lalu[m.kunci];
       const perubahan = selisih === 0 ? "tetap" : `${selisih > 0 ? "+" : ""}${angka(selisih)}`;
       return <Link href={m.href} key={m.kunci} className={styles.metric} aria-label={`${m.label}: ${angka(nilai)}. ${perubahan} dibanding ${data.hari} hari sebelumnya.${m.kunci === "klaim" ? " Belum dicek." : ""}`}>
-        <span className={styles.metricLabel}><Ikon nama={m.ikon} size={15} />{m.label}</span>
+        <span className={styles.metricLabel}><Ikon nama={m.ikon} size={15} /><span className={styles.lbPanjang}>{m.label}</span><span className={styles.lbPendek}>{m.pendek}</span>{m.kunci === "klaim" && <i className={styles.dotKlaim} aria-hidden="true" />}</span>
         <strong>{angka(nilai)}</strong>
         <span className={styles.delta} data-arah={selisih > 0 ? "naik" : selisih < 0 ? "turun" : "tetap"} title={`Dibanding ${data.hari} hari sebelumnya`}>{selisih !== 0 && <TanyaIcon nama={selisih > 0 ? "atas" : "bawah"} size={11} />}{perubahan}{m.kunci === "klaim" && <em>belum dicek</em>}</span>
       </Link>;
@@ -168,10 +170,10 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
             <span className={styles.askText} aria-hidden="true"><span key={contoh} className={styles.askHint}>{contohTanya[contoh]}</span></span>
             <span className={styles.askGo} aria-hidden="true"><TanyaIcon nama="kanan" size={16} /></span>
           </Link>
-          <div className={styles.quick}>{BANTUAN_BISNIS.map((f, i) => <Link key={f.judul} href={tanyaBisnis(f.pesan)} className={styles.chip} title={f.detail}><Ikon nama={ikonBantuan[i]} size={16} /><span>{f.judul}</span></Link>)}</div>
+          <div className={styles.quick}>{BANTUAN_BISNIS.map((f, i) => <Link key={f.judul} href={tanyaBisnis(f.pesan)} className={styles.chip} title={f.detail}><span className={styles.chipIkon}><Ikon nama={ikonBantuan[i]} size={16} /></span><span className={styles.lbPanjang}>{f.judul}</span><span className={styles.lbPendek}>{pendekBantuan[i]}</span></Link>)}</div>
         </section>
 
-        <section className={styles.card} aria-labelledby="judul-tahap">
+        <section className={`${styles.card} ${styles.stages}`} aria-labelledby="judul-tahap">
           <div className={styles.cardHead}><h2 id="judul-tahap">Tahap pelanggan</h2><Link href="/app/kontak" className={styles.more} aria-label={`Lihat ${angka(total)} pelanggan`}>{angka(total)}<TanyaIcon nama="kanan" size={13} /></Link></div>
           {total ? <>
             <div className={styles.stageBar} aria-hidden="true">{TAHAP.map(s => { const n = perTahap(s.nama); return n ? <i key={s.nama} style={{ flexGrow: n, background: s.warna }} data-redup={sorot && sorot !== s.nama ? "" : undefined} /> : null; })}</div>
