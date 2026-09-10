@@ -143,21 +143,22 @@
 /* Phone-only layout, modelled on big-company mobile home screens: a stat strip, a shortcut grid,
    pill filters and dense rows. Desktop and tablet never see these rules. */
 @media(max-width:639px){
-  .page{padding:12px 14px 20px}
-  .header{margin-bottom:10px;gap:8px}
+  /* Compact controls, generous gaps: tight sizes read as "app", tight spacing reads as "crammed". */
+  .page{padding:16px 16px 28px}
+  .header{margin-bottom:16px;gap:8px}
   .heading h1{font-size:20px}
   .controls{gap:2px}
   .period{padding:2px;border-radius:9px}
   .period button{min-height:30px;padding:0 10px;font-size:12px;border-radius:7px}
   .info{display:inline-flex;padding:0 4px}
   .iconBtn{width:36px;height:36px;border:0;background:transparent}
-  .alerts{margin-bottom:10px}
-  .alert{width:100%;min-height:36px;padding:0 10px;border-radius:10px;font-size:12.5px}
+  .alerts{margin-bottom:16px}
+  .alert{width:100%;min-height:40px;padding:0 12px;border-radius:12px;font-size:13px}
   .alert svg{margin-left:auto}
 
   .metrics{grid-template-columns:repeat(4,minmax(0,1fr));border-radius:14px}
-  .metric{align-items:center;gap:3px;padding:10px 4px 9px;text-align:center}
-  .metric strong{order:-1;font-size:20px;letter-spacing:-.4px}
+  .metric{align-items:center;gap:4px;padding:14px 4px 13px;text-align:center}
+  .metric strong{order:-1;font-size:21px;letter-spacing:-.4px}
   .metricLabel{justify-content:center;gap:4px;font-size:11px}
   .metricLabel svg{display:none}
   .lbPanjang{display:none}
@@ -166,33 +167,35 @@
   .delta{font-size:10px}
   .delta[data-arah=tetap],.delta em{display:none}
 
-  .grid{gap:10px;margin-top:10px}
+  .grid{gap:16px;margin-top:16px}
   .side{display:contents}
-  .ask{order:1;padding:10px 10px 8px}
+  .ask{order:1;padding:14px 14px 12px}
   .focus{order:2}
   .stages{order:3}
   .status{order:4}
   .card,.status{border-radius:14px}
 
-  .askBar{min-height:42px;padding:0 5px 0 14px}
+  .askBar{min-height:44px;padding:0 5px 0 14px}
   .askText{font-size:13.5px}
-  .askGo{width:32px;height:32px}
-  .quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:10px 0 0;padding:0;overflow:visible}
+  .askGo{width:34px;height:34px}
+  .quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 0 0;padding:0;overflow:visible}
   .chip{flex-direction:column;gap:6px;min-height:0;padding:2px;border:0;background:transparent;font-size:11px;line-height:1.25;text-align:center;white-space:normal;color:#404346}
   .chip:hover{background:transparent}
   .chipIkon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#f0f0f0;color:#171717;transition:background var(--gerak-cepat)}
   .chip svg{color:inherit}
   .chip:active .chipIkon{background:#e6e6e6}
 
-  .tabs{gap:6px;padding:8px 10px}
-  .tabs button{min-height:32px;padding:0 11px;border-radius:999px;background:#f0f0f0;font-size:12.5px;gap:5px;color:#404346}
+  .tabs{gap:8px;padding:12px 14px;scroll-padding-inline:14px}
+  .tabs button{min-height:34px;padding:0 12px;border-radius:999px;background:#f0f0f0;font-size:12.5px;gap:5px;color:#404346}
+  .tabs button:last-child{margin-right:14px}
   .tabs button::after{display:none}
   .tabs button[aria-selected=true]{background:#171717;color:#fff}
   .count{min-width:0;padding:0 5px;background:transparent;color:inherit}
   .tabs button[aria-selected=true] .count:not([data-penting]){background:transparent;color:#fff}
 
-  .rowMain{min-height:56px;gap:10px;padding:8px 4px 8px 12px}
-  .row.rowMain{padding-right:12px}
+  .row{padding-right:8px}
+  .rowMain{min-height:62px;gap:12px;padding:11px 4px 11px 14px}
+  .row.rowMain{padding-right:14px}
   .rowMain>span:first-child:not(.date){width:34px!important;height:34px!important;font-size:14px!important}
   .rowText b{font-size:13.5px}
   .rowText small{font-size:12px}
@@ -200,18 +203,18 @@
   .date{width:34px;height:38px}
   .date b{font-size:15px}
   .empty{min-height:110px;padding:18px}
-  .listFoot{min-height:42px;padding-left:12px}
-  .footBtn{min-height:34px}
+  .listFoot{min-height:46px;padding-left:14px}
+  .footBtn{min-height:36px}
 
-  .cardHead{padding:8px 8px 0 12px}
+  .cardHead{padding:12px 10px 2px 14px}
   .cardHead h2{font-size:13.5px}
   .more{min-height:32px}
-  .stageBar{height:8px;margin:6px 12px 8px}
-  .legend{display:flex;gap:6px;padding:0 12px 10px;overflow-x:auto;scrollbar-width:none}
+  .stageBar{height:8px;margin:10px 14px 12px}
+  .legend{display:flex;gap:6px;padding:0 14px 14px;overflow-x:auto;scrollbar-width:none}
   .legend::-webkit-scrollbar{display:none}
   .legend a{flex-shrink:0;min-height:30px;padding:0 10px;border:1px solid #f0f0f0;border-radius:999px;font-size:12px}
   .legend span{flex:none;overflow:visible}
-  .status summary{min-height:46px;padding:0 12px}
+  .status summary{min-height:52px;padding:0 14px}
 }
 @media(max-width:360px){
   .page{padding-inline:12px}.heading h1{font-size:18px}.period button{padding:0 8px}
