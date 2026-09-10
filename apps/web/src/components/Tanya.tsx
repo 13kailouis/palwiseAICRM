@@ -143,6 +143,8 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
   const gulirRef = useRef<HTMLDivElement>(null);
   const isianRef = useRef<HTMLTextAreaElement>(null);
   const sedangMemuatRef = useRef(0);
+  // Answers that just arrived are revealed progressively; history loads instantly.
+  const [ketikIds, setKetikIds] = useState<Set<string>>(() => new Set());
   const operasiRef = useRef(false);
   const ikutiRef = useRef(true);
 
@@ -409,6 +411,7 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
         ...p.filter((x) => x.id !== sementara.id),
         ...(data.pesan ?? []),
       ]);
+      setKetikIds(new Set((data.pesan ?? []).filter((p: Pesan) => p.peran !== "pemilik").map((p: Pesan) => p.id)));
       if ((data.pesan ?? []).some((p: Pesan) => p.alat?.includes("sambungkan_whatsapp"))) setWhatsappBuka(true);
       // A history refresh failure must not restore an already delivered draft.
       await Promise.allSettled([muatDaftar(), ...(mode === "pasang" ? [muatPemasangan()] : [])]);
@@ -494,7 +497,7 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
         <header className={styles.header}>
           <button type="button" className={styles.iconButton} title="Buka atau tutup riwayat" aria-label="Buka atau tutup riwayat" aria-controls="riwayat-tanya"
             onClick={() => { if (window.matchMedia("(min-width: 1024px)").matches) setRiwayatCiut(!riwayatCiut); else setRiwayatBuka(true); }}><TanyaIcon nama="panel" /></button>
-          <Link href="/app" className={styles.identity} aria-label="Palwise — kembali ke ringkasan" title="Kembali ke ringkasan"><Logo ukuran={24} /><span className={styles.identityTitle}>Palwise</span></Link>
+          <Link href="/app" className={styles.identity} aria-label="Palwise AI, kembali ke ringkasan" title="Kembali ke ringkasan"><Logo ukuran={24} /><span className={styles.identityTitle}>Palwise<span className={styles.aiBadge}>AI</span></span></Link>
           {mode === "pasang" ? <Langkah keadaan={pasang} sambungkan={() => { ikutiRef.current = true; setWhatsappBuka(true); }} /> : <p className={styles.headerTitle} title={judulSekarang}>{judulSekarang || ""}</p>}
           <div className={styles.headerActions}>
             <button type="button" onClick={utasBaru} disabled={terkunci} className={styles.iconButton} aria-label="Obrolan baru" title="Obrolan baru"><TanyaIcon nama="baru" /></button>
@@ -508,18 +511,22 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
               ikutiRef.current = !jauh;
               setJauhDariBawah(jauh);
             }}>
-              {memuat ? <div className={styles.loading} role="status"><span className={styles.spinner} />Menyiapkan obrolan...</div> :
+              {memuat ? <div className={styles.loading} role="status"><span className="titik-ketik inline-flex items-center gap-1" aria-hidden="true"><span /><span /><span /></span>Menyiapkan obrolan...</div> :
                 <div className={styles.thread}>
                   {kosong ? <Sambutan usaha={ideAkun.usaha} /> : <div className={styles.messages} role="log" aria-label="Percakapan dengan Palwise" aria-live="polite" aria-relevant="additions">
                     {pesan.map((p, index) => p.peran === "pemilik" ? <DariPemilik key={p.id} teks={p.teks} /> :
                       <DariPalwise key={p.id} pesan={p} jalankan={(opsi) => jalankanUsul(p.id, opsi)}
+                        ketik={ketikIds.has(p.id)}
+                        selesaiKetik={() => setKetikIds(s => { if (!s.has(p.id)) return s; const n = new Set(s); n.delete(p.id); return n; })}
+                        ikuti={() => { if (!ikutiRef.current) return; const el = gulirRef.current; if (el) el.scrollTop = el.scrollHeight; }}
                         lengkapi={index === pesan.length - 1 && !terkunci ? () => kirim("Lengkapi jawaban sebelumnya dengan hasil atau draf lengkap yang bisa saya periksa. Jangan hanya menulis pengantar atau janji.") : undefined} />)}
                   </div>}
                   {barusanMulai && !sibuk && <div className="mt-5 flex flex-wrap gap-2">
                     {JENIS_USAHA.map((j) => <button key={j.label} type="button" disabled={terkunci} onClick={() => kirim(`Jualan ${j.label.toLowerCase()}`)}
                       className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-ink-200 px-3 py-2 text-xs text-ink-700 transition hover:bg-ink-50 disabled:opacity-40"><Ikon nama={j.ikon} size={16} />{j.label}</button>)}
                   </div>}
-                  {sibuk && <div className={styles.thinking} role="status"><TandaPalwise /><span className={styles.spinner} /><span>Palwise sedang menyiapkan jawaban...</span></div>}
+                  {/* Waiting state: typing dots in a bubble, like chat apps, never a spinner. */}
+                  {sibuk && <div className={styles.thinking} role="status"><TandaPalwise /><span className={`titik-ketik ${styles.dots}`} aria-hidden="true"><span /><span /><span /></span><span className="sr-only">Palwise sedang menyiapkan jawaban...</span></div>}
                   {whatsappBuka && <WhatsAppDalamChat key={sesiId} tutup={() => setWhatsappBuka(false)} tersambung={(connected) => {
                     setPasang(keadaan => keadaan && keadaan.nomor !== connected ? { ...keadaan, nomor: connected } : keadaan);
                   }} />}
@@ -737,10 +744,33 @@ function TeksJawaban({ teks }: { teks: string }) {
   return <div className={styles.answerText}>{hasil}</div>;
 }
 
-function DariPalwise({ pesan, jalankan, lengkapi }: {
+function DariPalwise({ pesan, jalankan, lengkapi, ketik = false, selesaiKetik, ikuti }: {
   pesan: Pesan; jalankan: (opsi: { batal?: boolean; ambilAlih?: boolean }) => Promise<string | null>;
   lengkapi?: () => void;
+  /** Reveal the text progressively (a freshly arrived answer). */
+  ketik?: boolean; selesaiKetik?: () => void; ikuti?: () => void;
 }) {
+  const teksDariDataAwal = !pesan.usul && !!pesan.teks && !!pesan.hasilBaca?.[0]?.isi.startsWith(pesan.teks);
+  const [tampil, setTampil] = useState(() => ketik && !teksDariDataAwal ? 0 : pesan.teks.length);
+  // The whole answer is already here; this paces it on screen (~1.5s for a long answer) so a new
+  // reply reads like it is being written instead of landing as a block.
+  useEffect(() => {
+    if (!ketik) return;
+    const panjang = pesan.teks.length;
+    if (teksDariDataAwal || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setTampil(panjang); selesaiKetik?.(); return; }
+    const langkah = Math.max(2, Math.ceil(panjang / 90));
+    let n = 0, raf = 0;
+    const jalan = () => {
+      n = Math.min(panjang, n + langkah);
+      setTampil(n); ikuti?.();
+      if (n < panjang) raf = requestAnimationFrame(jalan); else selesaiKetik?.();
+    };
+    raf = requestAnimationFrame(jalan);
+    return () => cancelAnimationFrame(raf);
+    // Callbacks are recreated each render; the reveal only restarts for a new text.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ketik, pesan.teks]);
+  const mengetik = tampil < pesan.teks.length;
   const [salinan, setSalinan] = useState<"awal" | "selesai" | "gagal">("awal");
   useEffect(() => { if (salinan === "awal") return; const timer = setTimeout(() => setSalinan("awal"), 2500); return () => clearTimeout(timer); }, [salinan]);
   async function salin() {
@@ -757,18 +787,18 @@ function DariPalwise({ pesan, jalankan, lengkapi }: {
       {/* Data the assistant read to write its answer sits ABOVE the answer, folded, like a model's
           "thinking" row. When the data itself IS the answer (a plain lookup), it stays open below. */}
       {bacaanPendukung && <LangkahBaca hasil={pesan.hasilBaca!} />}
-      {!teksDariData && <TeksJawaban teks={pesan.teks} />}
-      {pesan.usul && <KartuUsul usul={pesan.usul} status={pesan.usulStatus} kabar={pesan.usulPesan} jalankan={jalankan} />}
-      {adaBacaan && !bacaanPendukung && <HasilPembacaan hasil={pesan.hasilBaca!} />}
-      {lengkapi && !pesan.usul && !pesan.hasilBaca?.length && pesan.teks.length < 400 &&
+      {!teksDariData && <TeksJawaban teks={mengetik ? pesan.teks.slice(0, tampil) : pesan.teks} />}
+      {!mengetik && pesan.usul && <div className="anim-naik"><KartuUsul usul={pesan.usul} status={pesan.usulStatus} kabar={pesan.usulPesan} jalankan={jalankan} /></div>}
+      {!mengetik && adaBacaan && !bacaanPendukung && <HasilPembacaan hasil={pesan.hasilBaca!} />}
+      {!mengetik && lengkapi && !pesan.usul && !pesan.hasilBaca?.length && pesan.teks.length < 400 &&
         /(?:ini|berikut).{0,40}\b(?:draf|draft)|\b(?:saya|aku)\s+(?:akan\s+)?(?:lihat|cek|siapkan)\s+(?:dulu|data|draf)/i.test(pesan.teks) &&
         !/[\n:][\s\S]{20}/.test(pesan.teks) && <button type="button" className={styles.recoverAnswer} onClick={lengkapi} title="Buat jawaban lengkap menggunakan kuota AI">Lengkapi jawaban</button>}
-      <div className={styles.answerFooter}>
+      {!mengetik && <div className={styles.answerFooter}>
         <button type="button" className={styles.copy} onClick={salin} aria-label="Salin jawaban" title={salinan === "selesai" ? "Tersalin" : "Salin jawaban"}>
           <Ikon nama={salinan === "selesai" ? "centang" : "salin"} size={16} /><span className="sr-only" aria-live="polite">{salinan === "selesai" ? "Tersalin" : salinan === "gagal" ? "Gagal menyalin, coba lagi" : ""}</span>
         </button>
         {pesan.alat.length > 0 && <details className={styles.sourceMenu}><summary aria-label="Sumber jawaban" title="Sumber jawaban"><Ikon nama="info" size={16} /></summary><div>{[...new Set(pesan.alat)].map(kode => <p key={kode}>{namaAlat(kode)}</p>)}</div></details>}
-      </div>
+      </div>}
     </div>
   </article>;
 }
@@ -1240,7 +1270,7 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
           <button type="button" onClick={bukaWhatsapp} className={styles.ideaButton} title="Sambungkan WhatsApp" aria-label="Sambungkan WhatsApp di chat"><Ikon nama="whatsapp" size={19} /></button>
           {jatah && <KuotaTanya jatah={jatah} />}
           <button type="submit" disabled={terkunci || !draft.trim()} className={styles.send} aria-label="Kirim pesan" title="Kirim pesan">
-            {sibuk ? <span className={styles.spinner} /> : <TanyaIcon nama="atas" size={21} />}
+            {sibuk ? <span className="titik-ketik inline-flex items-center gap-[3px]" aria-hidden="true"><span /><span /><span /></span> : <TanyaIcon nama="atas" size={21} />}
           </button>
         </div>
       </form>

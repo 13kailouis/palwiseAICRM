@@ -115,6 +115,7 @@
 .copy:hover { color: #171717; background: #f6f6f6; }
 .sources { display: inline-flex; align-items: center; gap: 5px; color: #6b7075; font-size: 10px; flex-wrap: wrap; }
 .thinking { display: flex; align-items: center; gap: 10px; padding-top: 26px; color: #6b7075; font-size: 12px; }
+.dots { display: inline-flex; align-items: center; gap: 4px; padding: 12px 14px; border-radius: 16px; border-top-left-radius: 6px; background: #f0f0f0; color: #6b7075; }
 .spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 100%; animation: spin 800ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .error { display: flex; align-items: flex-start; gap: 9px; max-width: 736px; margin: 0 auto 12px; padding: 12px 14px; border: 1px solid #fecaca; border-radius: 12px; background: #fff7f7; color: #991b1b; font-size: 12px; line-height: 1.7; }
@@ -294,7 +295,11 @@
   .workspaceEmpty .thread { margin: auto; padding: 24px 16px; }
   .workspaceEmpty .composerDock { padding: 6px 10px max(8px, env(safe-area-inset-bottom)); }
   .composerInner { display: flex; flex-direction: column; }
-  .suggestions { margin: 0 0 10px; max-height: 110px; overflow-y: auto; justify-content: flex-start; }
+  /* Phone suggestions: one swipeable row above the composer, never a stack of wrapped chips. */
+  .suggestions { flex-wrap: nowrap; margin: 0 0 10px; max-height: none; overflow-x: auto; overflow-y: hidden; justify-content: flex-start; scrollbar-width: none; }
+  .suggestions::-webkit-scrollbar { display: none; }
+  .suggestion { flex-shrink: 0; max-width: none; }
+  .suggestion strong { white-space: nowrap; overflow-wrap: normal; }
   .suggestion, .ideaButton, .send { min-height: 44px; }
   .send, .ideaButton { min-width: 44px; }
   .takeOver { margin-left: 0; }

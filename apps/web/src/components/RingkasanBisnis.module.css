@@ -92,21 +92,26 @@
 .footBtn{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 10px;border-radius:9px;font-size:13px;font-weight:600;color:#404346}
 .footBtn:hover{background:#f0f0f0}
 
-/* Ask: looks like a search field, opens Tanya. The rotating hint is the only moving thing on the page. */
-.ask{padding:12px}
-.askBar{display:flex;align-items:center;gap:10px;min-height:50px;padding:0 6px 0 16px;border:1px solid #e6e6e6;border-radius:999px;background:#fafafa;color:#54585c;transition:border-color var(--gerak-cepat),box-shadow var(--gerak-cepat),background var(--gerak-cepat)}
-.askBar:hover{border-color:#c9ddfb;background:#fff;box-shadow:0 0 0 4px #eff4fe}
-.askBar>svg{flex-shrink:0}
-.askText{flex:1;min-width:0;overflow:hidden;font-size:14px;color:#6b7075}
-.askHint{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:ganti-teks var(--gerak-pelan) var(--lengkung-masuk) both}
+/* Tanya: ONE dark assistant card on every size (icon plate, bold title, rotating example, white go
+   button). Helpers are rows inside it on tablet/desktop and swipeable pills on phones. */
+.card.ask{padding:0;border:0;border-radius:0;background:transparent;overflow:visible}
+.askIsi{display:block;padding:16px;border-radius:18px;background:#171717;color:#fff;overflow:hidden}
+.askBar{display:flex;align-items:center;gap:12px;color:#fff}
+.askBar>svg{flex-shrink:0;box-sizing:content-box;width:20px;height:20px;padding:10px;border-radius:12px;background:rgba(255,255,255,.1)}
+.askText{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;overflow:hidden}
+.askJudul{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.askHint{display:block;font-size:13px;color:rgba(255,255,255,.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:ganti-teks var(--gerak-pelan) var(--lengkung-masuk) both}
 @keyframes ganti-teks{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.askGo{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#1a73e8;color:#fff;flex-shrink:0;transition:transform var(--gerak-cepat),background var(--gerak-cepat)}
-.askBar:hover .askGo{background:#1557b0;transform:translateX(2px)}
-.quick{display:flex;gap:8px;margin:10px -12px 0;padding:0 12px 2px;overflow-x:auto;scrollbar-width:none}
+.askGo{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#fff;color:#171717;flex-shrink:0;transition:transform var(--gerak-cepat)}
+.askBar:hover .askGo{transform:translateX(2px)}
+.quick{display:flex;flex-direction:column;gap:6px;margin-top:16px}
 .quick::-webkit-scrollbar{display:none}
-.chip{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 12px;border:1px solid #e6e6e6;border-radius:10px;background:#fff;font-size:13px;color:#404346;white-space:nowrap;flex-shrink:0;transition:border-color var(--gerak-cepat),background var(--gerak-cepat)}
-.chip svg{flex-shrink:0;color:#9aa0a6}
-.chip:hover{border-color:#d4d4d4;background:#fafafa}
+.chip{display:flex;align-items:center;gap:10px;min-height:42px;padding:0 12px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.06);font-size:13px;color:#fff;transition:background var(--gerak-cepat),border-color var(--gerak-cepat)}
+.chip:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2)}
+.chip:active{background:rgba(255,255,255,.16)}
+.chip svg{flex-shrink:0;width:16px;height:16px;color:rgba(255,255,255,.7)}
+.chip::after{content:"";flex-shrink:0;width:6px;height:6px;margin-left:auto;border-top:1.5px solid rgba(255,255,255,.45);border-right:1.5px solid rgba(255,255,255,.45);transform:rotate(45deg);transition:transform var(--gerak-cepat)}
+.chip:hover::after{transform:translateX(2px) rotate(45deg)}
 
 /* Stages: one stacked bar plus a tappable legend. Hovering a legend item isolates its segment. */
 .stageBar{display:flex;gap:2px;height:10px;margin:6px 14px 10px;border-radius:999px;overflow:hidden;background:#f0f0f0}
@@ -139,9 +144,6 @@
 
 .chipIkon{display:contents}
 .judulHp{display:none}
-/* Tanya: on phones .askIsi becomes a dark assistant card with a title; on wider screens both vanish. */
-.askIsi{display:contents}
-.askJudul{display:none}
 
 /* Phone-only layout, modelled on big-company mobile home screens: a stat strip, a shortcut grid,
    pill filters and dense rows. Desktop and tablet never see these rules. */
@@ -181,21 +183,12 @@
   .status{order:6}
   .card,.status{border-radius:14px}
 
-  /* Tanya on phones: ONE dark assistant card (icon plate, bold title, rotating example, white go
-     button) with suggestion pills that scroll inside it. The section itself only carries the band. */
-  .card.ask{margin:0 -16px;padding:18px 16px 0;border:0;border-top:6px solid #ededed;border-radius:0;background:transparent;overflow:visible}
-  .askIsi{display:block;padding:16px;border-radius:18px;background:#171717;color:#fff;overflow:hidden}
-  .askBar,.askBar:hover{min-height:0;padding:0;gap:12px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#fff}
-  .askBar>svg{box-sizing:content-box;width:20px;height:20px;padding:10px;border-radius:12px;background:rgba(255,255,255,.1)}
-  .askText{display:flex;flex-direction:column;gap:2px;color:#fff}
-  .askJudul{display:block;font-size:15px;font-weight:700;letter-spacing:-.2px}
-  .askHint{font-size:13px;color:rgba(255,255,255,.62)}
-  .askGo,.askBar:hover .askGo{width:36px;height:36px;background:#fff;color:#171717}
-  .quick{display:flex;gap:8px;margin:16px -16px 0;padding:0 16px;overflow-x:auto;scrollbar-width:none}
-  .chip{min-height:36px;padding:0 12px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.07);color:#fff;font-size:12.5px;white-space:nowrap}
-  .chip:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22)}
-  .chip:active{background:rgba(255,255,255,.16)}
-  .chipIkon svg{width:15px;height:15px;color:rgba(255,255,255,.7)}
+  /* Phone: the section carries the divider band; helpers become pills that scroll inside the card. */
+  .card.ask{margin:0 -16px;padding:18px 16px 0;border-top:6px solid #ededed}
+  .quick{flex-direction:row;gap:8px;margin:16px -16px 0;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+  .chip{flex-shrink:0;gap:7px;min-height:36px;border-color:rgba(255,255,255,.14);border-radius:999px;font-size:12.5px;white-space:nowrap}
+  .chip svg{width:15px;height:15px}
+  .chip::after{display:none}
 
   .tabs{gap:8px;padding:12px 14px;scroll-padding-inline:14px}
   .tabs button{min-height:34px;padding:0 12px;border:1px solid #e6e6e6;border-radius:999px;background:#fff;font-size:12.5px;gap:5px;color:#404346}
@@ -258,7 +251,5 @@
   .rowAction{width:auto;height:38px;padding:0 12px;font-size:13px;font-weight:600;color:#6b7075}
   .rowAction span{display:inline}
   .row:hover .rowAction,.rowAction:focus-visible{color:#1a73e8}
-  .quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:10px 0 0;padding:0;overflow:visible}
-  .chip{white-space:normal;line-height:1.3;min-height:44px;padding:6px 12px}
 }
 @media(prefers-reduced-motion:reduce){.spin svg,.askHint{animation:none}}
