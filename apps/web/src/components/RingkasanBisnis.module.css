@@ -169,11 +169,12 @@
   .lbPendek{display:inline}
 
   /* Section rhythm: 24px between groups, 10px from a title to its content. */
-  .judulHp{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:24px;margin:8px 0 10px;font-size:15px;font-weight:700;letter-spacing:-.2px;color:#0f0f0f}
+  /* Each titled group opens with a full-bleed 6px band, so the previous group visibly ends (Tokopedia/Shopee style). */
+  .judulHp{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px -16px 10px;padding:18px 16px 0;border-top:6px solid #ededed;font-size:15px;font-weight:700;letter-spacing:-.2px;color:#0f0f0f}
   .judulHp h2{font:inherit}
   .judulLink{display:inline-flex;align-items:center;gap:3px;min-height:32px;font-size:13px;font-weight:600;letter-spacing:0;color:#1a73e8}
   .grid{gap:24px;margin-top:24px}
-  .judulFokus{order:3;margin:0 0 -14px}
+  .judulFokus{order:3;margin:0 -16px -14px}
   .side{display:contents}
   /* The ask block sits on the page ground, no card: a search field plus bare shortcuts, like a big-app home. */
   .ask{order:1;padding:0 0 2px;border:0;border-radius:0;background:transparent;overflow:visible}
@@ -231,6 +232,7 @@
   .page{padding-inline:12px}.heading h1{font-size:18px}.period button{padding:0 8px}
   .metric{flex-basis:138px}
   .metrics{margin-inline:-12px;padding-inline:12px;scroll-padding-inline:12px}
+  .judulHp,.judulFokus{margin-inline:-12px;padding-inline:12px}
   .tabs button{padding:0 9px;font-size:12px}
 }
 @media(min-width:640px){
