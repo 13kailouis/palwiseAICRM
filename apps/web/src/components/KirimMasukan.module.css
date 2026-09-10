@@ -1,17 +1,81 @@
-.launcher{position:fixed;right:20px;bottom:20px;z-index:30;display:flex;align-items:center;justify-content:center;gap:8px;min-width:44px;height:44px;padding:0 12px;border:1px solid #e0e3e8;border-radius:14px;background:#fff;color:#505865;box-shadow:0 3px 12px #1118270c;transition:background 140ms}
-.launcher>span{font-size:12px}.launcher:hover{background:#f5f7fa;color:#191b20}.launcher i{position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#126cf2;border:1px solid #fff}
-.panel{position:fixed;inset:auto 20px 20px auto;margin:0;width:min(344px,calc(100vw - 32px));max-height:calc(100dvh - 40px);padding:0;border:1px solid #e0e3e8;border-radius:16px;background:#fff;color:#191b20;box-shadow:0 16px 60px #15203426;overflow-y:auto;overscroll-behavior:contain}
-.panel[open]{animation:appear 160ms ease-out}.panel::backdrop{background:#10182818}
-.header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px 4px 20px}.header h2{font-size:16px;font-weight:650;letter-spacing:-.3px}.close{display:grid;place-items:center;width:44px;height:44px;border-radius:9px;color:#6a707a}.close:hover{background:#f4f5f7;color:#191b20}
-.form{padding:0 20px 14px}.types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border:0;padding:0;margin:4px 0 14px}.types label{position:relative;cursor:pointer}.types input{position:absolute;opacity:0;width:1px;height:1px}.types label>span{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 6px;border:1px solid #e3e5e9;border-radius:9px;font-size:12px;color:#626874}.types input:checked+span{background:#edf3fc;border-color:#afcafa;color:#155fca}.types input:focus-visible+span{outline:2px solid #126cf2;outline-offset:2px}.types label:hover>span{border-color:#acb4c0}
-.form textarea{display:block;width:100%;min-height:104px;max-height:176px;resize:none;overflow-y:auto;border:1px solid #dce0e6;border-radius:10px;background:#fff;padding:12px;font:inherit;font-size:13px;line-height:1.65;color:#191b20;scroll-margin-bottom:12px}.form textarea::placeholder{color:#818793}.form textarea:focus{outline:2px solid #126cf2;outline-offset:1px;border-color:transparent}
-.actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.counter{font-size:10px;color:#727985}.submit{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 18px;border-radius:9px;background:#126cf2;color:#fff;font-size:12px;font-weight:600}.submit:hover{background:#095ccc}.panel button:disabled{opacity:.55;cursor:wait}
-.privacy{font-size:10px;color:#6a707a;margin-top:4px}.privacy summary{display:flex;align-items:center;gap:6px;cursor:pointer;list-style:none;min-height:36px}.privacy summary::-webkit-details-marker{display:none}.privacy summary:after{content:"+";margin-left:auto;font-size:14px}.privacy[open] summary:after{content:"−"}.privacy p{line-height:1.8;padding:0 0 6px}
-.error{font-size:12px;color:#a32331;line-height:1.6;margin-top:10px}.success{padding:10px 20px 24px;text-align:center}.success>span{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;margin:0 auto 14px;background:#f0f5f2;color:#25794c}.success h3{font-size:16px;font-weight:600}.success p{font-size:12px;color:#626874;margin:6px 0 18px}.success .submit{width:100%}.handle{display:none}
+/* Desktop: labeled pill bottom-right, panel pops up from it. Phone: icon in the app bar, panel is a draggable bottom sheet. */
+.launcher{position:fixed;right:20px;bottom:20px;z-index:30;display:flex;align-items:center;gap:7px;height:40px;padding:0 14px 0 12px;border:1px solid #e6e6e6;border-radius:999px;background:#fff;color:#404346;font-size:13px;font-weight:500;box-shadow:0 4px 14px -4px rgba(15,15,15,.14);transition:transform var(--gerak-cepat),box-shadow var(--gerak-cepat),opacity var(--gerak-cepat),color var(--gerak-cepat)}
+.launcher:hover{transform:translateY(-1px);box-shadow:0 8px 20px -6px rgba(15,15,15,.2);color:#171717}
+.launcher[data-buka]{opacity:0;pointer-events:none}
+.launcher i{position:absolute;top:6px;right:8px;width:7px;height:7px;border-radius:50%;background:#1a73e8;border:1.5px solid #fff}
+
+.panel{position:fixed;inset:auto 20px 20px auto;margin:0;width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 40px);padding:0;border:1px solid #e6e6e6;border-radius:18px;background:#fff;color:#171717;box-shadow:0 20px 50px -12px rgba(15,15,15,.28);overflow-y:auto;overscroll-behavior:contain;transform-origin:bottom right;transition:transform var(--gerak) var(--lengkung-masuk)}
+.panel[open]{animation:muncul-pop var(--gerak) var(--lengkung-masuk)}
+.panel::backdrop{background:rgba(15,15,15,.08)}
+@keyframes muncul-pop{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+
+.grip{display:none}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 8px 2px 18px}
+.header h2{font-size:15px;font-weight:650;letter-spacing:-.2px}
+.close{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;color:#6b7075}
+.close:hover{background:#f0f0f0;color:#171717}
+
+.form{padding:6px 14px 12px}
+/* Segmented control with a sliding thumb. */
+.types{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;margin:0 0 10px;border:0;border-radius:11px;background:#f0f0f0}
+.thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(15,15,15,.12);transition:transform var(--gerak) var(--lengkung-masuk)}
+.types[data-pilih="1"] .thumb{transform:translateX(100%)}
+.types[data-pilih="2"] .thumb{transform:translateX(200%)}
+.types label{position:relative;cursor:pointer}
+.types input{position:absolute;opacity:0;width:1px;height:1px}
+.types label>span{display:flex;align-items:center;justify-content:center;gap:6px;min-height:36px;font-size:13px;color:#6b7075;transition:color var(--gerak-cepat)}
+.types input:checked+span{color:#171717;font-weight:600}
+.types input:focus-visible+span{outline:2px solid #1a73e8;outline-offset:1px;border-radius:8px}
+
+/* Composer: the send button lives inside the box, like a chat app. */
+.composer{border:1px solid #e6e6e6;border-radius:14px;background:#fff;transition:border-color var(--gerak-cepat),box-shadow var(--gerak-cepat)}
+.composer:focus-within{border-color:#1a73e8;box-shadow:0 0 0 3px #eff4fe}
+.composer[data-galat]{border-color:#fca5a5}
+.composer textarea{display:block;width:100%;min-height:96px;max-height:200px;resize:none;overflow-y:auto;border:0;background:transparent;padding:12px 14px 4px;font:inherit;font-size:14px;line-height:1.6;color:#171717;outline:none}
+.composer textarea::placeholder{color:#9aa0a6}
+.composerBar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 6px 14px}
+.counter{font-size:11px;color:#b45309}
+.send{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#1a73e8;color:#fff;flex-shrink:0;transition:background var(--gerak-cepat),transform var(--gerak-cepat),opacity var(--gerak-cepat)}
+.send:hover:not(:disabled){background:#1557b0;transform:translateX(1px)}
+.send:disabled{background:#d4d4d4;cursor:not-allowed}
+.send[aria-busy=true]{background:#1a73e8;cursor:wait}
+.titik{display:flex;gap:3px}
+.titik i{width:4px;height:4px;border-radius:50%;background:#fff;animation:titik 1s infinite ease-in-out}
+.titik i:nth-child(2){animation-delay:.15s}.titik i:nth-child(3){animation-delay:.3s}
+@keyframes titik{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-2px)}}
+
+.error{margin-top:8px;font-size:12.5px;line-height:1.5;color:#b91c1c}
+.privacy{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11.5px;line-height:1.4;color:#9aa0a6}
+.privacy svg{flex-shrink:0}
+
+.success{display:flex;flex-direction:column;align-items:center;padding:14px 18px 18px;text-align:center}
+.check{display:grid;place-items:center;width:52px;height:52px;margin-bottom:12px;border-radius:50%;background:#171717;color:#fff;animation:centang-masuk var(--gerak-pelan) var(--lengkung-masuk) both}
+@keyframes centang-masuk{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.success h3{font-size:15px;font-weight:600;outline:none}
+.done{margin-top:14px;min-height:40px;padding:0 18px;border:1px solid #e6e6e6;border-radius:10px;font-size:13px;font-weight:500;color:#404346}
+.done:hover{background:#fafafa}
+
 .srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.launcher:focus-visible,.panel button:focus-visible,.panel summary:focus-visible{outline:2px solid #126cf2;outline-offset:2px}
-@keyframes appear{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:1023px){.launcher{right:12px;bottom:calc(var(--bar-bawah) + env(safe-area-inset-bottom) + 12px);width:44px;padding:0;border-radius:50%}.launcher>span{display:none}.panel{inset:auto 0 var(--feedback-bottom,0px) 0;width:100%;max-width:100%;max-height:calc(var(--feedback-height,100dvh) - 12px);border-radius:20px 20px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -8px 40px #1520341a}.panel::backdrop{background:#10182855}.handle{display:block;width:32px;height:4px;background:#d9dde4;border-radius:4px;margin:10px auto 0}.header{padding:2px 12px 2px 20px}.form{padding:0 20px 8px}.form textarea{font-size:16px}.privacy summary{min-height:44px}.privacy{font-size:11px}.privacy p{font-size:12px}.actions{margin-top:10px}.counter{font-size:11px}.submit{min-width:100px;font-size:13px}.types{margin-bottom:12px}.types label>span{font-size:13px}.success{padding-top:8px}}
-@media(prefers-reduced-motion:reduce){.panel[open]{animation:none}.launcher{transition:none}}
-/* Dock in the mobile app header, leaving customer actions and bottom navigation clear. */
-@media(max-width:1023px){.launcher{top:2px;bottom:auto;right:12px;border:0;background:transparent;box-shadow:none;border-radius:10px}}
+.launcher:focus-visible,.panel button:focus-visible{outline:2px solid #1a73e8;outline-offset:2px}
+
+@media(max-width:1023px){
+  /* Docked in the mobile app bar so the composer and bottom nav stay clear; BarAtas reserves the space. */
+  .launcher{top:2px;bottom:auto;right:10px;width:44px;height:44px;padding:0;justify-content:center;border:0;background:transparent;box-shadow:none;border-radius:11px;color:#54585c}
+  .launcher:hover{transform:none;box-shadow:none;background:#f0f0f0}
+  .launcher>span{display:none}
+  .launcher[data-buka]{opacity:1}
+  .panel{inset:auto 0 var(--feedback-bottom,0px) 0;width:100%;max-width:100%;max-height:calc(var(--feedback-height,100dvh) - 12px);border-radius:22px 22px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -10px 40px rgba(15,15,15,.14);transform-origin:bottom center}
+  .panel[open]{animation:naik-sheet var(--gerak-pelan) var(--lengkung-masuk)}
+  .panel::backdrop{background:rgba(15,15,15,.4)}
+  .grip{display:flex;justify-content:center;padding:8px 0 2px;touch-action:none;cursor:grab}
+  .grip span{width:36px;height:4px;border-radius:4px;background:#d4d4d4}
+  .header{padding:0 8px 0 18px;touch-action:none}
+  .close{width:44px;height:44px}
+  .form{padding:6px 16px 12px}
+  .types label>span{min-height:40px}
+  .composer textarea{font-size:16px}
+  .send{width:42px;height:42px}
+  .privacy{font-size:12px}
+}
+@keyframes naik-sheet{from{transform:translateY(100%)}to{transform:none}}
+@media(prefers-reduced-motion:reduce){.panel[open],.check,.titik i{animation:none}.launcher,.thumb,.panel{transition:none}}
