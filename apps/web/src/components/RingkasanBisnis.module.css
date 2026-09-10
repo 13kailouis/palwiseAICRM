@@ -137,10 +137,11 @@
 .statusBody nav a{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border:1px solid #e6e6e6;border-radius:9px;font-size:12.5px;font-weight:500;color:#404346}
 .statusBody nav a:hover{background:#fafafa;border-color:#d4d4d4}
 
-/* Label twins: the long label on tablet/desktop, the short one on phones. Both are in the HTML, CSS picks. */
-.lbPendek{display:none}
 .chipIkon{display:contents}
 .judulHp{display:none}
+/* Tanya: on phones .askIsi becomes a dark assistant card with a title; on wider screens both vanish. */
+.askIsi{display:contents}
+.askJudul{display:none}
 
 /* Phone-only layout, modelled on big-company mobile home screens: a stat strip, a shortcut grid,
    pill filters and dense rows. Desktop and tablet never see these rules. */
@@ -165,8 +166,6 @@
   .metricLabel{font-size:12px}
   .metric strong{font-size:24px;letter-spacing:-.6px}
   .delta,.cek{font-size:11px;padding:2px 6px}
-  .lbPanjang{display:none}
-  .lbPendek{display:inline}
 
   /* Section rhythm: 24px between groups, 10px from a title to its content. */
   /* Each titled group opens with a full-bleed 6px band, so the previous group visibly ends (Tokopedia/Shopee style). */
@@ -176,26 +175,27 @@
   .grid{gap:24px;margin-top:24px}
   .judulFokus{order:3;margin:0 -16px -14px}
   .side{display:contents}
-  /* The ask block sits on the page ground, no card: a search field plus bare shortcuts, like a big-app home. */
-  .ask{order:1;padding:0 0 2px;border:0;border-radius:0;background:transparent;overflow:visible}
-  .ask .judulHp{margin-top:0}
+  .ask{order:1}
   .focus{order:4}
   .stages{order:5}
   .status{order:6}
   .card,.status{border-radius:14px}
 
-  .askBar{min-height:46px;padding:0 8px 0 16px;background:#fff;border-color:#e6e6e6}
-  .askBar:hover{box-shadow:none}
-  .askText{font-size:14px}
-  /* It opens Tanya, it does not send anything, so no filled "send" button. */
-  .askGo,.askBar:hover .askGo{width:28px;height:28px;background:transparent;color:#9aa0a6}
-  .quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 0 0;padding:0;overflow:visible}
-  .chip{flex-direction:column;gap:6px;min-height:0;padding:2px;border:0;background:transparent;font-size:11px;line-height:1.25;text-align:center;white-space:normal;color:#404346}
-  .chip:hover{background:transparent}
-  /* Bare icons, no tile: a grey plate behind each read as heavy and templated. */
-  .chipIkon{display:grid;place-items:center;height:30px;color:#171717;transition:transform var(--gerak-cepat)}
-  .chipIkon svg{width:23px;height:23px;color:inherit}
-  .chip:active .chipIkon{transform:scale(.9)}
+  /* Tanya on phones: ONE dark assistant card (icon plate, bold title, rotating example, white go
+     button) with suggestion pills that scroll inside it. The section itself only carries the band. */
+  .card.ask{margin:0 -16px;padding:18px 16px 0;border:0;border-top:6px solid #ededed;border-radius:0;background:transparent;overflow:visible}
+  .askIsi{display:block;padding:16px;border-radius:18px;background:#171717;color:#fff;overflow:hidden}
+  .askBar,.askBar:hover{min-height:0;padding:0;gap:12px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#fff}
+  .askBar>svg{box-sizing:content-box;width:20px;height:20px;padding:10px;border-radius:12px;background:rgba(255,255,255,.1)}
+  .askText{display:flex;flex-direction:column;gap:2px;color:#fff}
+  .askJudul{display:block;font-size:15px;font-weight:700;letter-spacing:-.2px}
+  .askHint{font-size:13px;color:rgba(255,255,255,.62)}
+  .askGo,.askBar:hover .askGo{width:36px;height:36px;background:#fff;color:#171717}
+  .quick{display:flex;gap:8px;margin:16px -16px 0;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+  .chip{min-height:36px;padding:0 12px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.07);color:#fff;font-size:12.5px;white-space:nowrap}
+  .chip:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22)}
+  .chip:active{background:rgba(255,255,255,.16)}
+  .chipIkon svg{width:15px;height:15px;color:rgba(255,255,255,.7)}
 
   .tabs{gap:8px;padding:12px 14px;scroll-padding-inline:14px}
   .tabs button{min-height:34px;padding:0 12px;border:1px solid #e6e6e6;border-radius:999px;background:#fff;font-size:12.5px;gap:5px;color:#404346}
@@ -232,7 +232,7 @@
   .page{padding-inline:12px}.heading h1{font-size:18px}.period button{padding:0 8px}
   .metric{flex-basis:138px}
   .metrics{margin-inline:-12px;padding-inline:12px;scroll-padding-inline:12px}
-  .judulHp,.judulFokus{margin-inline:-12px;padding-inline:12px}
+  .judulHp,.judulFokus,.card.ask{margin-inline:-12px;padding-inline:12px}
   .tabs button{padding:0 9px;font-size:12px}
 }
 @media(min-width:640px){

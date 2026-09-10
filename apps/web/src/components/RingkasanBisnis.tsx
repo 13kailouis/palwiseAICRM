@@ -29,10 +29,7 @@ const tabs = ["prioritas", "peluang", "janji", "terbaru"] as const;
 type Tab = typeof tabs[number];
 const labelTab: Record<Tab, string> = { prioritas: "Perhatian", peluang: "Peluang", janji: "Janji", terbaru: "Terbaru" };
 const hitungTab = (d: PusatBisnis): Record<Tab, number> => ({ prioritas: d.jumlahPrioritas, peluang: d.jumlahPeluang, janji: d.jumlahJanji, terbaru: d.terbaru.length });
-const ikonBantuan: NamaIkon[] = ["kalender", "pelanggan", "ringkasan", "info"];
-// Phone shortcut labels sit under an icon tile, so they get one or two words.
-const pendekBantuan = ["Rencana", "Cari peluang", "Strategi", "Info bisnis"];
-const TAHAP = [
+const ikonBantuan: NamaIkon[] = ["kalender", "pelanggan", "ringkasan", "info"];const TAHAP = [
   { nama: "baru", warna: "#d4d4d4" },
   { nama: "tertarik", warna: "#9aa0a6" },
   { nama: "negosiasi", warna: "#6b7075" },
@@ -40,7 +37,7 @@ const TAHAP = [
   { nama: "selesai", warna: "#171717" },
   { nama: "batal", warna: "#e8b4b4" },
 ];
-const contohTanya = ["Tanya Palwise", "Siapa yang perlu dibalas dulu?", "Ada peluang follow up?", "Ringkas kondisi minggu ini"];
+const contohTanya = ["Tanya apa saja soal bisnismu","Siapa yang perlu dibalas dulu?", "Ada peluang follow up?", "Ringkas kondisi minggu ini"];
 
 export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
   const [data, setData] = useState(awal);
@@ -170,13 +167,15 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
 
       <div className={styles.side}>
         <section className={`${styles.card} ${styles.ask}`} aria-label="Tanya Palwise">
-          <div className={styles.judulHp}><h2>Kerjakan bersama AI</h2></div>
-          <Link href="/app/tanya" className={styles.askBar} aria-label="Tanya Palwise">
-            <TanyaIcon nama="chat" size={18} />
-            <span className={styles.askText} aria-hidden="true"><span key={contoh} className={styles.askHint}>{contohTanya[contoh]}</span></span>
-            <span className={styles.askGo} aria-hidden="true"><TanyaIcon nama="kanan" size={16} /></span>
-          </Link>
-          <div className={styles.quick}>{BANTUAN_BISNIS.map((f, i) => <Link key={f.judul} href={tanyaBisnis(f.pesan)} className={styles.chip} title={f.detail}><span className={styles.chipIkon}><Ikon nama={ikonBantuan[i]} size={16} /></span><span className={styles.lbPanjang}>{f.judul}</span><span className={styles.lbPendek}>{pendekBantuan[i]}</span></Link>)}</div>
+          {/* On phones this wrapper becomes a dark assistant card; on wider screens it disappears. */}
+          <div className={styles.askIsi}>
+            <Link href="/app/tanya" className={styles.askBar} aria-label="Tanya Palwise">
+              <TanyaIcon nama="chat" size={18} />
+              <span className={styles.askText} aria-hidden="true"><span className={styles.askJudul}>Tanya Palwise</span><span key={contoh} className={styles.askHint}>{contohTanya[contoh]}</span></span>
+              <span className={styles.askGo} aria-hidden="true"><TanyaIcon nama="kanan" size={16} /></span>
+            </Link>
+            <div className={styles.quick}>{BANTUAN_BISNIS.map((f, i) => <Link key={f.judul} href={tanyaBisnis(f.pesan)} className={styles.chip} title={f.detail}><span className={styles.chipIkon}><Ikon nama={ikonBantuan[i]} size={16} /></span><span>{f.judul}</span></Link>)}</div>
+          </div>
         </section>
 
         <section className={`${styles.card} ${styles.stages}`} aria-labelledby="judul-tahap">
