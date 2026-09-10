@@ -10241,6 +10241,58 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
         )) === null,
       );
 
+      // Bug sungguhan 10-09-2026: "ubah sapaan pertama" masuk ke cara bicara
+      // sebagai baris "Sapaan pembuka: [ISI SAPAAN BARU DI SINI]", sementara
+      // kolom sapaan yang sebenarnya tidak berubah sama sekali.
+      const usulSapaan = await bacaUsul2(
+        ctxTanya,
+        { jenis: "ubah_asisten", bagian: "sapaan", isi: "Halo kak, selamat datang di Kopi Uji!" },
+        "perintah",
+      );
+      check(
+        "usul sapaan menuju kolom sapaan, bukan cara bicara",
+        usulSapaan?.jenis === "ubah_asisten" &&
+          usulSapaan.bagian === "sapaan" &&
+          usulSapaan.isiLama === (agent.welcomeMessage ?? ""),
+        JSON.stringify(usulSapaan)?.slice(0, 140),
+      );
+      check(
+        "usul dengan penanda kosong ditolak",
+        (await bacaUsul2(
+          ctxTanya,
+          { jenis: "ubah_asisten", bagian: "sapaan", isi: "Halo kak! [ISI SAPAAN BARU DI SINI]" },
+          "perintah",
+        )) === null,
+      );
+      const usulSetelan = await bacaUsul2(
+        ctxTanya,
+        { jenis: "atur_asisten", ubahan: { followUpAfterHours: 9999, officeHoursStart: "25:00", watak: agent.watak === "tegas" ? "tenang" : "tegas" } },
+        "perintah",
+      );
+      check(
+        "setelan di luar batas halaman Asisten dibuang, yang sah tetap",
+        usulSetelan?.jenis === "atur_asisten" &&
+          usulSetelan.ubahan.length === 1 &&
+          usulSetelan.ubahan[0].kunci === "watak",
+        JSON.stringify(usulSetelan)?.slice(0, 140),
+      );
+      check(
+        "usul ubah data pelanggan ditolak di utas pemasangan",
+        (await bacaUsul2(
+          ctxTanya,
+          { jenis: "ubah_pelanggan", kontakId: kontakAsli.id, ubahan: { stage: kontakAsli.stage === "batal" ? "baru" : "batal" } },
+          "pasang",
+        )) === null,
+      );
+      check(
+        "usul ubah data pelanggan lolos di utas perintah",
+        (await bacaUsul2(
+          ctxTanya,
+          { jenis: "ubah_pelanggan", kontakId: kontakAsli.id, ubahan: { stage: kontakAsli.stage === "batal" ? "baru" : "batal" } },
+          "perintah",
+        ))?.jenis === "ubah_pelanggan",
+      );
+
       const usulTambah = await bacaUsul2(
         ctxTanya,
         { jenis: "tambah_info", judul: "Jam buka", isi: "Buka Senin sampai Sabtu jam 9 sampai 5." },

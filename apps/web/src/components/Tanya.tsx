@@ -42,7 +42,17 @@ type Usul =
       isi: string;
     }
   | { jenis: "ubah_asisten"; bagian?: "cara_bicara" | "sapaan" | "serah_manusia"; isiLama: string; isi: string }
-  | { jenis: "atur_asisten"; ubahan: { kunci: string; lama: string | number | boolean; baru: string | number | boolean }[] };
+  | { jenis: "atur_asisten"; ubahan: { kunci: string; lama: string | number | boolean; baru: string | number | boolean }[] }
+  | { jenis: "ubah_pelanggan"; kontakId: string; kepada: string; nomor: string | null; ubahan: { kunci: string; lama: string | null; baru: string | null }[] }
+  | { jenis: "hapus_pelanggan"; kontakId: string; kepada: string; nomor: string | null }
+  | { jenis: "hafalkan_info"; catatanId: string; judul: string }
+  | { jenis: "hapus_info"; catatanId: string; judul: string; cuplikan: string }
+  | { jenis: "ubah_berkas"; berkasId: string; namaLama: string; keteranganLama: string; nama: string; keterangan: string }
+  | { jenis: "baca_berkas"; berkasId: string; nama: string }
+  | { jenis: "hapus_berkas"; berkasId: string; nama: string }
+  | { jenis: "atur_nomor"; nomorId: string; namaNomor: string; aksi: "matikan" | "nyalakan" | "ganti_nama"; namaBaru?: string }
+  | { jenis: "hapus_nomor"; nomorId: string; namaNomor: string }
+  | { jenis: "buka_halaman"; tujuan: string; alasan: string };
 
 interface Pesan {
   id: string;
@@ -813,7 +823,7 @@ function DariPalwise({ pesan, jalankan, lengkapi, tanpaAnimasi = false }: {
   const [salinan, setSalinan] = useState<"awal" | "selesai" | "gagal">("awal");
   useEffect(() => { if (salinan === "awal") return; const timer = setTimeout(() => setSalinan("awal"), 2500); return () => clearTimeout(timer); }, [salinan]);
   async function salin() {
-    const lengkap = [pesan.teks, pesan.usul ? ("teks" in pesan.usul ? pesan.usul.teks : "isi" in pesan.usul ? pesan.usul.isi : pesan.usul.ubahan.map(u => `${u.kunci}: ${u.baru}`).join("\n")) : "", ...(pesan.hasilBaca ?? []).map(h => `${h.judul}\n${rapikanHasil(h.alat, h.isi)}`)].filter(Boolean).join("\n\n");
+    const lengkap = [pesan.teks, pesan.usul ? ("teks" in pesan.usul ? pesan.usul.teks : "isi" in pesan.usul ? pesan.usul.isi : "ubahan" in pesan.usul ? pesan.usul.ubahan.map((u: { kunci: string; baru: unknown }) => `${u.kunci}: ${u.baru}`).join("\n") : "") : "", ...(pesan.hasilBaca ?? []).map(h => `${h.judul}\n${rapikanHasil(h.alat, h.isi)}`)].filter(Boolean).join("\n\n");
     try { await navigator.clipboard.writeText(lengkap); setSalinan("selesai"); }
     catch { setSalinan("gagal"); }
   }
@@ -887,6 +897,7 @@ function namaAlat(kode: string): string {
   const peta: Record<string, string> = {
     hitung_obrolan: "hitungan chat",
     status_whatsapp: "status WhatsApp saat diperiksa",
+    daftar_nomor: "daftar nomor WhatsApp",
     daftar_pelanggan: "tahap pelanggan",
     daftar_masalah: "daftar keluhan",
     daftar_nunggu: "yang nunggu dibalas",
@@ -1079,9 +1090,12 @@ function KartuUsul({
   const [ambilAlih, setAmbilAlih] = useState(false);
   const [proses, setProses] = useState(false);
   const [galatLokal, setGalatLokal] = useState<string | null>(null);
+  const [yakin, setYakin] = useState(false);
   const menunggu = status === "menunggu";
   const mengirim =
     usul.jenis === "kirim_pesan" || usul.jenis === "kirim_berkas";
+  // Deleting anything takes two presses: "Hapus", then "Ya, hapus".
+  const berbahaya = usul.jenis.startsWith("hapus_");
 
   async function tekan(opsi: { batal?: boolean; ambilAlih?: boolean }) {
     setProses(true);
@@ -1124,6 +1138,31 @@ function KartuUsul({
         };
       case "atur_asisten":
         return { ikon: "asisten", isi: <>Ubah setelan asisten</> };
+      case "ubah_pelanggan":
+      case "hapus_pelanggan":
+        return {
+          ikon: "pelanggan",
+          isi: <>{usul.jenis === "hapus_pelanggan" ? "Hapus pelanggan" : "Ubah data"} <span className="font-medium text-ink-900">{usul.kepada}</span>{usul.nomor && <span className="text-ink-400"> {usul.nomor}</span>}</>,
+        };
+      case "hafalkan_info":
+        return { ikon: "info", isi: <>Hafalkan ulang <span className="font-medium text-ink-900">{usul.judul}</span></> };
+      case "hapus_info":
+        return { ikon: "info", isi: <>Hapus catatan <span className="font-medium text-ink-900">{usul.judul}</span></> };
+      case "ubah_berkas":
+        return { ikon: "gambar", isi: <>Ubah <span className="font-medium text-ink-900">{usul.namaLama}</span></> };
+      case "baca_berkas":
+        return { ikon: "gambar", isi: <>Baca isi <span className="font-medium text-ink-900">{usul.nama}</span> jadi Info bisnis</> };
+      case "hapus_berkas":
+        return { ikon: "gambar", isi: <>Hapus <span className="font-medium text-ink-900">{usul.nama}</span></> };
+      case "atur_nomor":
+        return {
+          ikon: "whatsapp",
+          isi: <>{usul.aksi === "matikan" ? "Matikan sementara" : usul.aksi === "nyalakan" ? "Nyalakan lagi" : "Ganti nama"} nomor <span className="font-medium text-ink-900">{usul.namaNomor}</span></>,
+        };
+      case "hapus_nomor":
+        return { ikon: "whatsapp", isi: <>Lepas dan hapus nomor <span className="font-medium text-ink-900">{usul.namaNomor}</span></> };
+      case "buka_halaman":
+        return { ikon: HALAMAN_TANYA[usul.tujuan]?.ikon ?? "info", isi: <>Buka {HALAMAN_TANYA[usul.tujuan]?.label ?? "halaman"}</> };
       case "ubah_info":
         return {
           ikon: "info",
@@ -1147,7 +1186,33 @@ function KartuUsul({
     }
   })();
 
-  const isiBaru = mengirim ? usul.teks : "isi" in usul ? usul.isi : "";
+  const isiBaru = mengirim ? usul.teks : "isi" in usul ? usul.isi : usul.jenis === "hapus_info" ? usul.cuplikan : "";
+
+  // Changes that read best as "label: old → new" rows.
+  const daftarData: { kunci: string; lama: string | null; baru: string | null }[] | null =
+    usul.jenis === "ubah_pelanggan" ? usul.ubahan
+      : usul.jenis === "ubah_berkas" ? [
+          ...(usul.nama !== usul.namaLama ? [{ kunci: "nama", lama: usul.namaLama, baru: usul.nama }] : []),
+          ...(usul.keterangan !== usul.keteranganLama ? [{ kunci: "keterangan", lama: usul.keteranganLama, baru: usul.keterangan }] : []),
+        ]
+      : usul.jenis === "atur_nomor" && usul.aksi === "ganti_nama" ? [{ kunci: "namaNomor", lama: usul.namaNomor, baru: usul.namaBaru ?? "" }]
+      : null;
+
+  // What a delete takes with it, said plainly before the owner presses.
+  const peringatan =
+    usul.jenis === "hapus_pelanggan" ? "Seluruh obrolan, catatan, dan janji temunya ikut terhapus. Tidak bisa dikembalikan."
+      : usul.jenis === "hapus_info" ? "Asisten tidak akan memakai catatan ini lagi. Tidak bisa dikembalikan."
+      : usul.jenis === "hapus_berkas" ? "Berkasnya hilang dari galeri, dan catatan hasil bacaannya ikut dihapus."
+      : usul.jenis === "hapus_nomor" ? "Nomor ini keluar dari Palwise dan asisten berhenti membalas dari nomor ini. Untuk memakainya lagi harus scan QR ulang."
+      : null;
+
+  const labelUtama = mengirim ? "Kirim"
+    : berbahaya ? (yakin ? "Ya, hapus" : "Hapus")
+    : usul.jenis === "hafalkan_info" ? "Hafalkan"
+    : usul.jenis === "baca_berkas" ? "Baca isinya"
+    : usul.jenis === "atur_nomor" && usul.aksi === "matikan" ? "Matikan"
+    : usul.jenis === "atur_nomor" && usul.aksi === "nyalakan" ? "Nyalakan"
+    : "Simpan";
   const isiLama =
     usul.jenis === "ubah_info" || usul.jenis === "ubah_asisten"
       ? usul.isiLama.trim()
@@ -1163,8 +1228,25 @@ function KartuUsul({
   const menyusutBanyak =
     isiLama.length > 200 && isiBaru.length < isiLama.length * 0.6;
 
+  // A page link, not an action: payments, email and passwords stay on their own pages.
+  if (usul.jenis === "buka_halaman") {
+    const halaman = HALAMAN_TANYA[usul.tujuan];
+    return (
+      <div className={styles.proposal}>
+        <div className={styles.proposalHeading}>
+          <span className={styles.proposalIcon}><Ikon nama={kepala.ikon} size={15} /></span>
+          <p className={styles.proposalTitle}>{kepala.isi}</p>
+        </div>
+        {usul.alasan && <div className={styles.proposalBody}><p className={styles.proposalText}>{usul.alasan}</p></div>}
+        {halaman && <div className={styles.proposalActions}><div className={styles.proposalButtons}>
+          <Link href={halaman.href} className={`btn-primary ${styles.proposalPrimary}`}>Buka {halaman.label}<TanyaIcon nama="kanan" size={15} /></Link>
+        </div></div>}
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.proposal}>
+    <div className={`${styles.proposal} ${berbahaya ? styles.proposalBahaya : ""}`}>
       <div className={styles.proposalHeading}>
         <span className={styles.proposalIcon}><Ikon nama={kepala.ikon} size={15} /></span>
         <p className={styles.proposalTitle}>{kepala.isi}</p>
@@ -1184,6 +1266,8 @@ function KartuUsul({
           <Perubahan lama={isiLama} baru={isiBaru} />
         ) : usul.jenis === "atur_asisten" ? (
           <DaftarUbahan ubahan={usul.ubahan} />
+        ) : daftarData ? (
+          <DaftarUbahan ubahan={daftarData} label={LABEL_DATA} format={nilaiData} />
         ) : (
           isiBaru && (
             // A message to a customer previews as a chat bubble: that is what they will receive.
@@ -1191,6 +1275,12 @@ function KartuUsul({
               {isiBaru}
             </p>
           )
+        )}
+
+        {menunggu && peringatan && (
+          <p className={styles.peringatanHapus}>
+            {yakin ? "Tekan Ya, hapus sekali lagi untuk memastikan. " : ""}{peringatan}
+          </p>
         )}
 
         {menunggu && menyusutBanyak && (
@@ -1236,11 +1326,11 @@ function KartuUsul({
             <button
               type="button"
               disabled={proses}
-              onClick={() => tekan({ ambilAlih })}
-              className={`btn-primary ${styles.proposalPrimary}`}
+              onClick={() => (berbahaya && !yakin ? setYakin(true) : tekan({ ambilAlih }))}
+              className={berbahaya ? styles.tombolHapus : `btn-primary ${styles.proposalPrimary}`}
             >
-              {proses ? "Sebentar" : mengirim ? "Kirim" : "Simpan"}
-              {!proses && <Ikon nama={mengirim ? "kirim" : "centang"} size={15} />}
+              {proses ? "Sebentar" : labelUtama}
+              {!proses && (berbahaya ? <TanyaIcon nama="hapus" size={15} /> : <Ikon nama={mengirim ? "kirim" : "centang"} size={15} />)}
             </button>
           </div>
         </div>
@@ -1269,15 +1359,41 @@ const LABEL_SETELAN: Record<string, string> = {
   restockEnabled: "Ajak beli lagi", restockAfterDays: "Ajak beli lagi setelah (hari)", restockPrompt: "Pesan ajak beli lagi",
   pengingatEnabled: "Pengingat janji temu", pengingatJamSebelum: "Ingatkan sebelum janji (jam)", pengingatPrompt: "Pesan pengingat janji",
 };
-const nilaiSetelan = (v: string | number | boolean) => (v === true ? "Nyala" : v === false ? "Mati" : String(v));
+type NilaiUbahan = string | number | boolean | null;
+const nilaiSetelan = (_kunci: string, v: NilaiUbahan) => (v === true ? "Nyala" : v === false ? "Mati" : v === null ? "Kosong" : String(v));
 
-/** A settings change as "label: old → new"; long texts stack under their label. */
-function DaftarUbahan({ ubahan }: { ubahan: { kunci: string; lama: string | number | boolean; baru: string | number | boolean }[] }) {
+/** Labels exactly as on the Pelanggan, Gambar and Nomor WhatsApp pages. */
+const LABEL_DATA: Record<string, string> = {
+  stage: "Tahap", notes: "Catatan", janjiPada: "Janji temu", janjiCatatan: "Keperluan janji", bereskanMasalah: "Keluhan",
+  name: "Nama", businessName: "Nama usaha", industry: "Bidang usaha", nama: "Judul", keterangan: "Dikirim kalau", namaNomor: "Nama nomor",
+};
+const nilaiData = (kunci: string, v: NilaiUbahan) =>
+  v === null ? (kunci === "bereskanMasalah" ? "Beres" : "Kosong")
+    : kunci === "janjiPada" ? `${new Date(String(v)).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} WIB`
+    : String(v);
+
+/** Where a "buka_halaman" card points. */
+const HALAMAN_TANYA: Record<string, { href: string; label: string; ikon: React.ComponentProps<typeof Ikon>["nama"] }> = {
+  tagihan: { href: "/app/tagihan", label: "Paket & pemakaian", ikon: "paket" },
+  akun: { href: "/app/akun", label: "Akun", ikon: "akun" },
+  whatsapp: { href: "/app/whatsapp", label: "Nomor WhatsApp", ikon: "whatsapp" },
+  agent: { href: "/app/agent", label: "Asisten", ikon: "asisten" },
+  knowledge: { href: "/app/knowledge", label: "Info bisnis", ikon: "info" },
+  galeri: { href: "/app/galeri", label: "Gambar & berkas", ikon: "gambar" },
+  kontak: { href: "/app/kontak", label: "Pelanggan", ikon: "pelanggan" },
+};
+
+/** A change as "label: old → new"; long texts stack under their label. */
+function DaftarUbahan({ ubahan, label = LABEL_SETELAN, format = nilaiSetelan }: {
+  ubahan: { kunci: string; lama: NilaiUbahan; baru: NilaiUbahan }[];
+  label?: Record<string, string>;
+  format?: (kunci: string, v: NilaiUbahan) => string;
+}) {
   return <ul className={styles.settingList}>{ubahan.map((u) => {
-    const panjang = typeof u.baru === "string" && u.baru.length > 30;
+    const panjang = typeof u.baru === "string" && u.baru.length > 30 && u.kunci !== "janjiPada";
     return <li key={u.kunci} className={panjang ? styles.settingLong : undefined}>
-      <span>{LABEL_SETELAN[u.kunci] ?? u.kunci}</span>
-      {panjang ? <p>{String(u.baru)}</p> : <span className={styles.settingValue}><s>{nilaiSetelan(u.lama)}</s><TanyaIcon nama="kanan" size={12} /><b>{nilaiSetelan(u.baru)}</b></span>}
+      <span>{label[u.kunci] ?? u.kunci}</span>
+      {panjang ? <p>{String(u.baru)}</p> : <span className={styles.settingValue}><s>{format(u.kunci, u.lama)}</s><TanyaIcon nama="kanan" size={12} /><b>{format(u.kunci, u.baru)}</b></span>}
     </li>;
   })}</ul>;
 }

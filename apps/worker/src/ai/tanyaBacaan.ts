@@ -60,7 +60,7 @@ export function tahapYangDiminta(pesan: string, riwayat: GiliranTanya[] = []): s
 
 const JUDUL: Record<string, string> = {
   ringkasan_bisnis: "Kondisi bisnis", prioritas_bisnis: "Prioritas kerja", peluang_follow_up: "Peluang follow up",
-  status_whatsapp: "Status WhatsApp",
+  status_whatsapp: "Status WhatsApp", daftar_nomor: "Nomor WhatsApp",
   hitung_obrolan: "Ringkasan chat", daftar_pelanggan: "Daftar pelanggan",
   daftar_masalah: "Keluhan yang masih terbuka", daftar_nunggu: "Menunggu balasan tim",
   daftar_janji: "Janji temu", cari_kontak: "Hasil pencarian pelanggan",

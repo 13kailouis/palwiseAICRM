@@ -109,7 +109,27 @@ export type Usul =
       jenis: "atur_asisten";
       /** Only the settings that change, each with its value before and after. */
       ubahan: UbahanAsisten[];
-    };
+    }
+  // ── Managing data: every action a page offers, still as a card the owner presses ──
+  | { jenis: "ubah_pelanggan"; kontakId: string; kepada: string; nomor: string | null; ubahan: UbahanPelanggan[] }
+  | { jenis: "hapus_pelanggan"; kontakId: string; kepada: string; nomor: string | null }
+  | { jenis: "hafalkan_info"; catatanId: string; judul: string }
+  | { jenis: "hapus_info"; catatanId: string; judul: string; cuplikan: string }
+  | { jenis: "ubah_berkas"; berkasId: string; namaLama: string; keteranganLama: string; nama: string; keterangan: string }
+  | { jenis: "baca_berkas"; berkasId: string; nama: string }
+  | { jenis: "hapus_berkas"; berkasId: string; nama: string }
+  | { jenis: "atur_nomor"; nomorId: string; namaNomor: string; aksi: "matikan" | "nyalakan" | "ganti_nama"; namaBaru?: string }
+  | { jenis: "hapus_nomor"; nomorId: string; namaNomor: string }
+  /** Payments, email, password and new numbers stay on their own pages; the card is only a link. */
+  | { jenis: "buka_halaman"; tujuan: TujuanHalaman; alasan: string };
+
+export type KunciPelanggan = "stage" | "notes" | "janjiPada" | "janjiCatatan" | "bereskanMasalah" | "name" | "businessName" | "industry";
+export interface UbahanPelanggan { kunci: KunciPelanggan; lama: string | null; baru: string | null }
+export const HALAMAN_TUJUAN = ["tagihan", "akun", "whatsapp", "agent", "knowledge", "galeri", "kontak"] as const;
+export type TujuanHalaman = (typeof HALAMAN_TUJUAN)[number];
+const TAHAP_PELANGGAN = ["baru", "tertarik", "negosiasi", "closing", "selesai", "batal"];
+/** Proposals that change or delete data. Setup threads never get them. */
+const USUL_KELOLA = new Set(["ubah_pelanggan", "hapus_pelanggan", "hafalkan_info", "hapus_info", "ubah_berkas", "baca_berkas", "hapus_berkas", "atur_nomor", "hapus_nomor"]);
 
 /**
  * The three free-text boxes of the Asisten page, each its own column. Before this existed every
@@ -266,6 +286,19 @@ export const ALAT: Alat[] = [
     nama: "status_whatsapp",
     untuk: "Status sambungan WhatsApp saat ini, termasuk nomor yang putus. Baca ini saat ditanya apakah WhatsApp sudah tersambung; riwayat lama bukan bukti koneksi aktif.",
     async jalankan({ workspaceId }) { return (await koneksiTanya(workspaceId)).teks; },
+  },
+  {
+    nama: "daftar_nomor",
+    untuk: "Nomor WhatsApp di akun ini beserta id, nama, dan keadaannya. Wajib sebelum mengusulkan atur_nomor atau hapus_nomor.",
+    async jalankan({ workspaceId }) {
+      const nomor = await prisma.channel.findMany({
+        where: { workspaceId }, orderBy: { createdAt: "asc" },
+        select: { id: true, name: true, status: true, phoneNumber: true, autoStart: true },
+      });
+      if (!nomor.length) return "Belum ada nomor WhatsApp di akun ini.";
+      const label: Record<string, string> = { connected: "tersambung", connecting: "sedang menyambungkan", qr: "menunggu scan QR", logged_out: "tautan dicabut dari WhatsApp", disconnected: "terputus" };
+      return nomor.map(c => `- ${c.name} (id: ${c.id}, nomor: ${c.phoneNumber ?? "belum ditautkan"}, ${label[c.status] ?? "belum tersambung"}${c.autoStart ? "" : ", sedang dimatikan"})`).join("\n");
+    },
   },
   {
     nama: "daftar_pelanggan",
@@ -700,6 +733,32 @@ function daftarAlatUntukPrompt(mode: ModeTanya): string {
 
 /** Bentuk balasan JSON, sama di dua mode supaya pembacanya cuma satu. */
 function bentukJawaban(mode: ModeTanya): string {
+  const usulHalaman = `
+13) Yang HARUS lewat halaman resminya (ganti paket atau pembayaran, ganti email atau sandi, menambah nomor WhatsApp baru): jangan cuma menolak. Jelaskan singkat, lalu beri tombol ke halamannya:
+{"jawab":"kalimat singkat","usul":{"jenis":"buka_halaman","tujuan":"tagihan|akun|whatsapp|agent|knowledge|galeri|kontak","alasan":"apa yang bisa dia lakukan di sana"}}
+`;
+  const usulKelola = mode === "pasang" ? usulHalaman : `
+8) Mengubah data SATU pelanggan (wajib cari_kontak dulu). Hanya kunci yang berubah:
+{"jawab":"kalimat singkat","usul":{"jenis":"ubah_pelanggan","kontakId":"...","ubahan":{"stage":"tertarik","notes":"catatan pemilik","janjiPada":"2026-09-12T14:00:00+07:00","janjiCatatan":"keperluan janjinya","bereskanMasalah":true,"name":"nama","businessName":"nama usahanya","industry":"bidang usahanya"}}}
+stage: baru|tertarik|negosiasi|closing|selesai|batal. janjiPada ISO dengan +07:00 (WIB); null berarti menghapus janjinya. bereskanMasalah true = keluhannya ditandai beres. notes MENGGANTI seluruh catatan pemilik, jadi bawa catatan lama yang masih benar (baca lihat_kontak dulu).
+
+9) Info bisnis: hafalkan ulang satu catatan, atau HAPUS satu catatan (wajib daftar_info dulu untuk id-nya):
+{"jawab":"kalimat singkat","usul":{"jenis":"hafalkan_info","catatanId":"..."}}
+{"jawab":"kalimat singkat","usul":{"jenis":"hapus_info","catatanId":"..."}}
+
+10) Gambar & berkas (wajib daftar_gambar dulu untuk kodenya): ubah judul atau keterangan kapan dikirim, baca isi gambar jadi Info bisnis, atau HAPUS:
+{"jawab":"kalimat singkat","usul":{"jenis":"ubah_berkas","kode":"...","nama":"judul baru","keterangan":"dikirim kalau pelanggan ... (minimal 10 huruf)"}}
+{"jawab":"kalimat singkat","usul":{"jenis":"baca_berkas","kode":"..."}}
+{"jawab":"kalimat singkat","usul":{"jenis":"hapus_berkas","kode":"..."}}
+
+11) Nomor WhatsApp (wajib daftar_nomor dulu untuk id-nya): matikan sementara, nyalakan lagi, ganti nama, atau lepas dan HAPUS dari Palwise:
+{"jawab":"kalimat singkat","usul":{"jenis":"atur_nomor","nomorId":"...","aksi":"matikan|nyalakan|ganti_nama","namaBaru":"hanya untuk ganti_nama"}}
+{"jawab":"kalimat singkat","usul":{"jenis":"hapus_nomor","nomorId":"..."}}
+
+12) HAPUS satu pelanggan beserta seluruh obrolannya (wajib cari_kontak dulu):
+{"jawab":"kalimat singkat","usul":{"jenis":"hapus_pelanggan","kontakId":"..."}}
+Menghapus selalu SATU hal per usul, dan hanya kalau pemilik memintanya dengan jelas. Sebutkan di jawab apa yang akan hilang.
+${usulHalaman}`;
   const usulKirim =
     mode === "pasang"
       ? ""
@@ -736,6 +795,7 @@ Untuk MENAMBAH email, cari berisi baris kontak lama, ganti berisi baris lama + e
 {"jawab":"kalimat singkat","usul":{"jenis":"atur_asisten","ubahan":{"officeHoursEnabled":true,"officeHoursStart":"09:00","officeHoursEnd":"17:00"}}}
 Kunci yang boleh: isActive (asisten sedang bekerja, true/false), rasaAktif (baca perasaan pelanggan), watak (hangat|tenang|santai|tegas), splitBubbles (pecah jawaban panjang jadi beberapa pesan), officeHoursEnabled/officeHoursStart/officeHoursEnd (ikut jam kerja tim, HH:mm), followUpEnabled/followUpAfterHours (1-720)/followUpMaxAttempts (1-5)/followUpPrompt, afterSalesEnabled/afterSalesAfterDays (1-60)/afterSalesPrompt, restockEnabled/restockAfterDays (3-365)/restockPrompt, pengingatEnabled/pengingatJamSebelum (1-168)/pengingatPrompt.
 
+${usulKelola}
 SATU USUL SAJA PER BALASAN. Kalau ada dua hal yang mau kamu simpan, usulkan yang pertama dulu, dan tunggu.`;
 }
 
@@ -780,7 +840,7 @@ Untuk follow up atau draf balasan, WAJIB baca lihat_kontak agar isinya sesuai ob
 
 ${bentukJawaban("perintah")}
 
-YANG TIDAK BISA KAMU LAKUKAN, dan katakan apa adanya kalau diminta: menghapus seluruh akun, pelanggan atau catatan, mengubah paket atau transaksi uang, dan mengirim ke banyak orang sekaligus. Untuk yang terakhir, jelaskan bahwa mengirim serentak berisiko membuat nomor WhatsApp-nya diblokir, jadi itu tidak dibuka lewat perintah chat.`;
+YANG TIDAK BISA KAMU LAKUKAN, dan katakan apa adanya kalau diminta: menghapus seluruh akun, menghapus atau mengubah banyak data sekaligus, mengubah paket atau pembayaran, mengganti email atau sandi, dan mengirim ke banyak orang sekaligus. Untuk paket, pembayaran, email, sandi, dan menambah nomor baru, beri usul buka_halaman. Untuk kirim serentak, jelaskan bahwa mengirim serentak berisiko membuat nomor WhatsApp-nya diblokir, jadi itu tidak dibuka lewat perintah chat.`;
 }
 
 /**
@@ -1370,6 +1430,91 @@ export async function bacaUsul(
       if (lama !== baru) ubahan.push({ kunci: k, lama, baru });
     }
     return ubahan.length ? { jenis: "atur_asisten", ubahan } : null;
+  }
+
+  if (jenis === "buka_halaman") {
+    const tujuan = String(mentah.tujuan ?? "");
+    if (!(HALAMAN_TUJUAN as readonly string[]).includes(tujuan)) return null;
+    return { jenis: "buka_halaman", tujuan: tujuan as TujuanHalaman, alasan: String(mentah.alasan ?? "").trim().slice(0, 200) };
+  }
+
+  // Rejected in CODE for setup threads, same reason as sending: a new account's first day is
+  // not the moment to delete or rearrange anything, and a prompt that omits a power does not remove it.
+  if (USUL_KELOLA.has(jenis) && mode === "pasang") {
+    log.warn(`ruang perintah: usul ${jenis} ditolak, utas ini mode pemasangan`);
+    return null;
+  }
+
+  if (jenis === "ubah_pelanggan" || jenis === "hapus_pelanggan") {
+    const kontak = await prisma.contact.findFirst({
+      where: { id: String(mentah.kontakId ?? "").trim(), workspaceId: ctx.workspaceId, ...HANYA_PELANGGAN_ASLI },
+    });
+    if (!kontak) return null;
+    const kepada = displayName(kontak);
+    const nomor = kontak.phone ?? null;
+    if (jenis === "hapus_pelanggan") return { jenis, kontakId: kontak.id, kepada, nomor };
+
+    const minta = mentah.ubahan && typeof mentah.ubahan === "object" ? (mentah.ubahan as Record<string, unknown>) : {};
+    const sekarang = kontak as unknown as Record<string, string | null>;
+    const ubahan: UbahanPelanggan[] = [];
+    for (const [kunci, nilai] of Object.entries(minta)) {
+      if (kunci === "stage") {
+        const s = String(nilai);
+        if (TAHAP_PELANGGAN.includes(s) && s !== kontak.stage) ubahan.push({ kunci, lama: kontak.stage, baru: s });
+      } else if (kunci === "janjiPada") {
+        const lama = kontak.janjiPada?.toISOString() ?? null;
+        if (nilai === null || nilai === "") { if (lama) ubahan.push({ kunci, lama, baru: null }); continue; }
+        const d = new Date(String(nilai));
+        if (Number.isNaN(d.getTime()) || d.toISOString() === lama) continue;
+        ubahan.push({ kunci, lama, baru: d.toISOString() });
+      } else if (kunci === "bereskanMasalah") {
+        if (nilai === true && kontak.masalah) ubahan.push({ kunci, lama: kontak.masalah, baru: null });
+      } else if (kunci === "notes" || kunci === "janjiCatatan" || kunci === "name" || kunci === "businessName" || kunci === "industry") {
+        const baru = String(nilai ?? "").trim().slice(0, kunci === "notes" ? 2000 : 200) || null;
+        if (baru && PENANDA_KOSONG.test(baru)) continue;
+        if (kunci === "name" && !baru) continue;
+        const lama = sekarang[kunci] ?? null;
+        if ((baru ?? "") !== (lama ?? "")) ubahan.push({ kunci, lama, baru });
+      }
+    }
+    return ubahan.length ? { jenis: "ubah_pelanggan", kontakId: kontak.id, kepada, nomor, ubahan } : null;
+  }
+
+  if (jenis === "hafalkan_info" || jenis === "hapus_info") {
+    const catatan = await prisma.knowledgeSource.findFirst({
+      where: { id: String(mentah.catatanId ?? "").trim(), agent: { workspaceId: ctx.workspaceId } },
+    });
+    if (!catatan) return null;
+    return jenis === "hafalkan_info"
+      ? { jenis, catatanId: catatan.id, judul: catatan.title }
+      : { jenis, catatanId: catatan.id, judul: catatan.title, cuplikan: catatan.content.replace(/\s+/g, " ").slice(0, 180) };
+  }
+
+  if (jenis === "ubah_berkas" || jenis === "baca_berkas" || jenis === "hapus_berkas") {
+    const berkas = await prisma.mediaAsset.findFirst({
+      where: { code: String(mentah.kode ?? "").trim(), agent: { workspaceId: ctx.workspaceId } },
+    });
+    if (!berkas) return null;
+    if (jenis === "baca_berkas") return berkas.kind === "image" ? { jenis, berkasId: berkas.id, nama: berkas.name } : null;
+    if (jenis === "hapus_berkas") return { jenis, berkasId: berkas.id, nama: berkas.name };
+    // Same rules as the Gambar page: a title, and a "send when" of at least 10 characters.
+    const nama = String(mentah.nama ?? berkas.name).trim().slice(0, 100) || berkas.name;
+    const keterangan = String(mentah.keterangan ?? berkas.description).trim().slice(0, 300);
+    if (keterangan.length < 10 || PENANDA_KOSONG.test(nama + keterangan)) return null;
+    if (nama === berkas.name && keterangan === berkas.description) return null;
+    return { jenis, berkasId: berkas.id, namaLama: berkas.name, keteranganLama: berkas.description, nama, keterangan };
+  }
+
+  if (jenis === "atur_nomor" || jenis === "hapus_nomor") {
+    const nomor = await prisma.channel.findFirst({ where: { id: String(mentah.nomorId ?? "").trim(), workspaceId: ctx.workspaceId } });
+    if (!nomor) return null;
+    if (jenis === "hapus_nomor") return { jenis, nomorId: nomor.id, namaNomor: nomor.name };
+    const aksi = String(mentah.aksi ?? "");
+    if (aksi === "ganti_nama") {
+      const namaBaru = String(mentah.namaBaru ?? "").trim().slice(0, 60);
+      return namaBaru && namaBaru !== nomor.name ? { jenis, nomorId: nomor.id, namaNomor: nomor.name, aksi, namaBaru } : null;
+    }
+    return aksi === "matikan" || aksi === "nyalakan" ? { jenis, nomorId: nomor.id, namaNomor: nomor.name, aksi } : null;
   }
 
   return null;

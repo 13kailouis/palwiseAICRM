@@ -421,25 +421,23 @@ const MAKS_BACA_BYTE = 5 * 1024 * 1024;
  * Tanpa ini, foto daftar harga bisa DIKIRIM asisten tapi angkanya tidak
  * DIKETAHUI, jadi dia tetap tidak bisa menjawab "berapa harganya".
  */
-router.post("/assets/:id/read", async (req, res) => {
+type HasilBacaAset = { ok: true; knowledgeSourceId: string; panjang: number } | { ok: false; status: number; error: string };
+
+/** Read an image's text into Info bisnis. Shared by the Gambar page and Palwise AI cards. */
+async function bacaIsiAset(id: string): Promise<HasilBacaAset> {
   try {
-    const aset = await prisma.mediaAsset.findUnique({ where: { id: req.params.id } });
+    const aset = await prisma.mediaAsset.findUnique({ where: { id } });
     if (!aset) {
-      res.status(404).json({ error: "Berkasnya tidak ditemukan" });
-      return;
+      return { ok: false, status: 404, error: "Berkasnya tidak ditemukan" };
     }
 
     if (aset.kind !== "image") {
-      res.status(400).json({
-        error: "Yang bisa dibaca isinya baru gambar. Untuk PDF, pakai tab Dari file di Info bisnis.",
-      });
-      return;
+      return { ok: false, status: 400, error: "Yang bisa dibaca isinya baru gambar. Untuk PDF, pakai tab Dari file di Info bisnis." };
     }
 
     const lokasi = path.join(env.MEDIA_DIR, path.basename(aset.fileName));
     if (!fs.existsSync(lokasi)) {
-      res.status(404).json({ error: "Berkasnya tidak ada di penyimpanan" });
-      return;
+      return { ok: false, status: 404, error: "Berkasnya tidak ada di penyimpanan" };
     }
 
     // Foto langsung dari HP gampang tembus 10 MB, dan setelah dijadikan base64
@@ -456,16 +454,12 @@ router.post("/assets/:id/read", async (req, res) => {
         where: { id: aset.id },
         data: { readStatus: "error", readError: pesan },
       });
-      res.status(400).json({ error: pesan });
-      return;
+      return { ok: false, status: 400, error: pesan };
     }
 
     const llm = getLlm();
     if (!llm.supportsImage) {
-      res.status(400).json({
-        error: "Layanan AI yang dipakai sekarang tidak bisa membaca gambar.",
-      });
-      return;
+      return { ok: false, status: 400, error: "Layanan AI yang dipakai sekarang tidak bisa membaca gambar." };
     }
 
     await prisma.mediaAsset.update({
@@ -502,8 +496,7 @@ router.post("/assets/:id/read", async (req, res) => {
         where: { id: aset.id },
         data: { readStatus: "error", readError: pesan.slice(0, 400) },
       });
-      res.status(502).json({ error: pesan });
-      return;
+      return { ok: false, status: 502, error: pesan };
     }
 
     // Kalau sudah pernah dibaca, catatan lamanya diperbarui, bukan ditumpuk.
@@ -535,10 +528,18 @@ router.post("/assets/:id/read", async (req, res) => {
 
     await indexSource(sumber.id);
 
-    res.json({ ok: true, knowledgeSourceId: sumber.id, panjang: isi.length });
+    return { ok: true, knowledgeSourceId: sumber.id, panjang: isi.length };
   } catch (err) {
-    fail(res, err, 502);
+    const pesan = err instanceof Error ? err.message : String(err);
+    log.error(pesan);
+    return { ok: false, status: 502, error: pesan };
   }
+}
+
+router.post("/assets/:id/read", async (req, res) => {
+  const hasil = await bacaIsiAset(req.params.id);
+  if (hasil.ok) res.json(hasil);
+  else res.status(hasil.status).json({ error: hasil.error });
 });
 
 // Playground -----------------------------------------------------------------
@@ -1141,6 +1142,119 @@ router.post("/tanya/lakukan", async (req, res) => {
       });
       invalidateAgentCache(agent.id);
       return void (await beres("Setelan asisten sudah disimpan."));
+    }
+
+    // ── Managing data: each branch does exactly what the page button does ─────
+    if (usul.jenis === "buka_halaman") return void (await gagal("Kartu ini cuma tautan ke halaman."));
+
+    if (usul.jenis === "ubah_pelanggan") {
+      const kontak = await prisma.contact.findFirst({ where: { id: usul.kontakId, workspaceId } });
+      if (!kontak) return void (await gagal("Pelanggannya sudah tidak ada.", 404));
+      const baris = kontak as unknown as Record<string, string | null>;
+      const nilaiKini = (k: string) => k === "janjiPada" ? (kontak.janjiPada?.toISOString() ?? null) : k === "bereskanMasalah" ? kontak.masalah : (baris[k] ?? null);
+      if (usul.ubahan.some(u => (nilaiKini(u.kunci) ?? "") !== (u.lama ?? ""))) {
+        return void (await gagal("Data pelanggan ini sudah berubah sejak usulan dibuat. Minta perubahan baru supaya yang terbaru tetap aman."));
+      }
+      const data: Record<string, unknown> = {};
+      for (const u of usul.ubahan) {
+        if (u.kunci === "stage") {
+          data.stage = u.baru;
+          // Same as the profile page: the after-sales countdown starts when the owner marks it done.
+          data.closedAt = u.baru === "selesai" ? (kontak.stage === "selesai" ? kontak.closedAt : new Date()) : null;
+        } else if (u.kunci === "janjiPada") {
+          data.janjiPada = u.baru ? new Date(u.baru) : null;
+          // A time the owner approved is a confirmed time, as when typed on the profile.
+          data.janjiDipastikan = !!u.baru;
+          if (!u.baru) data.janjiCatatan = null;
+        } else if (u.kunci === "bereskanMasalah") {
+          data.masalah = null;
+          data.masalahSejak = null;
+        } else if (u.kunci === "name" || u.kunci === "notes") {
+          data[u.kunci] = u.baru ?? "";
+        } else {
+          data[u.kunci] = u.baru;
+        }
+      }
+      // An appointment note is only kept next to a time, same as the profile page.
+      if ("janjiCatatan" in data && !(("janjiPada" in data) ? data.janjiPada : kontak.janjiPada)) delete data.janjiCatatan;
+      await prisma.contact.update({ where: { id: kontak.id }, data });
+      return void (await beres(`Data ${usul.kepada} sudah diperbarui.`));
+    }
+
+    if (usul.jenis === "hapus_pelanggan") {
+      const dihapus = await prisma.contact.deleteMany({ where: { id: usul.kontakId, workspaceId } });
+      if (!dihapus.count) return void (await gagal("Pelanggannya sudah tidak ada.", 404));
+      return void (await beres(`${usul.kepada} beserta seluruh obrolannya sudah dihapus.`));
+    }
+
+    if (usul.jenis === "hafalkan_info" || usul.jenis === "hapus_info") {
+      const catatan = await prisma.knowledgeSource.findFirst({ where: { id: usul.catatanId, agent: { workspaceId } } });
+      if (!catatan) return void (await gagal("Catatannya sudah tidak ada.", 404));
+      if (usul.jenis === "hapus_info") {
+        await prisma.knowledgeSource.delete({ where: { id: catatan.id } });
+        invalidateAgentCache(catatan.agentId);
+        return void (await beres(`Catatan "${usul.judul}" sudah dihapus. Asisten tidak memakainya lagi.`));
+      }
+      try {
+        await indexSource(catatan.id);
+        invalidateAgentCache(catatan.agentId);
+      } catch (err) {
+        return void (await gagal(`Belum berhasil dihafal: ${err instanceof Error ? err.message : err}`));
+      }
+      return void (await beres(`"${usul.judul}" sudah dihafal ulang.`));
+    }
+
+    if (usul.jenis === "ubah_berkas" || usul.jenis === "baca_berkas" || usul.jenis === "hapus_berkas") {
+      const berkas = await prisma.mediaAsset.findFirst({ where: { id: usul.berkasId, agent: { workspaceId } } });
+      if (!berkas) return void (await gagal("Berkasnya sudah tidak ada.", 404));
+      if (usul.jenis === "ubah_berkas") {
+        if (berkas.name !== usul.namaLama || berkas.description !== usul.keteranganLama) {
+          return void (await gagal("Berkas ini sudah diubah sejak usulan dibuat. Minta perubahan baru supaya yang terbaru tetap aman."));
+        }
+        await prisma.mediaAsset.update({ where: { id: berkas.id }, data: { name: usul.nama, description: usul.keterangan } });
+        invalidateAgentCache(berkas.agentId);
+        return void (await beres(`"${usul.nama}" sudah diperbarui.`));
+      }
+      if (usul.jenis === "baca_berkas") {
+        const hasil = await bacaIsiAset(berkas.id);
+        if (!hasil.ok) return void (await gagal(hasil.error, hasil.status));
+        return void (await beres(`Isi "${usul.nama}" sudah dibaca dan masuk Info bisnis.`));
+      }
+      // Its read-out note goes too, or the assistant keeps quoting prices from a picture that is gone.
+      if (berkas.knowledgeSourceId) await prisma.knowledgeSource.delete({ where: { id: berkas.knowledgeSourceId } }).catch(() => null);
+      await prisma.mediaAsset.delete({ where: { id: berkas.id } });
+      fs.rmSync(path.join(env.MEDIA_DIR, path.basename(berkas.fileName)), { force: true });
+      invalidateAgentCache(berkas.agentId);
+      return void (await beres(`"${usul.nama}" sudah dihapus dari Gambar & berkas.`));
+    }
+
+    if (usul.jenis === "atur_nomor" || usul.jenis === "hapus_nomor") {
+      const nomor = await prisma.channel.findFirst({ where: { id: usul.nomorId, workspaceId } });
+      if (!nomor) return void (await gagal("Nomornya sudah tidak ada.", 404));
+      if (usul.jenis === "hapus_nomor") {
+        await stopChannel(nomor.id, true).catch(() => null);
+        await prisma.channel.delete({ where: { id: nomor.id } });
+        return void (await beres(`Nomor "${usul.namaNomor}" sudah dilepas dan dihapus dari Palwise.`));
+      }
+      if (usul.aksi === "ganti_nama") {
+        await prisma.channel.update({ where: { id: nomor.id }, data: { name: usul.namaBaru ?? nomor.name } });
+        return void (await beres(`Nomornya sekarang bernama "${usul.namaBaru}".`));
+      }
+      if (usul.aksi === "matikan") {
+        // stopChannel without logout also writes autoStart: false, so it stays off across a restart.
+        await stopChannel(nomor.id, false);
+        return void (await beres(`"${usul.namaNomor}" dimatikan sementara. Asisten tidak membalas dari nomor ini sampai dinyalakan lagi.`));
+      }
+      try {
+        await startChannel(nomor.id);
+      } catch (err) {
+        return void (await gagal(err instanceof Error ? err.message : "Nomornya belum bisa dinyalakan."));
+      }
+      // Written explicitly so "nyalakan" survives the next worker restart.
+      const kini = await prisma.channel.update({ where: { id: nomor.id }, data: { autoStart: true }, select: { status: true } });
+      return void (await beres(kini.status === "qr"
+        ? `"${usul.namaNomor}" dinyalakan, tapi perlu scan QR lagi. Buka Nomor WhatsApp untuk scan.`
+        : `"${usul.namaNomor}" sudah dinyalakan lagi.`));
     }
 
     // ── Mengirim ke pelanggan ─────────────────────────────────────────────────
