@@ -130,6 +130,63 @@ async function callGemini(path: string, body: unknown, apiKey: string) {
   throw terakhir ?? new LlmError("Gagal menghubungi Google AI", undefined, "gemini");
 }
 
+/**
+ * Streaming version of callGemini (server-sent events). Retries like callGemini, but only before the
+ * stream starts. A break mid-stream becomes a 503 so the caller's fallback treats it as temporary.
+ */
+async function callGeminiStream(path: string, body: unknown, apiKey: string, saatPotongan: (potongan: any) => void) {
+  const model = path.split("/")[1]?.split(":")[0] ?? "?";
+  let terakhir: LlmError | null = null;
+
+  for (let percobaan = 0; percobaan < PERCOBAAN_MAKS; percobaan++) {
+    let res: Response;
+    try {
+      res = await fetch(`${BASE}/${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      terakhir = new LlmError("Tidak bisa menghubungi Google AI. Periksa koneksi internet.", undefined, "gemini");
+      if (percobaan < PERCOBAAN_MAKS - 1) { await tunggu(JEDA_MS[percobaan]); continue; }
+      throw terakhir;
+    }
+
+    if (!res.ok || !res.body) {
+      const detail = await res.text().catch(() => "");
+      terakhir = new LlmError(friendlyError(res.status, detail, model), res.status, "gemini");
+      if (!bisaDicobaUlang(res.status, detail) || percobaan === PERCOBAAN_MAKS - 1) throw terakhir;
+      log.warn(`Google AI menolak sementara (kode ${res.status}), coba lagi dalam ${JEDA_MS[percobaan] / 1000} detik`);
+      await tunggu(JEDA_MS[percobaan]);
+      continue;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let sisa = "";
+    const olah = (blok: string) => {
+      const data = blok.split("\n").filter((b) => b.startsWith("data:")).map((b) => b.slice(5).trim()).join("");
+      if (!data) return;
+      try { saatPotongan(JSON.parse(data)); } catch { /* keep-alive or malformed line */ }
+    };
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        sisa += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+        let i: number;
+        while ((i = sisa.indexOf("\n\n")) >= 0) { olah(sisa.slice(0, i)); sisa = sisa.slice(i + 2); }
+      }
+    } catch {
+      throw new LlmError("Sambungan ke Google AI terputus di tengah jawaban.", 503, "gemini");
+    }
+    if (sisa.trim()) olah(sisa);
+    return;
+  }
+
+  throw terakhir ?? new LlmError("Gagal menghubungi Google AI", undefined, "gemini");
+}
+
 function tunggu(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -164,7 +221,16 @@ export class GeminiProvider implements LlmProvider {
     private fallbackModel: string,
   ) {}
 
-  async complete(opts: CompleteOptions): Promise<string> {
+  complete(opts: CompleteOptions): Promise<string> {
+    return this.denganCadangan(opts, (model) => this.jalankan(model, opts));
+  }
+
+  /** Like complete, but reports the text accumulated so far while the model writes it. */
+  stream(opts: CompleteOptions, saatTeks: (sejauhIni: string) => void): Promise<string> {
+    return this.denganCadangan(opts, (model) => this.jalankan(model, opts, saatTeks));
+  }
+
+  private async denganCadangan(opts: CompleteOptions, jalan: (model: string) => Promise<string>): Promise<string> {
     const utama = opts.model || this.defaultModel;
     const punyaCadangan = !!this.fallbackModel && this.fallbackModel !== utama;
 
@@ -179,11 +245,11 @@ export class GeminiProvider implements LlmProvider {
     // mengirim pesan lagi, dan jawaban yang sedang disusun jadi menjawab
     // keadaan yang sudah lewat. Memperpendeknya ikut mengecilkan lubang itu.
     if (punyaCadangan && Date.now() < (istirahat.get(utama) ?? 0)) {
-      return this.jalankan(this.fallbackModel, opts);
+      return jalan(this.fallbackModel);
     }
 
     try {
-      const hasil = await this.jalankan(utama, opts);
+      const hasil = await jalan(utama);
       // Sudah pulih. Dicatat supaya pesan berikutnya kembali ke model utama.
       if (istirahat.delete(utama)) {
         log.ok(`model "${utama}" sudah lega lagi`);
@@ -202,13 +268,13 @@ export class GeminiProvider implements LlmProvider {
           );
         }
         istirahat.set(utama, Date.now() + ISTIRAHAT_MS);
-        return this.jalankan(this.fallbackModel, opts);
+        return jalan(this.fallbackModel);
       }
       throw err;
     }
   }
 
-  private async jalankan(model: string, opts: CompleteOptions): Promise<string> {
+  private async jalankan(model: string, opts: CompleteOptions, saatTeks?: (sejauhIni: string) => void): Promise<string> {
 
     // Model Gemini 3.x "berpikir" dulu sebelum menjawab, dan token berpikir itu
     // dipotong dari jatah maxOutputTokens yang sama. Untuk satu perintah sepele
@@ -241,11 +307,30 @@ export class GeminiProvider implements LlmProvider {
       body.systemInstruction = { parts: [{ text: opts.system }] };
     }
 
-    const json = await callGemini(
-      `models/${model}:generateContent`,
-      body,
-      this.apiKey,
-    );
+    let json: any;
+    if (saatTeks) {
+      // Streamed: gather the answer text (thought parts excluded) and the last usage/finish info
+      // into the same shape as a normal response, so every check below applies unchanged.
+      let teks = "";
+      let finishReason: string | undefined;
+      let usageMetadata: any;
+      let promptFeedback: any;
+      await callGeminiStream(`models/${model}:streamGenerateContent?alt=sse`, body, this.apiKey, (potongan) => {
+        const cand = potongan?.candidates?.[0];
+        const tambahan = (cand?.content?.parts ?? []).filter((p: any) => !p?.thought).map((p: any) => p?.text ?? "").join("");
+        if (cand?.finishReason) finishReason = cand.finishReason;
+        if (potongan?.usageMetadata) usageMetadata = potongan.usageMetadata;
+        if (potongan?.promptFeedback) promptFeedback = potongan.promptFeedback;
+        if (tambahan) { teks += tambahan; saatTeks(teks); }
+      });
+      json = { usageMetadata, promptFeedback, candidates: [{ finishReason, content: { parts: [{ text: teks }] } }] };
+    } else {
+      json = await callGemini(
+        `models/${model}:generateContent`,
+        body,
+        this.apiKey,
+      );
+    }
 
     const pakai = json?.usageMetadata ?? {};
     catatToken({

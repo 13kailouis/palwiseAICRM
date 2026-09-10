@@ -29,6 +29,11 @@ export interface LlmProvider {
   readonly supportsAudio: boolean;
   readonly supportsImage: boolean;
   complete(opts: CompleteOptions): Promise<string>;
+  /**
+   * Optional streaming variant of complete. `saatTeks` receives the text accumulated so far each
+   * time more arrives; it can start over (shorter) if the provider falls back to another model.
+   */
+  stream?(opts: CompleteOptions, saatTeks: (sejauhIni: string) => void): Promise<string>;
 }
 
 export interface EmbedProvider {

@@ -79,6 +79,34 @@ export async function callWorker<T = any>(
   }
 }
 
+/**
+ * Open a streaming (server-sent events) call to the worker and return its raw Response, so a route
+ * can pass the body straight through. Failures before the stream starts throw like callWorker.
+ */
+export async function streamWorker(path: string, body: unknown, signal?: AbortSignal): Promise<Response> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-internal-token": TOKEN },
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal,
+    });
+  } catch {
+    throw new WorkerError(
+      process.env.NODE_ENV === "production"
+        ? "Mesinnya sedang tidak bisa dihubungi. Ini gangguan di pihak kami, coba lagi sebentar lagi ya."
+        : `Tidak bisa menghubungi worker di ${BASE}. Pastikan "npm run dev" jalan.`,
+    );
+  }
+  if (!res.ok || !res.body) {
+    const json = safeParse(await res.text().catch(() => ""));
+    throw new WorkerError(json?.error ?? `Worker error ${res.status}`, res.status, json);
+  }
+  return res;
+}
+
 function safeParse(text: string) {
   try {
     return JSON.parse(text);

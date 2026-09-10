@@ -99,10 +99,69 @@ export type Usul =
     }
   | {
       jenis: "ubah_asisten";
+      /** Which text box of the Asisten page. Missing on older rows means cara_bicara. */
+      bagian?: BagianAsisten;
       /** Teks lama, sama alasannya: yang diubah harus kelihatan, bukan cuma yang baru. */
       isiLama: string;
       isi: string;
+    }
+  | {
+      jenis: "atur_asisten";
+      /** Only the settings that change, each with its value before and after. */
+      ubahan: UbahanAsisten[];
     };
+
+/**
+ * The three free-text boxes of the Asisten page, each its own column. Before this existed every
+ * assistant edit landed in behaviorPrompt, so "ubah sapaan pertama" was written into the cara
+ * bicara text as a line, while the real greeting stayed unchanged.
+ */
+export type BagianAsisten = "cara_bicara" | "sapaan" | "serah_manusia";
+export const KOLOM_BAGIAN = {
+  cara_bicara: "behaviorPrompt",
+  sapaan: "welcomeMessage",
+  serah_manusia: "handoffCondition",
+} as const;
+
+type AturanSetelan =
+  | { jenis: "ya_tidak" }
+  | { jenis: "angka"; min: number; maks: number }
+  | { jenis: "jam" }
+  | { jenis: "teks" }
+  | { jenis: "pilihan"; pilihan: string[] };
+
+/** Toggles, numbers and short texts of the Asisten page, with the same bounds as its save action. */
+export const SETELAN_ASISTEN = {
+  isActive: { jenis: "ya_tidak" },
+  rasaAktif: { jenis: "ya_tidak" },
+  splitBubbles: { jenis: "ya_tidak" },
+  watak: { jenis: "pilihan", pilihan: ["hangat", "tenang", "santai", "tegas"] },
+  officeHoursEnabled: { jenis: "ya_tidak" },
+  officeHoursStart: { jenis: "jam" },
+  officeHoursEnd: { jenis: "jam" },
+  followUpEnabled: { jenis: "ya_tidak" },
+  followUpAfterHours: { jenis: "angka", min: 1, maks: 720 },
+  followUpMaxAttempts: { jenis: "angka", min: 1, maks: 5 },
+  followUpPrompt: { jenis: "teks" },
+  afterSalesEnabled: { jenis: "ya_tidak" },
+  afterSalesAfterDays: { jenis: "angka", min: 1, maks: 60 },
+  afterSalesPrompt: { jenis: "teks" },
+  restockEnabled: { jenis: "ya_tidak" },
+  restockAfterDays: { jenis: "angka", min: 3, maks: 365 },
+  restockPrompt: { jenis: "teks" },
+  pengingatEnabled: { jenis: "ya_tidak" },
+  pengingatJamSebelum: { jenis: "angka", min: 1, maks: 168 },
+  pengingatPrompt: { jenis: "teks" },
+} satisfies Record<string, AturanSetelan>;
+export type KunciSetelan = keyof typeof SETELAN_ASISTEN;
+export interface UbahanAsisten {
+  kunci: KunciSetelan;
+  lama: string | number | boolean;
+  baru: string | number | boolean;
+}
+
+/** A template marker such as "[ISI SAPAAN BARU DI SINI]" or "[nama toko]" would reach customers verbatim. */
+const PENANDA_KOSONG = /\[[^\]\n]{2,40}\]/;
 
 export interface HasilTanya {
   teks: string;
@@ -554,15 +613,24 @@ export const ALAT: Alat[] = [
 
   {
     nama: "lihat_asisten",
-    untuk: "Cara bicara asisten sekarang, sapaan pembukanya, dan kapan dia menyerah ke manusia.",
+    untuk: "Semua isi halaman Asisten: cara kerja dan gaya bicara, sapaan pertama, kapan harus panggil kamu, nada bicara, jam kerja, dan sapa otomatis (follow up, tanya kabar, ajak beli lagi, pengingat janji).",
     async jalankan({ agentId }) {
       if (!agentId) return "Belum ada asisten di akun ini.";
       const a = await prisma.agent.findUniqueOrThrow({ where: { id: agentId } });
+      const nyala = (b: boolean) => (b ? "nyala" : "mati");
+      // Labels match the Asisten page, so what the owner reads here is what they see there.
       return [
         `Nama asisten: ${a.name}`,
-        `Cara bicara: ${a.behaviorPrompt?.trim() || "(masih kosong)"}`,
-        `Sapaan pembuka: ${a.welcomeMessage?.trim() || "(tidak ada)"}`,
-        `Kapan menyerah ke manusia: ${a.handoffCondition?.trim() || "(belum diatur)"}`,
+        `Asisten sedang bekerja: ${a.isActive ? "ya" : "tidak"}`,
+        `Cara kerja dan gaya bicara: ${a.behaviorPrompt?.trim() || "(masih kosong)"}`,
+        `Sapaan pertama: ${a.welcomeMessage?.trim() || "(tidak ada)"}`,
+        `Kapan harus panggil kamu: ${a.handoffCondition?.trim() || "(belum diatur)"}`,
+        `Nada bicara: ${a.watak}. Baca perasaan pelanggan: ${nyala(a.rasaAktif)}. Pecah jawaban panjang: ${nyala(a.splitBubbles)}.`,
+        `Ikut jam kerja tim: ${a.officeHoursEnabled ? `nyala, ${a.officeHoursStart}-${a.officeHoursEnd}` : "mati"}`,
+        `Follow up otomatis: ${a.followUpEnabled ? `nyala, setelah ${a.followUpAfterHours} jam, paling banyak ${a.followUpMaxAttempts} kali` : "mati"}. Pesannya: ${a.followUpPrompt}`,
+        `Tanya kabar setelah beli: ${a.afterSalesEnabled ? `nyala, setelah ${a.afterSalesAfterDays} hari` : "mati"}. Pesannya: ${a.afterSalesPrompt}`,
+        `Ajak beli lagi: ${a.restockEnabled ? `nyala, setelah ${a.restockAfterDays} hari` : "mati"}. Pesannya: ${a.restockPrompt}`,
+        `Pengingat janji temu: ${a.pengingatEnabled ? `nyala, ${a.pengingatJamSebelum} jam sebelumnya` : "mati"}. Pesannya: ${a.pengingatPrompt}`,
       ].join("\n");
     },
   },
@@ -661,8 +729,12 @@ ${usulKirim}
 {"jawab":"Ringkas perubahan yang diminta","usul":{"jenis":"ubah_bagian_info","catatanId":"...","cari":"kutipan persis yang muncul satu kali pada catatan","ganti":"teks pengganti untuk kutipan itu saja"}}
 Untuk MENAMBAH email, cari berisi baris kontak lama, ganti berisi baris lama + email baru. Untuk MENGHAPUS bagian, ganti boleh string kosong. Server mempertahankan seluruh bagian lain. Jika kutipan muncul beberapa kali, sertakan baris di sekitarnya agar unik. lihat_info menerima argumen bagian untuk mencari judul/kata dalam catatan panjang.
 
-7) Mengusulkan cara bicara asisten:
-{"jawab":"kalimat singkat","usul":{"jenis":"ubah_asisten","isi":"seluruh teks cara bicaranya"}}
+7) Mengusulkan perubahan TEKS asisten (wajib lihat_asisten dulu). bagian: "cara_bicara" (Cara kerja dan gaya bicara), "sapaan" (Sapaan pertama, dikirim otomatis saat orang chat pertama kali; boleh "" untuk mematikan), atau "serah_manusia" (Kapan harus panggil kamu):
+{"jawab":"kalimat singkat","usul":{"jenis":"ubah_asisten","bagian":"sapaan","isi":"seluruh teks baru untuk bagian itu saja"}}
+
+7b) Mengusulkan SETELAN asisten, hanya kunci yang berubah (wajib lihat_asisten dulu):
+{"jawab":"kalimat singkat","usul":{"jenis":"atur_asisten","ubahan":{"officeHoursEnabled":true,"officeHoursStart":"09:00","officeHoursEnd":"17:00"}}}
+Kunci yang boleh: isActive (asisten sedang bekerja, true/false), rasaAktif (baca perasaan pelanggan), watak (hangat|tenang|santai|tegas), splitBubbles (pecah jawaban panjang jadi beberapa pesan), officeHoursEnabled/officeHoursStart/officeHoursEnd (ikut jam kerja tim, HH:mm), followUpEnabled/followUpAfterHours (1-720)/followUpMaxAttempts (1-5)/followUpPrompt, afterSalesEnabled/afterSalesAfterDays (1-60)/afterSalesPrompt, restockEnabled/restockAfterDays (3-365)/restockPrompt, pengingatEnabled/pengingatJamSebelum (1-168)/pengingatPrompt.
 
 SATU USUL SAJA PER BALASAN. Kalau ada dua hal yang mau kamu simpan, usulkan yang pertama dulu, dan tunggu.`;
 }
@@ -678,6 +750,9 @@ Pelanggan tertarik adalah tahap tertarik di CRM: pakai daftar_pelanggan. daftar_
 
 MENYIMPAN SESUATU
 Kamu tidak pernah menyimpan sendiri. Kamu menyusun usul, dan pemiliknya yang menekan tombol Simpan. Untuk mengubah catatan, jalankan lihat_info dulu. Utamakan ubah_bagian_info untuk perubahan sebagian; bagian lain otomatis dipertahankan. ubah_info hanya untuk penggantian seluruh catatan yang sudah terbaca lengkap. Perintah tambah email, hapus bagian, rubah harga, edit bagian X merujuk catatan yang sedang dibahas, BUKAN draf pelanggan. Jika target belum jelas, tanyakan catatan mana. Mengedit hasil impor hanya mengubah salinan Palwise, bukan website asal.
+
+MENGUBAH ASISTEN
+Halaman Asisten punya kotak terpisah: Cara kerja dan gaya bicara (bagian cara_bicara), Sapaan pertama (bagian sapaan), Kapan harus panggil kamu (bagian serah_manusia), dan setelan nyala/mati serta angka (atur_asisten). Ubah HANYA kotak yang diminta. Permintaan soal sapaan, salam pembuka, atau pesan pertama SELALU bagian sapaan, bukan cara bicara, dan jangan pernah menulis baris "Sapaan pembuka:" ke cara bicara. Jalankan lihat_asisten dulu. Kalau pemilik minta saran tanpa menyebut isinya, usulkan satu contoh jadi yang lengkap; jangan pernah memakai penanda kosong seperti [ISI DI SINI].
 
 MENYAMBUNGKAN WHATSAPP
 Kalau pemilik meminta QR, scan WhatsApp, atau Perangkat tertaut, pakai sambungkan_whatsapp. QR penautan BUKAN gambar yang disimpan di galeri; jangan pakai daftar_gambar atau mengarang kode QR. Kartu akan menampilkan QR dan status langsung di chat, tanpa harus pindah halaman. Pemilik yang menekan Tampilkan QR lalu memindai dari WhatsApp di HP-nya.`;
@@ -807,6 +882,42 @@ export async function muatRiwayatTanya(sesiId: string, workspaceId: string): Pro
   });
 }
 
+/** Live progress sent to a streaming caller. */
+export type KabarTanya =
+  | { jenis: "status"; teks: string }
+  | { jenis: "teks"; teks: string }
+  | { jenis: "ulang" };
+
+/**
+ * The `jawab` string from a model reply that is still arriving as JSON, decoded as far as it goes.
+ * Null while the reply is a tool call or has not reached `jawab` yet.
+ */
+export function jawabSebagian(mentah: string): string | null {
+  if (/"alat"\s*:\s*"[^"\s]/.test(mentah)) return null;
+  const awal = /"jawab"\s*:\s*"/.exec(mentah);
+  if (!awal) return null;
+  const lolos: Record<string, string> = { n: "\n", t: "\t", r: "", b: "", f: "", '"': '"', "\\": "\\", "/": "/" };
+  let hasil = "";
+  for (let i = awal.index + awal[0].length; i < mentah.length;) {
+    const c = mentah[i];
+    if (c === '"') break;
+    if (c !== "\\") { hasil += c; i++; continue; }
+    const berikut = mentah[i + 1];
+    if (berikut === undefined) break;
+    if (berikut === "u") {
+      const hex = mentah.slice(i + 2, i + 6);
+      if (hex.length < 4) break;
+      hasil += String.fromCharCode(parseInt(hex, 16));
+      i += 6;
+      continue;
+    }
+    hasil += lolos[berikut] ?? berikut;
+    i += 2;
+  }
+  // Never hand out half of a surrogate pair (an emoji split across chunks).
+  return /[\uD800-\uDBFF]$/.test(hasil) ? hasil.slice(0, -1) : hasil;
+}
+
 export interface JalankanTanyaInput {
   workspaceId: string;
   /** Giliran sebelumnya, urut dari yang paling lama. */
@@ -816,6 +927,8 @@ export interface JalankanTanyaInput {
   mode?: ModeTanya;
   /** Reservasi hanya jika jalur ini benar-benar membutuhkan model. */
   sebelumModel?: () => Promise<void>;
+  /** Streaming callers get status lines, the answer text as it is written, and resets. */
+  kabar?: (kabar: KabarTanya) => void;
 }
 
 export async function jalankanTanya({
@@ -824,6 +937,7 @@ export async function jalankanTanya({
   pesan,
   mode = "perintah",
   sebelumModel,
+  kabar,
 }: JalankanTanyaInput): Promise<HasilTanya> {
   const [ws, agent] = await Promise.all([
     prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId } }),
@@ -884,6 +998,7 @@ export async function jalankanTanya({
   let hasilDiperbaiki = false;
   if (analisis) {
     try {
+      kabar?.({ jenis: "status", teks: "Membaca kondisi bisnis" });
       const isi = await teksPusatBisnis(await muatPusatBisnis(workspaceId, /30|bulan/i.test(pesan) ? 30 : 7));
       dipakai.push("ringkasan_bisnis");
       hasilBaca.push(hasilUntukChat("ringkasan_bisnis", isi, {}));
@@ -893,16 +1008,31 @@ export async function jalankanTanya({
     }
   }
 
+  // Answer text already streamed to the screen for the current attempt. When a guard below rejects
+  // the attempt and the loop runs again, the screen is told to clear it first, never left stale.
+  let tampil = "";
+  const bersihkanTampil = () => { if (tampil) { kabar?.({ jenis: "ulang" }); tampil = ""; } };
+  const saatTeks = (mentahSejauh: string) => {
+    const jawab = jawabSebagian(mentahSejauh);
+    if (jawab === null) return;
+    if (!jawab.startsWith(tampil)) bersihkanTampil();
+    const baru = jawab.slice(tampil.length);
+    if (baru) { kabar?.({ jenis: "teks", teks: baru }); tampil = jawab; }
+  };
+
   for (let langkah = 0; langkah <= ALAT_MAKS; langkah++) {
-    let mentah: string;
-    try { mentah = await llm.complete({
+    if (tampil) { bersihkanTampil(); kabar?.({ jenis: "status", teks: "Memeriksa ulang jawaban" }); }
+    else kabar?.({ jenis: "status", teks: hasilBaca.length ? "Menyusun jawaban" : "Memahami pertanyaan" });
+    const opsiModel = {
       system,
       messages: batasiKonteksTanya(pesanModel, permintaan),
       temperature: 0.2,
       json: true,
       maxTokens: 1400,
       // Use the configured provider's default; a Gemini model ID is invalid for other providers.
-    }); } catch (error) {
+    };
+    let mentah: string;
+    try { mentah = await (kabar && llm.stream ? llm.stream(opsiModel, saatTeks) : llm.complete(opsiModel)); } catch (error) {
       if (!hasilBaca.length || (analisis && langkah === 0)) throw error;
       return { teks: "Ringkasan belum selesai dibuat. Hasil pemeriksaan tetap ada di bawah.", usul: null, alat: dipakai, hasilBaca };
     }
@@ -951,6 +1081,8 @@ export async function jalankanTanya({
 
       let hasil: string;
       let gagal = false;
+      const judulBaca = hasilUntukChat(alat.nama, "", jawaban.argumen ?? {}).judul;
+      kabar?.({ jenis: "status", teks: `Membaca ${judulBaca.charAt(0).toLowerCase()}${judulBaca.slice(1)}` });
       try {
         hasil = await alat.jalankan(ctx, jawaban.argumen ?? {});
       } catch (err) {
@@ -1011,6 +1143,7 @@ export async function jalankanTanya({
     if (usul && "kontakId" in usul && !kontakDibaca.has(usul.kontakId)) {
       const alat = petaAlat.get("lihat_kontak")!;
       let isi: string;
+      kabar?.({ jenis: "status", teks: "Membaca obrolan pelanggan" });
       try { isi = await alat.jalankan(ctx, { kontakId: usul.kontakId }); }
       catch {
         hasilBaca.push(hasilUntukChat(alat.nama, "Obrolan pelanggan belum bisa dibaca. Coba lagi sebentar ya.", {}, true));
@@ -1188,14 +1321,55 @@ export async function bacaUsul(
 
   if (jenis === "ubah_asisten") {
     if (!ctx.agentId) return null;
-    const isi = String(mentah.isi ?? "").trim().slice(0, 8000);
-    if (isi.length < 20) return null;
+    const bagian: BagianAsisten =
+      mentah.bagian === "sapaan" || mentah.bagian === "serah_manusia" ? mentah.bagian : "cara_bicara";
+    const isi = String(mentah.isi ?? "").trim().slice(0, bagian === "cara_bicara" ? 8000 : 1500);
+    // Cara bicara needs substance. A greeting may be emptied to switch it off; the handoff rule may not.
+    if (bagian === "cara_bicara" ? isi.length < 20 : bagian === "serah_manusia" && isi.length < 5) return null;
+    if (PENANDA_KOSONG.test(isi)) return null;
 
     const agent = await prisma.agent.findUnique({ where: { id: ctx.agentId } });
-    const isiLama = agent?.behaviorPrompt ?? "";
+    const isiLama = agent?.[KOLOM_BAGIAN[bagian]] ?? "";
     if (isi === isiLama.trim()) return null;
 
-    return { jenis: "ubah_asisten", isiLama, isi };
+    return { jenis: "ubah_asisten", bagian, isiLama, isi };
+  }
+
+  if (jenis === "atur_asisten") {
+    if (!ctx.agentId) return null;
+    const agent = await prisma.agent.findUnique({ where: { id: ctx.agentId } });
+    if (!agent) return null;
+    const minta = mentah.ubahan && typeof mentah.ubahan === "object" ? (mentah.ubahan as Record<string, unknown>) : {};
+    const ubahan: UbahanAsisten[] = [];
+    for (const [kunci, nilai] of Object.entries(minta)) {
+      if (!Object.hasOwn(SETELAN_ASISTEN, kunci)) continue;
+      const k = kunci as KunciSetelan;
+      const aturan: AturanSetelan = SETELAN_ASISTEN[k];
+      let baru: string | number | boolean;
+      if (aturan.jenis === "ya_tidak") {
+        if (typeof nilai !== "boolean") continue;
+        baru = nilai;
+      } else if (aturan.jenis === "angka") {
+        const n = Math.round(Number(nilai));
+        if (!Number.isFinite(n) || n < aturan.min || n > aturan.maks) continue;
+        baru = n;
+      } else if (aturan.jenis === "jam") {
+        const s = String(nilai).trim();
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(s)) continue;
+        baru = s;
+      } else if (aturan.jenis === "pilihan") {
+        const s = String(nilai).trim().toLowerCase();
+        if (!aturan.pilihan.includes(s)) continue;
+        baru = s;
+      } else {
+        const s = String(nilai ?? "").trim().slice(0, 1500);
+        if (s.length < 10 || PENANDA_KOSONG.test(s)) continue;
+        baru = s;
+      }
+      const lama = agent[k] as string | number | boolean;
+      if (lama !== baru) ubahan.push({ kunci: k, lama, baru });
+    }
+    return ubahan.length ? { jenis: "atur_asisten", ubahan } : null;
   }
 
   return null;

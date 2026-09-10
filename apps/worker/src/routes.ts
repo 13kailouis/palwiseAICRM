@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import express, { type Request, type Response } from "express";
-import { bacaHasilTanya, getPlan, prisma } from "@palwise/db";
+import { bacaHasilTanya, bolehPakai, getPlan, pesanTerkunci, prisma } from "@palwise/db";
 
 import { env, aiConfigured } from "./env.js";
 import { log } from "./lib/log.js";
@@ -23,7 +23,7 @@ import {
 } from "@palwise/db";
 import { getQuota } from "./core/quota.js";
 import { ringkasPelanggan } from "./core/ringkasan.js";
-import { jalankanTanya, judulDariPesan, muatRiwayatTanya, type Usul } from "./ai/tanya.js";
+import { jalankanTanya, judulDariPesan, KOLOM_BAGIAN, muatRiwayatTanya, type KabarTanya, type KunciSetelan, type Usul } from "./ai/tanya.js";
 import {
   channelRuntimeStatus,
   isChannelConnected,
@@ -861,41 +861,53 @@ router.post("/jobs/followup", async (_req, res) => {
  * belakangnya adalah tombol yang tidak mengerjakan apa-apa.
  */
 router.post("/tanya", async (req, res) => {
+  const hasil = await prosesTanya(req.body);
+  res.status(hasil.status).json(hasil.data);
+});
+
+/**
+ * The same command, streamed as server-sent events: live status lines, the answer text as the
+ * model writes it, a reset when a guard rejects an attempt, and one final "selesai" event carrying
+ * exactly what POST /tanya returns. The answer is saved before "selesai" is sent.
+ */
+router.post("/tanya/alir", async (req, res) => {
+  res.status(200).set({
+    "content-type": "text/event-stream; charset=utf-8",
+    "cache-control": "no-cache, no-transform",
+    "x-accel-buffering": "no",
+  });
+  res.flushHeaders();
+  const kirim = (data: unknown) => { if (!res.writableEnded && !res.destroyed) res.write(`data: ${JSON.stringify(data)}\n\n`); };
+  const hasil = await prosesTanya(req.body, kirim);
+  kirim({ jenis: "selesai", status: hasil.status, ...hasil.data });
+  res.end();
+});
+
+async function prosesTanya(body: any, kabar?: (kabar: KabarTanya) => void): Promise<{ status: number; data: Record<string, unknown> }> {
   let reservasi: string | null = null;
   let jawabanTersimpan = false;
   try {
-    const workspaceId = String(req.body?.workspaceId ?? "");
-    const sesiId = String(req.body?.sesiId ?? "");
-    const pesan = String(req.body?.pesan ?? "").trim();
+    const workspaceId = String(body?.workspaceId ?? "");
+    const sesiId = String(body?.sesiId ?? "");
+    const pesan = String(body?.pesan ?? "").trim();
 
-    if (!workspaceId || !sesiId) {
-      res.status(400).json({ error: "workspaceId dan sesiId wajib diisi" });
-      return;
-    }
-    if (!pesan) {
-      res.status(400).json({ error: "Perintahnya kosong" });
-      return;
-    }
+    if (!workspaceId || !sesiId) return { status: 400, data: { error: "workspaceId dan sesiId wajib diisi" } };
+    if (!pesan) return { status: 400, data: { error: "Perintahnya kosong" } };
     // Batasnya jauh di atas kalimat perintah mana pun, dan ada supaya satu
     // tempelan raksasa tidak jadi satu prompt raksasa yang dibayar.
-    if (pesan.length > 2000) {
-      res.status(400).json({ error: "Perintahnya kepanjangan, ringkas dulu ya" });
-      return;
-    }
+    if (pesan.length > 2000) return { status: 400, data: { error: "Perintahnya kepanjangan, ringkas dulu ya" } };
 
     const sesi = await prisma.sesiTanya.findFirst({
       where: { id: sesiId, workspaceId },
     });
-    if (!sesi) {
-      res.status(404).json({ error: "Utasnya tidak ketemu" });
-      return;
-    }
+    if (!sesi) return { status: 404, data: { error: "Utasnya tidak ketemu" } };
 
     const riwayat = await muatRiwayatTanya(sesiId, workspaceId);
     const hasil = await jalankanTanya({
       workspaceId, riwayat, pesan,
       mode: sesi.mode === "pasang" ? "pasang" : "perintah",
       sebelumModel: async () => { reservasi = await pesanJatahTanya(workspaceId); },
+      kabar,
     });
 
     // Store both bubbles together: quota errors never leave a phantom user message.
@@ -914,20 +926,19 @@ router.post("/tanya", async (req, res) => {
     });
     jawabanTersimpan = true;
 
-    res.json({
+    return { status: 200, data: {
       ok: true,
       pesan: [dariPemilik, dariPalwise].map(bentukPesanTanya),
       jatah: await ambilJatahTanya(workspaceId).catch(() => null),
-    });
+    } };
   } catch (err) {
     if (reservasi && !jawabanTersimpan) await selesaikanJatahTanya(reservasi, false).catch(error => log.error(`Refund kuota Tanya gagal: ${error}`));
-    if (err instanceof BatasTanyaError) {
-      res.status(429).json({ error: err.message, code: "TANYA_LIMIT", jatah: err.jatah });
-      return;
-    }
-    fail(res, err);
+    if (err instanceof BatasTanyaError) return { status: 429, data: { error: err.message, code: "TANYA_LIMIT", jatah: err.jatah } };
+    const message = err instanceof Error ? err.message : String(err);
+    log.error(message);
+    return { status: 500, data: { error: message } };
   }
-});
+}
 
 /**
  * Kerjakan usul yang tadi ditampilkan sebagai kartu.
@@ -1089,11 +1100,47 @@ router.post("/tanya/lakukan", async (req, res) => {
       });
       if (!agent) return void (await gagal("Belum ada asisten di akun ini."));
 
+      const bagian = usul.bagian ?? "cara_bicara";
+      const kolom = KOLOM_BAGIAN[bagian];
+      // Same guard as notes: a card shown earlier must not overwrite text changed on the Asisten page since.
+      const disimpan = await prisma.agent.updateMany({
+        where: { id: agent.id, [kolom]: usul.isiLama },
+        data: { [kolom]: usul.isi },
+      });
+      if (!disimpan.count) return void (await gagal("Isi asisten sudah berubah sejak usulan ini dibuat. Minta perubahan baru supaya yang terbaru tetap aman."));
+      invalidateAgentCache(agent.id);
+      return void (await beres(
+        bagian === "sapaan" ? (usul.isi ? "Sapaan pertama sudah disimpan." : "Sapaan pertama dimatikan.")
+          : bagian === "serah_manusia" ? "Kapan asisten memanggil kamu sudah disimpan."
+          : "Cara bicara asistennya sudah disimpan.",
+      ));
+    }
+
+    if (usul.jenis === "atur_asisten") {
+      const agent = await prisma.agent.findFirst({
+        where: { workspaceId },
+        orderBy: { createdAt: "asc" },
+      });
+      if (!agent) return void (await gagal("Belum ada asisten di akun ini."));
+
+      // The same plan locks as the Asisten page, checked when the button is pressed.
+      const ws = await prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId } });
+      const dinyalakan = (k: KunciSetelan) => usul.ubahan.some(u => u.kunci === k && u.baru === true);
+      if ((dinyalakan("followUpEnabled") || dinyalakan("afterSalesEnabled") || dinyalakan("restockEnabled") || dinyalakan("pengingatEnabled"))
+        && !bolehPakai(ws.plan, "sapaOtomatis")) return void (await gagal(pesanTerkunci("sapaOtomatis", ws.plan)));
+      if (dinyalakan("officeHoursEnabled") && !bolehPakai(ws.plan, "jamKerja")) return void (await gagal(pesanTerkunci("jamKerja", ws.plan)));
+
+      // A card shown earlier must not overwrite a setting changed on the Asisten page since.
+      const sekarang = agent as unknown as Record<string, unknown>;
+      if (usul.ubahan.some(u => sekarang[u.kunci] !== u.lama)) {
+        return void (await gagal("Setelan asisten sudah berubah sejak usulan ini dibuat. Minta perubahan baru supaya yang terbaru tetap aman."));
+      }
       await prisma.agent.update({
         where: { id: agent.id },
-        data: { behaviorPrompt: usul.isi },
+        data: Object.fromEntries(usul.ubahan.map(u => [u.kunci, u.baru])),
       });
-      return void (await beres("Cara bicara asistennya sudah disimpan."));
+      invalidateAgentCache(agent.id);
+      return void (await beres("Setelan asisten sudah disimpan."));
     }
 
     // ── Mengirim ke pelanggan ─────────────────────────────────────────────────

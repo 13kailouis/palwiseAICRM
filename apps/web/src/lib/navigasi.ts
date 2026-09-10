@@ -27,7 +27,8 @@ export const KELOMPOK: Kelompok[] = [
     judul: "Setiap hari",
     menu: [
       { href: "/app", label: "Ringkasan", ikon: "ringkasan" },
-      { href: "/app/tanya", label: "Tanya", ikon: "tanya" },
+      // Called "Palwise AI", not "Tanya": owners read "Tanya" as a help/FAQ page, not an assistant that does work.
+      { href: "/app/tanya", label: "Palwise AI", ikon: "tanya" },
       { href: "/app/inbox", label: "Chat masuk", pendek: "Chat", ikon: "chat" },
       { href: "/app/kontak", label: "Pelanggan", ikon: "pelanggan" },
     ],

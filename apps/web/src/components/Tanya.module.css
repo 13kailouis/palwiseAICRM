@@ -102,20 +102,50 @@
 .langkahBaca[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
 .langkahBaca > summary small { color: #b42318; font-size: 11px; }
 .langkahBaca .results { margin: 4px 0 8px; }
-.proposal { margin-top: 12px; border: 1px solid #e4e7eb; border-radius: 14px; overflow: hidden; }
-.proposalHeading { display: flex; align-items: center; gap: 8px; padding: 10px 12px 0; }
-.proposalBody { padding: 10px 12px; }
+/* Proposal card: icon chip + title, the content, and an action bar (Batal / primary on the right). */
+.proposal { margin-top: 14px; border: 1px solid #e6e6e6; border-radius: 16px; overflow: hidden; background: #fff; box-shadow: 0 1px 2px rgba(15, 15, 15, .04); }
+.proposalHeading { display: flex; align-items: center; gap: 10px; padding: 12px 14px 0; }
+.proposalIcon { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 9px; background: #f0f0f0; color: #404346; }
+.proposalTitle { min-width: 0; flex: 1; font-size: 13px; line-height: 1.5; color: #54585c; overflow-wrap: anywhere; }
+.proposalBody { padding: 12px 14px 14px; }
 .proposalBody > * + * { margin-top: 10px; }
 .proposalText { max-height: 240px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.7; color: #30343a; }
-.proposalActions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 0 12px 8px; }
-.proposalActions button { min-height: 44px; padding: 0 14px; font-size: 12px; }
+.proposalBubble { width: fit-content; max-width: 100%; max-height: 260px; overflow-y: auto; padding: 10px 14px; border-radius: 16px 16px 16px 5px; background: #f2f2f2; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.65; color: #171717; }
+.proposalActions { display: flex; align-items: center; gap: 8px 12px; padding: 10px 12px 10px 14px; border-top: 1px solid #f0f0f0; background: #fafafa; }
+.proposalButtons { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.proposalCancel { min-height: 40px; padding: 0 14px; border-radius: 10px; font-size: 13px; color: #54585c; transition: background var(--gerak-cepat), color var(--gerak-cepat); }
+.proposalCancel:hover { background: #f0f0f0; color: #171717; }
+.proposalPrimary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 16px; font-size: 13px; }
+.proposalActions button:disabled { opacity: .6; }
+.ambilAlih { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; font-size: 12.5px; color: #54585c; cursor: pointer; }
+.settingList li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #404346; }
+.settingList li:last-child { border-bottom: 0; padding-bottom: 0; }
+.settingList li:first-child { padding-top: 0; }
+.settingValue { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; color: #9aa0a6; }
+.settingValue s { color: #9aa0a6; }
+.settingValue b { font-weight: 600; color: #171717; }
+.settingLong { flex-direction: column; align-items: flex-start !important; gap: 6px !important; }
+.settingLong p { white-space: pre-wrap; font-size: 13.5px; line-height: 1.6; color: #171717; }
+@media (max-width: 600px) {
+  .proposalActions { flex-direction: column-reverse; align-items: stretch; gap: 4px; padding: 10px 12px; }
+  .proposalButtons { margin-left: 0; }
+  .proposalPrimary { flex: 1; min-height: 44px; }
+  .proposalCancel { min-height: 44px; }
+  .ambilAlih { justify-content: center; }
+}
 .takeOver { display: flex; align-items: center; gap: 6px; margin-left: auto; min-height: 44px; font-size: 11px; color: #6b7075; cursor: pointer; }
 .resultCard .answerText { font-size: 13px; line-height: 1.8; }
 .copy { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; margin-left: -8px; border-radius: 8px; color: #6b7075; font-size: 10px; }
 .copy:hover { color: #171717; background: #f6f6f6; }
 .sources { display: inline-flex; align-items: center; gap: 5px; color: #6b7075; font-size: 10px; flex-wrap: wrap; }
 .thinking { display: flex; align-items: center; gap: 10px; padding-top: 26px; color: #6b7075; font-size: 12px; }
-.dots { display: inline-flex; align-items: center; gap: 4px; padding: 12px 14px; border-radius: 16px; border-top-left-radius: 6px; background: #f0f0f0; color: #6b7075; }
+.thinkingStatus { font-size: 12.5px; color: #6b7075; }
+/* Live answer: a thin blinking caret after the last line while the model is still writing. */
+.mengalir .answerText > :last-child:not(ol):not(ul)::after,
+.mengalir .answerText > :is(ol, ul):last-child > li:last-child::after { content: ""; display: inline-block; width: 2px; height: 1.05em; margin-left: 3px; vertical-align: -3px; background: #171717; animation: kedip 1s steps(1) infinite; }
+@keyframes kedip { 50% { opacity: 0; } }
+/* Bare typing dots, no bubble behind them. */
+.dots { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; color: #9aa0a6; }
 .spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 100%; animation: spin 800ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .error { display: flex; align-items: flex-start; gap: 9px; max-width: 736px; margin: 0 auto 12px; padding: 12px 14px; border: 1px solid #fecaca; border-radius: 12px; background: #fff7f7; color: #991b1b; font-size: 12px; line-height: 1.7; }

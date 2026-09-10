@@ -6,6 +6,7 @@ import type { PusatBisnis } from "@palwise/db";
 import { TanyaIcon } from "./TanyaIcon";
 import { Ikon, type NamaIkon } from "./Ikon";
 import { InfoTip } from "./InfoTip";
+import { Logo } from "./Logo";
 import { Avatar } from "./ui";
 import { BANTUAN_BISNIS } from "./bantuanBisnis";
 import styles from "./RingkasanBisnis.module.css";
@@ -169,9 +170,9 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
         <section className={`${styles.card} ${styles.ask}`} aria-label="Tanya Palwise">
           {/* On phones this wrapper becomes a dark assistant card; on wider screens it disappears. */}
           <div className={styles.askIsi}>
-            <Link href="/app/tanya" className={styles.askBar} aria-label="Tanya Palwise">
-              <TanyaIcon nama="chat" size={18} />
-              <span className={styles.askText} aria-hidden="true"><span className={styles.askJudul}>Tanya Palwise</span><span key={contoh} className={styles.askHint}>{contohTanya[contoh]}</span></span>
+            <Link href="/app/tanya" className={styles.askBar} aria-label="Tanya Palwise AI">
+              <span className={styles.askLogo} aria-hidden="true"><Logo ukuran={20} /></span>
+              <span className={styles.askText} aria-hidden="true"><span className={styles.askJudul}>Palwise AI</span><span key={contoh} className={styles.askHint}>{contohTanya[contoh]}</span></span>
               <span className={styles.askGo} aria-hidden="true"><TanyaIcon nama="kanan" size={16} /></span>
             </Link>
             <div className={styles.quick}>{BANTUAN_BISNIS.map((f, i) => <Link key={f.judul} href={tanyaBisnis(f.pesan)} className={styles.chip} title={f.detail}><span className={styles.chipIkon}><Ikon nama={ikonBantuan[i]} size={16} /></span><span>{f.judul}</span></Link>)}</div>

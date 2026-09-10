@@ -95,23 +95,22 @@
 /* Tanya: ONE dark assistant card on every size (icon plate, bold title, rotating example, white go
    button). Helpers are rows inside it on tablet/desktop and swipeable pills on phones. */
 .card.ask{padding:0;border:0;border-radius:0;background:transparent;overflow:visible}
-.askIsi{display:block;padding:16px;border-radius:18px;background:#171717;color:#fff;overflow:hidden}
-.askBar{display:flex;align-items:center;gap:12px;color:#fff}
-.askBar>svg{flex-shrink:0;box-sizing:content-box;width:20px;height:20px;padding:10px;border-radius:12px;background:rgba(255,255,255,.1)}
-.askText{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;overflow:hidden}
-.askJudul{font-size:15px;font-weight:700;letter-spacing:-.2px}
-.askHint{display:block;font-size:13px;color:rgba(255,255,255,.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:ganti-teks var(--gerak-pelan) var(--lengkung-masuk) both}
+/* Compact: header ~34px tall, helpers as small wrapping pills (the tall row list ate the column). */
+.askIsi{display:block;padding:14px;border-radius:16px;background:#171717;color:#fff;overflow:hidden}
+.askBar{display:flex;align-items:center;gap:10px;color:#fff}
+.askLogo{display:grid;place-items:center;flex-shrink:0;width:34px;height:34px;border-radius:10px;background:#fff}
+.askText{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0;overflow:hidden}
+.askJudul{font-size:14px;font-weight:700;letter-spacing:-.2px}
+.askHint{display:block;font-size:12.5px;color:rgba(255,255,255,.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:ganti-teks var(--gerak-pelan) var(--lengkung-masuk) both}
 @keyframes ganti-teks{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.askGo{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#fff;color:#171717;flex-shrink:0;transition:transform var(--gerak-cepat)}
+.askGo{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#fff;color:#171717;flex-shrink:0;transition:transform var(--gerak-cepat)}
 .askBar:hover .askGo{transform:translateX(2px)}
-.quick{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .quick::-webkit-scrollbar{display:none}
-.chip{display:flex;align-items:center;gap:10px;min-height:42px;padding:0 12px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.06);font-size:13px;color:#fff;transition:background var(--gerak-cepat),border-color var(--gerak-cepat)}
-.chip:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2)}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 11px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(255,255,255,.06);font-size:12.5px;color:#fff;white-space:nowrap;transition:background var(--gerak-cepat),border-color var(--gerak-cepat)}
+.chip:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22)}
 .chip:active{background:rgba(255,255,255,.16)}
-.chip svg{flex-shrink:0;width:16px;height:16px;color:rgba(255,255,255,.7)}
-.chip::after{content:"";flex-shrink:0;width:6px;height:6px;margin-left:auto;border-top:1.5px solid rgba(255,255,255,.45);border-right:1.5px solid rgba(255,255,255,.45);transform:rotate(45deg);transition:transform var(--gerak-cepat)}
-.chip:hover::after{transform:translateX(2px) rotate(45deg)}
+.chip svg{flex-shrink:0;width:14px;height:14px;color:rgba(255,255,255,.7)}
 
 /* Stages: one stacked bar plus a tappable legend. Hovering a legend item isolates its segment. */
 .stageBar{display:flex;gap:2px;height:10px;margin:6px 14px 10px;border-radius:999px;overflow:hidden;background:#f0f0f0}
@@ -185,10 +184,9 @@
 
   /* Phone: the section carries the divider band; helpers become pills that scroll inside the card. */
   .card.ask{margin:0 -16px;padding:18px 16px 0;border-top:6px solid #ededed}
-  .quick{flex-direction:row;gap:8px;margin:16px -16px 0;padding:0 16px;overflow-x:auto;scrollbar-width:none}
-  .chip{flex-shrink:0;gap:7px;min-height:36px;border-color:rgba(255,255,255,.14);border-radius:999px;font-size:12.5px;white-space:nowrap}
+  .quick{flex-wrap:nowrap;gap:8px;margin:12px -14px 0;padding:0 14px;overflow-x:auto;scrollbar-width:none}
+  .chip{flex-shrink:0;gap:7px;min-height:36px}
   .chip svg{width:15px;height:15px}
-  .chip::after{display:none}
 
   .tabs{gap:8px;padding:12px 14px;scroll-padding-inline:14px}
   .tabs button{min-height:34px;padding:0 12px;border:1px solid #e6e6e6;border-radius:999px;background:#fff;font-size:12.5px;gap:5px;color:#404346}

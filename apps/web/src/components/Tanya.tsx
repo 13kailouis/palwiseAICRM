@@ -41,7 +41,8 @@ type Usul =
       isiLama: string;
       isi: string;
     }
-  | { jenis: "ubah_asisten"; isiLama: string; isi: string };
+  | { jenis: "ubah_asisten"; bagian?: "cara_bicara" | "sapaan" | "serah_manusia"; isiLama: string; isi: string }
+  | { jenis: "atur_asisten"; ubahan: { kunci: string; lama: string | number | boolean; baru: string | number | boolean }[] };
 
 interface Pesan {
   id: string;
@@ -143,8 +144,10 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
   const gulirRef = useRef<HTMLDivElement>(null);
   const isianRef = useRef<HTMLTextAreaElement>(null);
   const sedangMemuatRef = useRef(0);
-  // Answers that just arrived are revealed progressively; history loads instantly.
-  const [ketikIds, setKetikIds] = useState<Set<string>>(() => new Set());
+  // The answer being written right now, streamed from the worker: latest status and text so far.
+  const [alir, setAlir] = useState<{ status: string; teks: string } | null>(null);
+  // Messages that just finished streaming replace the live bubble without replaying an entrance.
+  const [tanpaAnimasi, setTanpaAnimasi] = useState<Set<string>>(() => new Set());
   const operasiRef = useRef(false);
   const ikutiRef = useRef(true);
 
@@ -395,9 +398,18 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ sesiId, pesan: isi }),
       });
-      const data = await res.json();
+      // Normal answers stream as server-sent events; instant paths and errors still arrive as JSON.
+      const mengalir = (res.headers.get("content-type") ?? "").includes("text/event-stream");
+      if (mengalir) setAlir({ status: "", teks: "" });
+      const data = mengalir ? await bacaAliran(res, (k) => setAlir((a) => {
+        const kini = a ?? { status: "", teks: "" };
+        if (k.jenis === "status") return { ...kini, status: k.teks ?? "" };
+        if (k.jenis === "teks") return { ...kini, teks: kini.teks + (k.teks ?? "") };
+        return { ...kini, teks: "" };
+      })) : await res.json();
+      const berhasil = mengalir ? Number(data.status ?? 500) < 400 : res.ok;
       if (data.jatah) setJatah(data.jatah);
-      if (!res.ok || data?.error) {
+      if (!berhasil || data?.error) {
         // Perintahnya gagal, jadi gelembung sementaranya dicabut lagi dan
         // teksnya dikembalikan ke kotak ketik. Membiarkannya menggantung di
         // layar bikin orang mengira perintahnya sudah masuk.
@@ -411,16 +423,25 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
         ...p.filter((x) => x.id !== sementara.id),
         ...(data.pesan ?? []),
       ]);
-      setKetikIds(new Set((data.pesan ?? []).filter((p: Pesan) => p.peran !== "pemilik").map((p: Pesan) => p.id)));
+      // Swap the live bubble for the saved answer in the same render.
+      setAlir(null);
+      if (mengalir) setTanpaAnimasi(new Set((data.pesan ?? []).map((p: Pesan) => p.id)));
       if ((data.pesan ?? []).some((p: Pesan) => p.alat?.includes("sambungkan_whatsapp"))) setWhatsappBuka(true);
       // A history refresh failure must not restore an already delivered draft.
       await Promise.allSettled([muatDaftar(), ...(mode === "pasang" ? [muatPemasangan()] : [])]);
-    } catch {
+    } catch (err) {
       setPesan((p) => p.filter((x) => x.id !== sementara.id));
-      setDraft(sekarang => sekarang.trim() ? `${isi}\n\n${sekarang}` : isi);
-      setGalat("Tidak bisa menghubungi server.");
+      if (err instanceof AliranPutus) {
+        // The worker may already have saved the answer: reload the thread rather than re-offer the text.
+        setGalat("Sambungan terputus di tengah jawaban. Obrolannya dimuat ulang.");
+        if (sesiId) void bukaUtas(sesiId, true);
+      } else {
+        setDraft(sekarang => sekarang.trim() ? `${isi}\n\n${sekarang}` : isi);
+        setGalat("Tidak bisa menghubungi server.");
+      }
     } finally {
       operasiRef.current = false;
+      setAlir(null);
       setSibuk(false);
     }
   }
@@ -516,9 +537,7 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
                   {kosong ? <Sambutan usaha={ideAkun.usaha} /> : <div className={styles.messages} role="log" aria-label="Percakapan dengan Palwise" aria-live="polite" aria-relevant="additions">
                     {pesan.map((p, index) => p.peran === "pemilik" ? <DariPemilik key={p.id} teks={p.teks} /> :
                       <DariPalwise key={p.id} pesan={p} jalankan={(opsi) => jalankanUsul(p.id, opsi)}
-                        ketik={ketikIds.has(p.id)}
-                        selesaiKetik={() => setKetikIds(s => { if (!s.has(p.id)) return s; const n = new Set(s); n.delete(p.id); return n; })}
-                        ikuti={() => { if (!ikutiRef.current) return; const el = gulirRef.current; if (el) el.scrollTop = el.scrollHeight; }}
+                        tanpaAnimasi={tanpaAnimasi.has(p.id)}
                         lengkapi={index === pesan.length - 1 && !terkunci ? () => kirim("Lengkapi jawaban sebelumnya dengan hasil atau draf lengkap yang bisa saya periksa. Jangan hanya menulis pengantar atau janji.") : undefined} />)}
                   </div>}
                   {barusanMulai && !sibuk && <div className="mt-5 flex flex-wrap gap-2">
@@ -526,7 +545,8 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
                       className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-ink-200 px-3 py-2 text-xs text-ink-700 transition hover:bg-ink-50 disabled:opacity-40"><Ikon nama={j.ikon} size={16} />{j.label}</button>)}
                   </div>}
                   {/* Waiting state: typing dots in a bubble, like chat apps, never a spinner. */}
-                  {sibuk && <div className={styles.thinking} role="status"><TandaPalwise /><span className={`titik-ketik ${styles.dots}`} aria-hidden="true"><span /><span /><span /></span><span className="sr-only">Palwise sedang menyiapkan jawaban...</span></div>}
+                  {sibuk && (alir?.teks ? <JawabanMengalir teks={alir.teks} /> :
+                    <div className={styles.thinking} role="status"><TandaPalwise /><span className={`titik-ketik ${styles.dots}`} aria-hidden="true"><span /><span /><span /></span>{alir?.status && <span key={alir.status} className={styles.thinkingStatus + " anim-naik"}>{alir.status}</span>}<span className="sr-only">Palwise sedang menyiapkan jawaban...</span></div>)}
                   {whatsappBuka && <WhatsAppDalamChat key={sesiId} tutup={() => setWhatsappBuka(false)} tersambung={(connected) => {
                     setPasang(keadaan => keadaan && keadaan.nomor !== connected ? { ...keadaan, nomor: connected } : keadaan);
                   }} />}
@@ -744,61 +764,80 @@ function TeksJawaban({ teks }: { teks: string }) {
   return <div className={styles.answerText}>{hasil}</div>;
 }
 
-function DariPalwise({ pesan, jalankan, lengkapi, ketik = false, selesaiKetik, ikuti }: {
+class AliranPutus extends Error {}
+
+type KabarAlir = { jenis: string; teks?: string; status?: number; [kunci: string]: unknown };
+
+/** Read the answer's server-sent events, reporting each one; returns the final "selesai" payload. */
+async function bacaAliran(res: Response, saatKabar: (kabar: KabarAlir) => void): Promise<KabarAlir> {
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let sisa = "";
+  let akhir: KabarAlir | null = null;
+  const olah = (blok: string) => {
+    const data = blok.split("\n").filter((b) => b.startsWith("data:")).map((b) => b.slice(5).trim()).join("");
+    if (!data) return;
+    const kabar = JSON.parse(data) as KabarAlir;
+    if (kabar.jenis === "selesai") akhir = kabar; else saatKabar(kabar);
+  };
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      sisa += decoder.decode(value, { stream: true });
+      let i: number;
+      while ((i = sisa.indexOf("\n\n")) >= 0) { olah(sisa.slice(0, i)); sisa = sisa.slice(i + 2); }
+    }
+    if (sisa.trim()) olah(sisa);
+  } catch {
+    throw new AliranPutus();
+  }
+  if (!akhir) throw new AliranPutus();
+  return akhir;
+}
+
+/** The answer while the model is still writing it: same look as a finished one, plus a caret. */
+function JawabanMengalir({ teks }: { teks: string }) {
+  return <article className={styles.answer} aria-busy="true">
+    <div className={styles.answerIdentity}><TandaPalwise /><span>Palwise</span><span className={styles.aiBadge}>AI</span></div>
+    <div className={`${styles.answerBody} ${styles.mengalir}`}><TeksJawaban teks={teks} /></div>
+  </article>;
+}
+
+function DariPalwise({ pesan, jalankan, lengkapi, tanpaAnimasi = false }: {
   pesan: Pesan; jalankan: (opsi: { batal?: boolean; ambilAlih?: boolean }) => Promise<string | null>;
   lengkapi?: () => void;
-  /** Reveal the text progressively (a freshly arrived answer). */
-  ketik?: boolean; selesaiKetik?: () => void; ikuti?: () => void;
+  /** Just finished streaming in place: do not replay the entrance animation. */
+  tanpaAnimasi?: boolean;
 }) {
-  const teksDariDataAwal = !pesan.usul && !!pesan.teks && !!pesan.hasilBaca?.[0]?.isi.startsWith(pesan.teks);
-  const [tampil, setTampil] = useState(() => ketik && !teksDariDataAwal ? 0 : pesan.teks.length);
-  // The whole answer is already here; this paces it on screen (~1.5s for a long answer) so a new
-  // reply reads like it is being written instead of landing as a block.
-  useEffect(() => {
-    if (!ketik) return;
-    const panjang = pesan.teks.length;
-    if (teksDariDataAwal || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setTampil(panjang); selesaiKetik?.(); return; }
-    const langkah = Math.max(2, Math.ceil(panjang / 90));
-    let n = 0, raf = 0;
-    const jalan = () => {
-      n = Math.min(panjang, n + langkah);
-      setTampil(n); ikuti?.();
-      if (n < panjang) raf = requestAnimationFrame(jalan); else selesaiKetik?.();
-    };
-    raf = requestAnimationFrame(jalan);
-    return () => cancelAnimationFrame(raf);
-    // Callbacks are recreated each render; the reveal only restarts for a new text.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ketik, pesan.teks]);
-  const mengetik = tampil < pesan.teks.length;
   const [salinan, setSalinan] = useState<"awal" | "selesai" | "gagal">("awal");
   useEffect(() => { if (salinan === "awal") return; const timer = setTimeout(() => setSalinan("awal"), 2500); return () => clearTimeout(timer); }, [salinan]);
   async function salin() {
-    const lengkap = [pesan.teks, pesan.usul ? ("teks" in pesan.usul ? pesan.usul.teks : pesan.usul.isi) : "", ...(pesan.hasilBaca ?? []).map(h => `${h.judul}\n${rapikanHasil(h.alat, h.isi)}`)].filter(Boolean).join("\n\n");
+    const lengkap = [pesan.teks, pesan.usul ? ("teks" in pesan.usul ? pesan.usul.teks : "isi" in pesan.usul ? pesan.usul.isi : pesan.usul.ubahan.map(u => `${u.kunci}: ${u.baru}`).join("\n")) : "", ...(pesan.hasilBaca ?? []).map(h => `${h.judul}\n${rapikanHasil(h.alat, h.isi)}`)].filter(Boolean).join("\n\n");
     try { await navigator.clipboard.writeText(lengkap); setSalinan("selesai"); }
     catch { setSalinan("gagal"); }
   }
   const adaBacaan = (pesan.hasilBaca?.length ?? 0) > 0;
   const teksDariData = !pesan.usul && !!pesan.teks && !!pesan.hasilBaca?.[0]?.isi.startsWith(pesan.teks);
   const bacaanPendukung = adaBacaan && (!!pesan.usul || (!teksDariData && !!pesan.teks.trim()));
-  return <article className={styles.answer + " anim-naik"}>
+  return <article className={styles.answer + (tanpaAnimasi ? "" : " anim-naik")}>
     <div className={styles.answerIdentity}><TandaPalwise /><span>Palwise</span><span className={styles.aiBadge}>AI</span></div>
     <div className={styles.answerBody}>
       {/* Data the assistant read to write its answer sits ABOVE the answer, folded, like a model's
           "thinking" row. When the data itself IS the answer (a plain lookup), it stays open below. */}
       {bacaanPendukung && <LangkahBaca hasil={pesan.hasilBaca!} />}
-      {!teksDariData && <TeksJawaban teks={mengetik ? pesan.teks.slice(0, tampil) : pesan.teks} />}
-      {!mengetik && pesan.usul && <div className="anim-naik"><KartuUsul usul={pesan.usul} status={pesan.usulStatus} kabar={pesan.usulPesan} jalankan={jalankan} /></div>}
-      {!mengetik && adaBacaan && !bacaanPendukung && <HasilPembacaan hasil={pesan.hasilBaca!} />}
-      {!mengetik && lengkapi && !pesan.usul && !pesan.hasilBaca?.length && pesan.teks.length < 400 &&
+      {!teksDariData && <TeksJawaban teks={pesan.teks} />}
+      {pesan.usul && <div className="anim-naik"><KartuUsul usul={pesan.usul} status={pesan.usulStatus} kabar={pesan.usulPesan} jalankan={jalankan} /></div>}
+      {adaBacaan && !bacaanPendukung && <HasilPembacaan hasil={pesan.hasilBaca!} />}
+      {lengkapi && !pesan.usul && !pesan.hasilBaca?.length && pesan.teks.length < 400 &&
         /(?:ini|berikut).{0,40}\b(?:draf|draft)|\b(?:saya|aku)\s+(?:akan\s+)?(?:lihat|cek|siapkan)\s+(?:dulu|data|draf)/i.test(pesan.teks) &&
         !/[\n:][\s\S]{20}/.test(pesan.teks) && <button type="button" className={styles.recoverAnswer} onClick={lengkapi} title="Buat jawaban lengkap menggunakan kuota AI">Lengkapi jawaban</button>}
-      {!mengetik && <div className={styles.answerFooter}>
+      <div className={styles.answerFooter}>
         <button type="button" className={styles.copy} onClick={salin} aria-label="Salin jawaban" title={salinan === "selesai" ? "Tersalin" : "Salin jawaban"}>
           <Ikon nama={salinan === "selesai" ? "centang" : "salin"} size={16} /><span className="sr-only" aria-live="polite">{salinan === "selesai" ? "Tersalin" : salinan === "gagal" ? "Gagal menyalin, coba lagi" : ""}</span>
         </button>
         {pesan.alat.length > 0 && <details className={styles.sourceMenu}><summary aria-label="Sumber jawaban" title="Sumber jawaban"><Ikon nama="info" size={16} /></summary><div>{[...new Set(pesan.alat)].map(kode => <p key={kode}>{namaAlat(kode)}</p>)}</div></details>}
-      </div>}
+      </div>
     </div>
   </article>;
 }
@@ -1077,7 +1116,14 @@ function KartuUsul({
           ),
         };
       case "ubah_asisten":
-        return { ikon: "asisten", isi: <>Ubah cara bicara asisten</> };
+        return {
+          ikon: "asisten",
+          isi: usul.bagian === "sapaan" ? <>Ubah sapaan pertama</>
+            : usul.bagian === "serah_manusia" ? <>Ubah kapan asisten memanggil kamu</>
+            : <>Ubah cara bicara asisten</>,
+        };
+      case "atur_asisten":
+        return { ikon: "asisten", isi: <>Ubah setelan asisten</> };
       case "ubah_info":
         return {
           ikon: "info",
@@ -1101,7 +1147,7 @@ function KartuUsul({
     }
   })();
 
-  const isiBaru = mengirim ? usul.teks : (usul as { isi: string }).isi;
+  const isiBaru = mengirim ? usul.teks : "isi" in usul ? usul.isi : "";
   const isiLama =
     usul.jenis === "ubah_info" || usul.jenis === "ubah_asisten"
       ? usul.isiLama.trim()
@@ -1120,10 +1166,8 @@ function KartuUsul({
   return (
     <div className={styles.proposal}>
       <div className={styles.proposalHeading}>
-        <Ikon nama={kepala.ikon} size={14} className="shrink-0 text-ink-400" />
-        <p className="min-w-0 flex-1 break-words text-[12px] leading-relaxed text-ink-600">
-          {kepala.isi}
-        </p>
+        <span className={styles.proposalIcon}><Ikon nama={kepala.ikon} size={15} /></span>
+        <p className={styles.proposalTitle}>{kepala.isi}</p>
       </div>
 
       <div className={styles.proposalBody}>
@@ -1138,9 +1182,12 @@ function KartuUsul({
             Menampilkan yang baru saja bikin "Simpan" jadi lompatan iman. */}
         {isiLama ? (
           <Perubahan lama={isiLama} baru={isiBaru} />
+        ) : usul.jenis === "atur_asisten" ? (
+          <DaftarUbahan ubahan={usul.ubahan} />
         ) : (
           isiBaru && (
-            <p className={styles.proposalText} tabIndex={0}>
+            // A message to a customer previews as a chat bubble: that is what they will receive.
+            <p className={mengirim ? styles.proposalBubble : styles.proposalText} tabIndex={0}>
               {isiBaru}
             </p>
           )
@@ -1162,38 +1209,40 @@ function KartuUsul({
 
       {menunggu ? (
         <div className={styles.proposalActions}>
-          <button
-            type="button"
-            disabled={proses}
-            onClick={() => tekan({ ambilAlih })}
-            className="btn-primary disabled:opacity-60"
-          >
-            {proses ? "Sebentar" : mengirim ? "Kirim" : "Simpan"}
-          </button>
-          <button
-            type="button"
-            disabled={proses}
-            onClick={() => tekan({ batal: true })}
-            className="tap-aman text-[13px] text-ink-500 transition hover:text-ink-900 disabled:opacity-60"
-          >
-            Batal
-          </button>
-
           {/* Cuma untuk yang mengirim, dan mati secara bawaan. "Suruh Budi bawa
               STNK" itu titipan, bukan niat mengambil alih obrolannya selamanya.
               Kalau asisten dimatikan diam-diam, Budi bertanya lagi besok dan
               tidak ada yang menjawab. */}
           {mengirim && (
-            <label className={styles.takeOver}>
+            <label className={styles.ambilAlih}>
               <input
                 type="checkbox"
                 checked={ambilAlih}
                 onChange={(e) => setAmbilAlih(e.target.checked)}
-                className="h-3.5 w-3.5 accent-brand-600"
+                className="h-4 w-4 accent-brand-600"
               />
               Aku yang lanjut balas
             </label>
           )}
+          <div className={styles.proposalButtons}>
+            <button
+              type="button"
+              disabled={proses}
+              onClick={() => tekan({ batal: true })}
+              className={styles.proposalCancel}
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              disabled={proses}
+              onClick={() => tekan({ ambilAlih })}
+              className={`btn-primary ${styles.proposalPrimary}`}
+            >
+              {proses ? "Sebentar" : mengirim ? "Kirim" : "Simpan"}
+              {!proses && <Ikon nama={mengirim ? "kirim" : "centang"} size={15} />}
+            </button>
+          </div>
         </div>
       ) : (
         <p
@@ -1209,6 +1258,28 @@ function KartuUsul({
       )}
     </div>
   );
+}
+
+/** Labels exactly as on the Asisten page, so a change reads the same in both places. */
+const LABEL_SETELAN: Record<string, string> = {
+  isActive: "Asisten sedang bekerja", rasaAktif: "Baca perasaan pelanggan", splitBubbles: "Pecah jawaban panjang",
+  watak: "Nada bicara", officeHoursEnabled: "Ikut jam kerja tim", officeHoursStart: "Jam kerja mulai", officeHoursEnd: "Jam kerja selesai",
+  followUpEnabled: "Follow up otomatis", followUpAfterHours: "Follow up setelah (jam)", followUpMaxAttempts: "Follow up paling banyak (kali)", followUpPrompt: "Pesan follow up",
+  afterSalesEnabled: "Tanya kabar setelah beli", afterSalesAfterDays: "Tanya kabar setelah (hari)", afterSalesPrompt: "Pesan tanya kabar",
+  restockEnabled: "Ajak beli lagi", restockAfterDays: "Ajak beli lagi setelah (hari)", restockPrompt: "Pesan ajak beli lagi",
+  pengingatEnabled: "Pengingat janji temu", pengingatJamSebelum: "Ingatkan sebelum janji (jam)", pengingatPrompt: "Pesan pengingat janji",
+};
+const nilaiSetelan = (v: string | number | boolean) => (v === true ? "Nyala" : v === false ? "Mati" : String(v));
+
+/** A settings change as "label: old → new"; long texts stack under their label. */
+function DaftarUbahan({ ubahan }: { ubahan: { kunci: string; lama: string | number | boolean; baru: string | number | boolean }[] }) {
+  return <ul className={styles.settingList}>{ubahan.map((u) => {
+    const panjang = typeof u.baru === "string" && u.baru.length > 30;
+    return <li key={u.kunci} className={panjang ? styles.settingLong : undefined}>
+      <span>{LABEL_SETELAN[u.kunci] ?? u.kunci}</span>
+      {panjang ? <p>{String(u.baru)}</p> : <span className={styles.settingValue}><s>{nilaiSetelan(u.lama)}</s><TanyaIcon nama="kanan" size={12} /><b>{nilaiSetelan(u.baru)}</b></span>}
+    </li>;
+  })}</ul>;
 }
 
 // ── Layar kosong & kotak ketik ────────────────────────────────────────────────
@@ -1263,7 +1334,7 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
         <textarea ref={isianRef} rows={1} maxLength={2000} value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(hover: hover) and (pointer: fine)").matches) { e.preventDefault(); kirim(draft); }
-          }} placeholder={sibuk ? "Tulis pertanyaan berikutnya..." : "Tanya Palwise..."}
+          }} placeholder={sibuk ? "Tulis pertanyaan berikutnya..." : "Minta apa saja ke Palwise AI"}
           className={styles.textarea} aria-label="Pesan untuk Palwise" />
         <div className={styles.composerToolbar}>
           <button type="button" onClick={togelIde} className={styles.ideaButton} title="Saran untuk bisnismu" aria-label="Saran untuk bisnismu" aria-expanded={ideBuka} aria-controls="ide-tanya"><TanyaIcon nama="ide" size={18} /></button>

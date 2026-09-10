@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { mintaSambunganWhatsApp, prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
-import { callWorker, WorkerError } from "@/lib/worker";
+import { streamWorker, WorkerError } from "@/lib/worker";
 
 export const dynamic = "force-dynamic";
 
@@ -47,13 +47,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ pesan: hasil.map(p => ({ ...p, alat: JSON.parse(p.alat), hasilBaca: [], usul: null })) });
   }
 
+  // The answer streams from the worker as server-sent events and is passed straight through.
+  // no-transform keeps compression from buffering it; if the owner leaves, the worker still saves.
   try {
-    const hasil = await callWorker("/tanya", {
-      method: "POST",
-      body: { workspaceId: user.workspaceId, sesiId: sesi.id, pesan },
-      timeoutMs: 120_000,
+    const alir = await streamWorker("/tanya/alir", { workspaceId: user.workspaceId, sesiId: sesi.id, pesan }, req.signal);
+    return new Response(alir.body, {
+      headers: {
+        "content-type": "text/event-stream; charset=utf-8",
+        "cache-control": "no-cache, no-transform",
+        "x-accel-buffering": "no",
+      },
     });
-    return NextResponse.json(hasil);
   } catch (err) {
     if (err instanceof WorkerError && err.status === 429) {
       return NextResponse.json(err.data ?? { error: err.message }, { status: 429 });
