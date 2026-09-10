@@ -181,9 +181,10 @@
   .quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 0 0;padding:0;overflow:visible}
   .chip{flex-direction:column;gap:6px;min-height:0;padding:2px;border:0;background:transparent;font-size:11px;line-height:1.25;text-align:center;white-space:normal;color:#404346}
   .chip:hover{background:transparent}
-  .chipIkon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#f0f0f0;color:#171717;transition:background var(--gerak-cepat)}
-  .chip svg{color:inherit}
-  .chip:active .chipIkon{background:#e6e6e6}
+  /* Bare icons, no tile: a grey plate behind each read as heavy and templated. */
+  .chipIkon{display:grid;place-items:center;height:30px;color:#171717;transition:transform var(--gerak-cepat)}
+  .chipIkon svg{width:23px;height:23px;color:inherit}
+  .chip:active .chipIkon{transform:scale(.9)}
 
   .tabs{gap:8px;padding:12px 14px;scroll-padding-inline:14px}
   .tabs button{min-height:34px;padding:0 12px;border-radius:999px;background:#f0f0f0;font-size:12.5px;gap:5px;color:#404346}
