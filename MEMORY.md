@@ -43,3 +43,9 @@ File ini menyimpan preferensi proyek, bukan izin umum untuk tindakan produksi pa
 - Tampilkan perubahan sebelum Simpan. Jika sumber sudah berubah setelah pratinjau, jangan menimpa versi terbaru. Edit salinan Palwise tidak mengubah website asal.
 
 Rilis preferensi di atas aktif pada 10 September 2026, kode `a56f1ef`; hasil verifikasi dicatat di [docs/rilis-ringkasan-tanya.md](docs/rilis-ringkasan-tanya.md).
+
+## Dashboard dan Masukan yang ringkas — 10 September 2026
+
+- Dashboard dan Masukan memakai susunan yang disesuaikan untuk HP dan desktop, dengan teks sedikit, hierarki jelas, dan rincian dibuka saat diperlukan.
+- Hindari kartu penuh penjelasan berulang. Utamakan angka, daftar pekerjaan, dan tindakan yang langsung bisa digunakan.
+- Masukan harus ringkas dan interaktif agar tidak banyak mengambil ruang layar atau menutupi pekerjaan utama.

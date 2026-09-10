@@ -1,155 +1,101 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useFormStatus } from "react-dom";
 import { Ikon } from "@/components/Ikon";
 import type { MasukanState } from "@/app/actions/masukan";
+import styles from "./KirimMasukan.module.css";
 
-/**
- * Tombol kirim masukan yang ikut di semua halaman dashboard.
- *
- * Kenapa melayang di sudut, bukan satu menu sendiri di sidebar: laporan bug
- * ditulis orang PADA SAAT dia menemukan bugnya, dan menu yang harus dibuka
- * berarti dia keluar dulu dari halaman tempat masalahnya terjadi. Sebagian besar
- * tidak akan kembali, dan yang hilang justru laporan yang paling berguna.
- *
- * Halaman yang sedang dibuka ikut terkirim otomatis. Tanpa itu, hampir semua
- * laporan berbunyi "tombolnya nggak jalan" dan tidak ada yang tahu tombol yang
- * mana.
- */
+type Action = (state: MasukanState, formData: FormData) => Promise<MasukanState>;
+type Jenis = "bug" | "saran" | "lainnya";
+const pilihan = [{ id: "bug", label: "Bug", ikon: "kendali" }, { id: "saran", label: "Ide", ikon: "catat" }, { id: "lainnya", label: "Lainnya", ikon: "chat" }] as const;
 
-function Submit() {
-  const { pending } = useFormStatus();
-  return (
-    <button type="submit" className="btn-primary w-full" disabled={pending}>
-      {pending ? "Mengirim" : "Kirim"}
-    </button>
-  );
-}
-
-export function KirimMasukan({
-  action,
-}: {
-  action: (state: MasukanState, formData: FormData) => Promise<MasukanState>;
-}) {
-  const [buka, setBuka] = useState(false);
-  const [state, formAction] = useActionState(action, {} as MasukanState);
+export function KirimMasukan({ action }: { action: Action }) {
   const pathname = usePathname();
+  const [buka, setBuka] = useState(false);
+  const [isi, setIsi] = useState("");
+  const [jenis, setJenis] = useState<Jenis>("saran");
+  const dialog = useRef<HTMLDialogElement>(null);
+  const pemicu = useRef<HTMLButtonElement>(null);
+  const pending = useRef(false);
+  const judulId = useId();
+  const tersembunyi = pathname.startsWith("/app/inbox") || pathname.startsWith("/app/tanya");
 
-  // Tutup sendiri sesudah terkirim, tapi beri jeda supaya kalimat "makasih"-nya
-  // sempat terbaca. Tanpa jeda, panelnya hilang seketika dan orangnya tidak yakin
-  // masukannya benar-benar masuk, lalu mengirim lagi.
-  useEffect(() => {
-    if (!state?.ok) return;
-    const t = setTimeout(() => setBuka(false), 2200);
-    return () => clearTimeout(t);
-  }, [state?.ok]);
-
-  // Di kotak masuk tombol kirim composer ada di pojok kanan bawah juga, jadi
-  // pil ini menutupinya. Kotak masuk itu halaman kerja utama; kalau ada
-  // masukan, tinggal kirim dari halaman lain. (Di HP obrolan kotak masuk itu
-  // layar penuh yang menutup pil ini sendiri, jadi ini terutama soal desktop.)
-  // Ruang perintah punya masalah yang sama persis: tombol kirimnya juga
-  // bundar di pojok kanan bawah, dan dua tombol bundar bertumpuk di sudut yang
-  // sama itu ketukan yang salah menunggu terjadi.
-  if (pathname.startsWith("/app/inbox") || pathname.startsWith("/app/tanya"))
-    return null;
-
-  if (!buka) {
-    return (
-      <button
-        type="button"
-        onClick={() => setBuka(true)}
-        // Pil BERLABEL, bukan lingkaran ikon polos.
-        //
-        // Lingkaran berikon gelembung chat di pojok kanan bawah itu isyarat yang
-        // sudah universal untuk "chat CS", jadi dibaca sebagai tempat bertanya ke
-        // layanan, bukan tempat memberi masukan soal aplikasinya, dan banyak yang
-        // tidak menyadarinya sama sekali. Tulisan "Masukan" plus ikon menulis
-        // (bukan gelembung) menghapus dua-duanya: jelas gunanya, dan lebih
-        // kelihatan. Di HP digeser ke atas supaya tidak menabrak bar bawah.
-        className="fixed bottom-[calc(var(--bar-bawah)+12px)] right-4 z-30 inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3.5 py-2.5 text-sm font-medium text-ink-700 shadow-lg transition hover:-translate-y-0.5 hover:text-ink-950 hover:shadow-xl lg:bottom-5 lg:right-5"
-        style={{ transitionDuration: "var(--gerak)" }}
-        aria-label="Kirim masukan"
-      >
-        <Ikon nama="catat" size={17} className="text-brand-600" />
-        Masukan
-      </button>
-    );
+  function tutup() {
+    if (pending.current) return;
+    dialog.current?.close();
+    setBuka(false);
+    pemicu.current?.focus({ preventScroll: true });
   }
 
-  return (
-    <div className="fixed bottom-[calc(var(--bar-bawah)+12px)] right-4 z-30 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-ink-200 bg-white p-5 shadow-xl lg:bottom-5 lg:right-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-ink-900">Ada masukan?</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-ink-500">
-            Bug, saran, atau apa pun yang bikin kamu kesel. Kami baca semuanya.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setBuka(false)}
-          className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-ink-400 hover:text-ink-700"
-          aria-label="Tutup"
-        >
-          <Ikon nama="silang" size={16} />
-        </button>
-      </div>
+  useEffect(() => {
+    if (!buka || tersembunyi) return;
+    const el = dialog.current;
+    el?.showModal();
+    // Focus the close button so opening feedback does not summon the mobile keyboard.
+    el?.querySelector<HTMLButtonElement>("[data-tutup]")?.focus({ preventScroll: true });
+    const viewport = window.visualViewport;
+    function sesuaikan() {
+      el?.style.setProperty("--feedback-height", `${viewport?.height ?? window.innerHeight}px`);
+      el?.style.setProperty("--feedback-bottom", `${Math.max(0, window.innerHeight - (viewport?.height ?? window.innerHeight) - (viewport?.offsetTop ?? 0))}px`);
+    }
+    sesuaikan();
+    viewport?.addEventListener("resize", sesuaikan);
+    viewport?.addEventListener("scroll", sesuaikan);
+    return () => { el?.close(); viewport?.removeEventListener("resize", sesuaikan); viewport?.removeEventListener("scroll", sesuaikan); };
+  }, [buka, tersembunyi]);
 
-      {state?.ok ? (
-        <p className="mt-4 rounded-lg bg-ink-50 px-3 py-2.5 text-sm leading-relaxed text-ink-700">
-          Makasih, sudah masuk. Kalau ini bug, biasanya yang paling menolong
-          justru laporan sependek ini.
-        </p>
-      ) : (
-        <form action={formAction} className="mt-4 space-y-3">
-          <input type="hidden" name="halaman" value={pathname} />
-          <div>
-            <label htmlFor="jenis" className="label">
-              Jenisnya
-            </label>
-            <select id="jenis" name="jenis" className="input" defaultValue="saran">
-              <option value="bug">Ada yang error atau nggak jalan</option>
-              <option value="saran">Saran atau permintaan fitur</option>
-              <option value="lainnya">Lainnya</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="isi" className="label">
-              Ceritain
-            </label>
-            {/* maxLength dipasang di sini, bukan cuma dipotong di server.
+  if (tersembunyi) return null;
+  return <>
+    <button ref={pemicu} type="button" onClick={() => setBuka(true)} className={styles.launcher} aria-label="Kirim masukan" aria-haspopup="dialog" title="Kirim masukan"><Ikon nama="catat" size={19} /><span>Masukan</span>{isi && <i aria-label="Ada draf" />}</button>
+    <dialog ref={dialog} className={styles.panel} aria-labelledby={judulId} onCancel={e => { e.preventDefault(); tutup(); }} onClick={e => {
+      if (e.target !== e.currentTarget) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) tutup();
+    }}>
+      {buka && <FormMasukan action={action} judulId={judulId} halaman={pathname} isi={isi} setIsi={setIsi} jenis={jenis} setJenis={setJenis} tutup={tutup} setPending={value => { pending.current = value; }} />}
+    </dialog>
+  </>;
+}
 
-                Server memotong di 2.000 huruf. Kalau batasnya cuma di sana,
-                orang yang menulis 2.500 huruf menekan Kirim, dibalas "makasih,
-                sudah masuk", dan lima ratus huruf terakhirnya hilang tanpa satu
-                pun tanda. Yang hilang bukan fiturnya tapi pekerjaan yang sudah
-                dia ketik, dan justru laporan bug yang panjang itu yang paling
-                berguna. Batas harus diumumkan sebelum dipakai, bukan diberlakukan
-                sesudah. */}
-            <textarea
-              id="isi"
-              name="isi"
-              rows={4}
-              maxLength={2000}
-              className="input"
-              placeholder="Nggak usah panjang. Cukup apa yang kamu lakuin dan apa yang terjadi."
-            />
-          </div>
-          {state?.error && (
-            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
-              {state.error}
-            </p>
-          )}
-          <Submit />
-          <p className="text-xs leading-relaxed text-ink-500">
-            Yang terkirim cuma tulisanmu, halaman yang sedang kamu buka, dan email
-            akunmu. Isi chat pelanggan kamu tidak ikut.
-          </p>
-        </form>
-      )}
-    </div>
-  );
+function FormMasukan({ action, judulId, halaman, isi, setIsi, jenis, setJenis, tutup, setPending }: {
+  action: Action; judulId: string; halaman: string; isi: string; setIsi: (s: string) => void; jenis: Jenis; setJenis: (s: Jenis) => void; tutup: () => void; setPending: (v: boolean) => void;
+}) {
+  const [state, formAction, pending] = useActionState(async (prev: MasukanState, form: FormData) => {
+    try { return await action(prev, form); }
+    catch { return { error: "Belum terkirim. Coba lagi, drafmu tetap tersimpan." }; }
+  }, {} as MasukanState);
+  const textarea = useRef<HTMLTextAreaElement>(null);
+  const berhasil = useRef<HTMLHeadingElement>(null);
+  const id = useId();
+  useEffect(() => { setPending(pending); }, [pending, setPending]);
+  useEffect(() => {
+    if (!state.ok) return;
+    setIsi("");
+    berhasil.current?.focus();
+  }, [state.ok, setIsi]);
+  useEffect(() => {
+    const el = textarea.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(176, Math.max(104, el.scrollHeight))}px`;
+  }, [isi]);
+
+  return <>
+    <div className={styles.handle} aria-hidden="true" />
+    <header className={styles.header}><h2 id={judulId}>Masukan</h2><button data-tutup type="button" onClick={tutup} disabled={pending} className={styles.close} aria-label="Tutup masukan" title="Tutup"><Ikon nama="silang" size={18} /></button></header>
+    {state.ok ? <div className={styles.success}>
+      <span><Ikon nama="centang" size={25} /></span><h3 ref={berhasil} tabIndex={-1}>Masukan terkirim</h3><p>Terima kasih sudah membantu.</p><button type="button" onClick={tutup} className={styles.submit}>Selesai</button>
+    </div> : <form action={formAction} className={styles.form}>
+      <input type="hidden" name="halaman" value={halaman} />
+      <fieldset className={styles.types} disabled={pending}><legend className={styles.srOnly}>Jenis masukan</legend>{pilihan.map(p => <label key={p.id}>
+        <input type="radio" name="jenis" value={p.id} checked={jenis === p.id} onChange={() => setJenis(p.id)} /><span><Ikon nama={p.ikon} size={16} />{p.label}</span>
+      </label>)}</fieldset>
+      <label className={styles.srOnly} htmlFor={id}>Isi masukan</label>
+      <textarea ref={textarea} id={id} name="isi" value={isi} onChange={e => setIsi(e.target.value)} readOnly={pending} rows={3} maxLength={2000} placeholder={jenis === "bug" ? "Apa yang tidak berjalan?" : jenis === "saran" ? "Apa yang bisa lebih baik?" : "Ceritakan di sini…"} aria-describedby={`${id}-batas${state.error ? ` ${id}-error` : ""}`} aria-invalid={state.error ? true : undefined} />
+      {state.error && <p id={`${id}-error`} role="alert" className={styles.error}>{state.error}</p>}
+      <div className={styles.actions}><span id={`${id}-batas`} className={styles.counter}>{isi.length.toLocaleString("id-ID")} / 2.000</span><button type="submit" disabled={pending} className={styles.submit}>{pending ? "Mengirim…" : "Kirim"}<Ikon nama="kirim" size={16} /></button></div>
+      <details className={styles.privacy}><summary><Ikon nama="gembok" size={13} />Data yang disertakan</summary><p>Tulisan ini, halaman yang dibuka, dan email akunmu. Isi chat pelanggan tidak disertakan.</p></details>
+    </form>}
+  </>;
 }

@@ -5829,7 +5829,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // Janji temu harus sampai ke layar, bukan cuma tersimpan di database.
     check(
       "janji temu muncul di Ringkasan",
-      /data\.janji\.map/.test(ringkasan),
+      /data\.janji(?:\.slice\([^)]*\))?\.map/.test(ringkasan),
     );
     check(
       "janji temu bisa dibetulkan pemiliknya",
@@ -5864,7 +5864,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     );
     check(
       "bentrok jam ditandai di Ringkasan",
-      /bentrok jamnya/.test(ringkasan),
+      /\? "Jam bentrok" :/.test(ringkasan),
     );
     const daftarKontak = baca("apps/web/src/app/app/kontak/page.tsx");
     check(
@@ -6477,7 +6477,10 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // itu yang ada, lalu empat belas orang datang tanpa dia siapkan.
     check(
       "daftar janji di Ringkasan mengaku kalau ada yang tidak muat",
-      /jumlah\[tab\] > 8/.test(ringkasan) && /Menampilkan 8 dari/.test(ringkasan),
+      /jumlah\[tab\] > tampil/.test(ringkasan) &&
+        /Menampilkan \{angka\(tampil\)\} dari \{angka\(jumlah\[tab\]\)\}/.test(
+          ringkasan,
+        ),
     );
     // Angka yang salah lebih buruk daripada tidak ada angka: orang berhenti
     // menggulir karena merasa sudah melihat semuanya.

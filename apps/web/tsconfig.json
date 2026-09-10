@@ -32,11 +32,12 @@
     "**/*.ts",
     "**/*.tsx",
     ".next-gantung/types/**/*.ts",
+    ".next-lama/types/**/*.ts",
     ".next-turbo/types/**/*.ts",
     ".next-uji/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-lama/types/**/*.ts"
+    ".next-tanya/dashboard-redesign/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

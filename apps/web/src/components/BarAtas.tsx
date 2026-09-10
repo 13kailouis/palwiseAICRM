@@ -49,7 +49,7 @@ export function BarAtas({ namaWorkspace: _namaWorkspace }: { namaWorkspace: stri
   if (sekunder) {
     const judul = judulHalaman(pathname);
     return (
-      <header className="flex items-center gap-1 border-b border-ink-200 bg-white px-2 py-2 lg:hidden">
+      <header className="flex items-center gap-1 border-b border-ink-200 bg-white py-2 pl-2 pr-16 lg:hidden">
         <button
           type="button"
           aria-label="Kembali"
@@ -82,7 +82,7 @@ export function BarAtas({ namaWorkspace: _namaWorkspace }: { namaWorkspace: stri
   }
 
   return (
-    <header className="flex items-center gap-2 border-b border-ink-200 bg-white px-4 py-2.5 lg:hidden">
+    <header className="flex items-center gap-2 border-b border-ink-200 bg-white py-2.5 pl-4 pr-16 lg:hidden">
       {/* Logo sungguhan, bukan huruf "P" di kotak biru: latar putih di sini
           jadi lambang berwarna aslinya tampil benar, sama dengan sidebar
           laptop. */}
