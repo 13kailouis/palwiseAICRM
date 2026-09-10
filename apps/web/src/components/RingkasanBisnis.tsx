@@ -73,11 +73,10 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
   }
 
   const metrik = [
-    // Phone labels must still say WHAT is counted: one-word "Baru"/"Pesan" confused the owner.
-    { label: "Pelanggan chat", pendek: "Yang chat", kunci: "aktif", href: "/app/inbox", ikon: "pelanggan" },
-    { label: "Pelanggan baru", pendek: "Kontak baru", kunci: "baru", href: "/app/kontak", ikon: "sapa" },
-    { label: "Pesan masuk", pendek: "Pesan masuk", kunci: "pesan", href: "/app/inbox", ikon: "chat" },
-    { label: "Klaim bayar", pendek: "Klaim bayar", kunci: "klaim", href: "/app/kontak?stage=klaim-bayar", ikon: "paket" },
+    { label: "Pelanggan chat", kunci: "aktif", href: "/app/inbox", ikon: "pelanggan" },
+    { label: "Pelanggan baru", kunci: "baru", href: "/app/kontak", ikon: "sapa" },
+    { label: "Pesan masuk", kunci: "pesan", href: "/app/inbox", ikon: "chat" },
+    { label: "Klaim bayar", kunci: "klaim", href: "/app/kontak?stage=klaim-bayar", ikon: "paket" },
   ] as const;
   const jumlah = hitungTab(data);
   const bentrok = new Set(data.janji.filter(j => data.janji.some(k => k.id !== j.id && Math.abs(new Date(k.waktu).getTime() - new Date(j.waktu).getTime()) < 30 * 60_000)).map(j => j.id));
@@ -111,9 +110,11 @@ export function RingkasanBisnis({ awal }: { awal: PusatBisnis }) {
       const selisih = nilai - data.lalu[m.kunci];
       const perubahan = selisih === 0 ? "tetap" : `${selisih > 0 ? "+" : ""}${angka(selisih)}`;
       return <Link href={m.href} key={m.kunci} className={styles.metric} aria-label={`${m.label}: ${angka(nilai)}. ${perubahan} dibanding ${data.hari} hari sebelumnya.${m.kunci === "klaim" ? " Belum dicek." : ""}`}>
-        <span className={styles.metricLabel}><Ikon nama={m.ikon} size={15} /><span className={styles.lbPanjang}>{m.label}</span><span className={styles.lbPendek}>{m.pendek}</span>{m.kunci === "klaim" && <i className={styles.dotKlaim} aria-hidden="true" />}</span>
+        <span className={styles.metricLabel}><Ikon nama={m.ikon} size={15} /><span>{m.label}</span></span>
+        {/* Change sits as a small pill beside the number; an unchanged number shows nothing. */}
         <span className={styles.nilai}><strong>{angka(nilai)}</strong>
-          <span className={styles.delta} data-arah={selisih > 0 ? "naik" : selisih < 0 ? "turun" : "tetap"} title={`Dibanding ${data.hari} hari sebelumnya`}>{selisih !== 0 && <TanyaIcon nama={selisih > 0 ? "atas" : "bawah"} size={11} />}<span className={styles.tanda}>{selisih > 0 ? "+" : selisih < 0 ? "-" : ""}</span>{selisih === 0 ? "tetap" : angka(Math.abs(selisih))}{m.kunci === "klaim" && <em>belum dicek</em>}</span></span>
+          {selisih !== 0 && <span className={styles.delta} data-arah={selisih > 0 ? "naik" : "turun"} title={`Dibanding ${data.hari} hari sebelumnya`}><TanyaIcon nama={selisih > 0 ? "atas" : "bawah"} size={11} />{angka(Math.abs(selisih))}</span>}
+          {m.kunci === "klaim" && <span className={styles.cek}>belum dicek</span>}</span>
       </Link>;
     })}</section>
 

@@ -37,9 +37,11 @@
 .metricLabel svg{flex-shrink:0;color:#9aa0a6}
 .metric strong{font-size:26px;line-height:1.1;font-weight:700;letter-spacing:-.8px;color:#0f0f0f;transition:opacity var(--gerak)}
 .metrics[aria-busy=true] strong{opacity:.35}
-.delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#6b7075;white-space:nowrap;min-width:0}
-.delta[data-arah=naik]{color:#171717;font-weight:600}
-.delta em{font-style:normal;font-weight:500;color:#b45309;margin-left:4px;overflow:hidden;text-overflow:ellipsis}
+.nilai{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;min-width:0}
+.delta,.cek{display:inline-flex;align-items:center;gap:2px;padding:2px 7px;border-radius:999px;font-size:11.5px;font-weight:600;line-height:1.4;white-space:nowrap}
+.delta{background:#f0f0f0;color:#171717}
+.delta[data-arah=turun]{color:#54585c}
+.cek{background:#fffbeb;color:#b45309}
 
 /* Body: one column on phones (focus, ask, stages, plan), two columns on desktop. */
 .grid{display:flex;flex-direction:column;gap:14px;margin-top:14px}
@@ -137,9 +139,6 @@
 
 /* Label twins: the long label on tablet/desktop, the short one on phones. Both are in the HTML, CSS picks. */
 .lbPendek{display:none}
-/* Number + change: stacked on tablet/desktop (wrapper disappears), side by side on phones. */
-.nilai{display:contents}
-.dotKlaim{display:none;width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0}
 .chipIkon{display:contents}
 
 /* Phone-only layout, modelled on big-company mobile home screens: a stat strip, a shortcut grid,
@@ -158,20 +157,15 @@
   .alert{width:100%;min-height:40px;padding:0 12px;border-radius:12px;font-size:13px}
   .alert svg{margin-left:auto}
 
-  .metrics{grid-template-columns:repeat(4,minmax(0,1fr));border-radius:14px}
-  .metric{align-items:center;gap:4px;padding:14px 4px 13px;text-align:center}
-  .nilai{display:flex;align-items:flex-start;justify-content:center;gap:3px;order:-1}
-  .metric strong{font-size:21px;letter-spacing:-.4px}
-  .metricLabel{justify-content:center;gap:4px;font-size:11px}
-  .metricLabel svg{display:none}
+  /* Stats: separate cards in a swipeable row that bleeds to the screen edges, the next card peeking. */
+  .metrics{display:flex;gap:10px;margin:0 -16px;padding:2px 16px 4px;background:transparent;border:0;border-radius:0;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:16px;scrollbar-width:none}
+  .metrics::-webkit-scrollbar{display:none}
+  .metric{flex:0 0 148px;scroll-snap-align:start;gap:12px;padding:14px;border:1px solid #e6e6e6;border-radius:14px}
+  .metricLabel{font-size:12px}
+  .metric strong{font-size:24px;letter-spacing:-.6px}
+  .delta,.cek{font-size:11px;padding:2px 6px}
   .lbPanjang{display:none}
   .lbPendek{display:inline}
-  .dotKlaim{display:inline-block}
-  /* Small change marker to the right of the number, arrow carries the sign. */
-  .delta{gap:1px;margin-top:3px;font-size:11px;font-weight:600;color:#404346}
-  .delta svg{width:10px;height:10px}
-  .tanda{display:none}
-  .delta[data-arah=tetap],.delta em{display:none}
 
   .grid{gap:16px;margin-top:16px}
   .side{display:contents}
@@ -196,10 +190,10 @@
   .chip:active .chipIkon{transform:scale(.9)}
 
   .tabs{gap:8px;padding:12px 14px;scroll-padding-inline:14px}
-  .tabs button{min-height:34px;padding:0 12px;border-radius:999px;background:#f0f0f0;font-size:12.5px;gap:5px;color:#404346}
+  .tabs button{min-height:34px;padding:0 12px;border:1px solid #e6e6e6;border-radius:999px;background:#fff;font-size:12.5px;gap:5px;color:#404346}
   .tabs button:last-child{margin-right:14px}
   .tabs button::after{display:none}
-  .tabs button[aria-selected=true]{background:#171717;color:#fff}
+  .tabs button[aria-selected=true]{background:#171717;border-color:#171717;color:#fff}
   .count{min-width:0;padding:0 5px;background:transparent;color:inherit}
   .tabs button[aria-selected=true] .count:not([data-penting]){background:transparent;color:#fff}
 
@@ -228,7 +222,8 @@
 }
 @media(max-width:360px){
   .page{padding-inline:12px}.heading h1{font-size:18px}.period button{padding:0 8px}
-  .metric strong{font-size:18px}.metricLabel{font-size:10.5px}
+  .metric{flex-basis:138px}
+  .metrics{margin-inline:-12px;padding-inline:12px;scroll-padding-inline:12px}
   .tabs button{padding:0 9px;font-size:12px}
 }
 @media(min-width:640px){
