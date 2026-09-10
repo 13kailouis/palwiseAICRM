@@ -693,9 +693,28 @@ function formatInline(teks: string): React.ReactNode[] {
     part.startsWith("`") && part.endsWith("`") ? <code key={i}>{part.slice(1, -1)}</code> : part);
 }
 
+/**
+ * The model often writes a list inside one sentence ("langkahnya: 1. A. 2. B. 3. C."). Split it
+ * into one line per item, but only for a run that starts at 1 and counts up, so "versi 2." stays put.
+ */
+function pecahDaftarSebaris(line: string): string[] {
+  const posisi: number[] = [];
+  const penanda = /(^|\s)(\d{1,2})\.\s+(?=\S)/g;
+  for (let m, cari = 1; (m = penanda.exec(line));) {
+    if (Number(m[2]) === cari) { posisi.push(m.index + m[1].length); cari++; }
+  }
+  if (posisi.length < 2) return [line];
+  const pembuka = line.slice(0, posisi[0]).trim();
+  return [...(pembuka ? [pembuka] : []), ...posisi.map((p, i) => line.slice(p, posisi[i + 1]).trim())];
+}
+
 function TeksJawaban({ teks }: { teks: string }) {
   const hasil: React.ReactNode[] = [];
-  const lines = teks.split("\n");
+  let dalamKode = false;
+  const lines = teks.split("\n").flatMap(l => {
+    if (l.startsWith("```")) { dalamKode = !dalamKode; return [l]; }
+    return dalamKode ? [l] : pecahDaftarSebaris(l);
+  });
   for (let i = 0; i < lines.length;) {
     const line = lines[i];
     if (!line.trim()) { i++; continue; }
@@ -725,19 +744,22 @@ function DariPalwise({ pesan, jalankan, lengkapi }: {
   const [salinan, setSalinan] = useState<"awal" | "selesai" | "gagal">("awal");
   useEffect(() => { if (salinan === "awal") return; const timer = setTimeout(() => setSalinan("awal"), 2500); return () => clearTimeout(timer); }, [salinan]);
   async function salin() {
-    const lengkap = [pesan.teks, pesan.usul ? ("teks" in pesan.usul ? pesan.usul.teks : pesan.usul.isi) : "", ...(pesan.hasilBaca ?? []).map(h => `${h.judul}\n${h.isi}`)].filter(Boolean).join("\n\n");
+    const lengkap = [pesan.teks, pesan.usul ? ("teks" in pesan.usul ? pesan.usul.teks : pesan.usul.isi) : "", ...(pesan.hasilBaca ?? []).map(h => `${h.judul}\n${rapikanHasil(h.alat, h.isi)}`)].filter(Boolean).join("\n\n");
     try { await navigator.clipboard.writeText(lengkap); setSalinan("selesai"); }
     catch { setSalinan("gagal"); }
   }
+  const adaBacaan = (pesan.hasilBaca?.length ?? 0) > 0;
+  const teksDariData = !pesan.usul && !!pesan.teks && !!pesan.hasilBaca?.[0]?.isi.startsWith(pesan.teks);
+  const bacaanPendukung = adaBacaan && (!!pesan.usul || (!teksDariData && !!pesan.teks.trim()));
   return <article className={styles.answer + " anim-naik"}>
     <div className={styles.answerIdentity}><TandaPalwise /><span>Palwise</span><span className={styles.aiBadge}>AI</span></div>
     <div className={styles.answerBody}>
-      {!(!pesan.usul && pesan.hasilBaca?.[0]?.isi.startsWith(pesan.teks) && pesan.teks) && <TeksJawaban teks={pesan.teks} />}
+      {/* Data the assistant read to write its answer sits ABOVE the answer, folded, like a model's
+          "thinking" row. When the data itself IS the answer (a plain lookup), it stays open below. */}
+      {bacaanPendukung && <LangkahBaca hasil={pesan.hasilBaca!} />}
+      {!teksDariData && <TeksJawaban teks={pesan.teks} />}
       {pesan.usul && <KartuUsul usul={pesan.usul} status={pesan.usulStatus} kabar={pesan.usulPesan} jalankan={jalankan} />}
-      {(pesan.hasilBaca?.length ?? 0) > 0 && (pesan.usul ? <details className={styles.supportingResults}>
-        <summary>Rincian yang dipakai · {pesan.hasilBaca!.length}{pesan.hasilBaca!.some(h => h.gagal) ? " · Ada data gagal dibaca" : ""}</summary>
-        <HasilPembacaan hasil={pesan.hasilBaca!} ringkas />
-      </details> : <HasilPembacaan hasil={pesan.hasilBaca!} />)}
+      {adaBacaan && !bacaanPendukung && <HasilPembacaan hasil={pesan.hasilBaca!} />}
       {lengkapi && !pesan.usul && !pesan.hasilBaca?.length && pesan.teks.length < 400 &&
         /(?:ini|berikut).{0,40}\b(?:draf|draft)|\b(?:saya|aku)\s+(?:akan\s+)?(?:lihat|cek|siapkan)\s+(?:dulu|data|draf)/i.test(pesan.teks) &&
         !/[\n:][\s\S]{20}/.test(pesan.teks) && <button type="button" className={styles.recoverAnswer} onClick={lengkapi} title="Buat jawaban lengkap menggunakan kuota AI">Lengkapi jawaban</button>}
@@ -756,8 +778,39 @@ function HasilPembacaan({ hasil, ringkas = false }: { hasil: HasilBacaTanya[]; r
   return <div className={styles.results}>{hasil.map((item, index) => <details key={`${item.alat}-${index}`} className={styles.resultCard} aria-label={item.judul}
     open={!ringkas && !["lihat_kontak", "lihat_info", "lihat_asisten", "cari_info_bisnis"].includes(item.alat)}>
     <summary className={styles.resultHeading}><span>{item.judul}</span>{item.gagal && <small>Belum berhasil dibaca</small>}</summary>
-    <div className={styles.resultContent} tabIndex={0} aria-label={`Isi ${item.judul}`}><TeksJawaban teks={item.isi} /></div>
+    <div className={styles.resultContent} tabIndex={0} aria-label={`Isi ${item.judul}`}><TeksJawaban teks={rapikanHasil(item.alat, item.isi)} /></div>
   </details>)}</div>;
+}
+
+/** Folded "what I read" row above an answer, in the spirit of a model's thinking disclosure. */
+function LangkahBaca({ hasil }: { hasil: HasilBacaTanya[] }) {
+  const nama = [...new Set(hasil.map(h => h.judul.charAt(0).toLowerCase() + h.judul.slice(1)))];
+  const daftar = nama.length > 2 ? `${nama.slice(0, 2).join(", ")} dan ${nama.length - 2} lainnya` : nama.join(" dan ");
+  const gagal = hasil.some(h => h.gagal);
+  return <details className={styles.langkahBaca}>
+    <summary><Ikon nama={gagal ? "info" : "centang"} size={14} /><span>Membaca {daftar}</span>{gagal && <small>ada yang gagal dibaca</small>}</summary>
+    <HasilPembacaan hasil={hasil} />
+  </details>;
+}
+
+const STATUS_KANAL: Record<string, string> = { connected: "tersambung", disconnected: "terputus", qr: "menunggu scan QR", connecting: "sedang menyambung" };
+
+/**
+ * The business brief is written for the model: ISO timestamps, tool names, and rules such as
+ * "jangan mengarang angka". The model still receives all of it; the owner sees a plain version.
+ * Done at display time so conversations saved earlier are cleaned too.
+ */
+function rapikanHasil(alat: string, isi: string): string {
+  if (!["ringkasan_bisnis", "prioritas_bisnis", "peluang_follow_up"].includes(alat)) return isi;
+  return isi
+    .replace(/^Data tercatat di Palwise, (\d+) hari[^\n]*/m, (_, n: string) => `Periode ${n} hari terakhir, dibanding ${n} hari sebelumnya.`)
+    .replace(/;\s*BUKAN pembayaran terverifikasi atau omzet\./, " (belum dicek, bukan omzet).")
+    .replace(/Tahap CRM saat ini \(bukan konversi penjualan\)/, "Tahap pelanggan saat ini")
+    .replace(/ \(maksimal 8\)/g, "")
+    .replace(/^Peluang dipilih dari[^\n]*\n?/m, "")
+    .replace(/^Tidak ada data omzet[^\n]*\n?/m, "")
+    .replace(/^(.*)Kanal: (.*)$/m, (_, depan: string, kanal: string) => `${depan}Kanal: ${kanal.replace(/\b(connected|disconnected|qr|connecting)\b/g, s => STATUS_KANAL[s])}`)
+    .trim();
 }
 
 /** Nama alat dalam bahasa yang dimengerti pemilik toko. */

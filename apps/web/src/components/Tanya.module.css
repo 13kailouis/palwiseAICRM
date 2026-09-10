@@ -92,9 +92,16 @@
 .results .resultHeading { min-height: 44px; padding: 10px 0; }
 .results .resultCard[open] > .resultHeading { margin-bottom: 0; }
 .resultContent { max-height: 260px; overflow: auto; padding: 0 4px 10px 0; overscroll-behavior: contain; }
-.supportingResults { margin-top: 8px; color: #6b7075; font-size: 12px; }
-.supportingResults > summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
-.supportingResults .results { margin-top: 0; }
+/* "Membaca …" row above an answer: quiet, folded, opens to the data cards. */
+.langkahBaca { margin: -4px 0 10px; font-size: 13px; color: #6b7075; }
+.langkahBaca > summary { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 6px 10px 6px 8px; margin-left: -8px; border-radius: 10px; cursor: pointer; list-style: none; transition: background var(--gerak-cepat), color var(--gerak-cepat); }
+.langkahBaca > summary::-webkit-details-marker { display: none; }
+.langkahBaca > summary:hover { background: #f5f5f5; color: #171717; }
+.langkahBaca > summary svg { flex-shrink: 0; }
+.langkahBaca > summary::after { content: ""; width: 6px; height: 6px; margin-left: 2px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform var(--gerak); }
+.langkahBaca[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
+.langkahBaca > summary small { color: #b42318; font-size: 11px; }
+.langkahBaca .results { margin: 4px 0 8px; }
 .proposal { margin-top: 12px; border: 1px solid #e4e7eb; border-radius: 14px; overflow: hidden; }
 .proposalHeading { display: flex; align-items: center; gap: 8px; padding: 10px 12px 0; }
 .proposalBody { padding: 10px 12px; }
