@@ -169,15 +169,18 @@
 
   .grid{gap:16px;margin-top:16px}
   .side{display:contents}
-  .ask{order:1;padding:14px 14px 12px}
+  /* The ask block sits on the page ground, no card: a search field plus bare shortcuts, like a big-app home. */
+  .ask{order:1;padding:0 0 2px;border:0;border-radius:0;background:transparent;overflow:visible}
   .focus{order:2}
   .stages{order:3}
   .status{order:4}
   .card,.status{border-radius:14px}
 
-  .askBar{min-height:44px;padding:0 5px 0 14px}
-  .askText{font-size:13.5px}
-  .askGo{width:34px;height:34px}
+  .askBar{min-height:46px;padding:0 8px 0 16px;background:#fff;border-color:#e6e6e6}
+  .askBar:hover{box-shadow:none}
+  .askText{font-size:14px}
+  /* It opens Tanya, it does not send anything, so no filled "send" button. */
+  .askGo,.askBar:hover .askGo{width:28px;height:28px;background:transparent;color:#9aa0a6}
   .quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:16px 0 0;padding:0;overflow:visible}
   .chip{flex-direction:column;gap:6px;min-height:0;padding:2px;border:0;background:transparent;font-size:11px;line-height:1.25;text-align:center;white-space:normal;color:#404346}
   .chip:hover{background:transparent}
