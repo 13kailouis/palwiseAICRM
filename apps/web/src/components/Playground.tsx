@@ -235,6 +235,7 @@ export function Playground({
         <div className="border-t border-ink-200 p-3 sm:p-4">
           <div className="flex items-center gap-2">
             <input
+              data-fokus-tenang
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send(draft)}

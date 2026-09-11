@@ -798,6 +798,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
               {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
               <div className="flex items-end gap-2">
                 <textarea
+                  data-fokus-tenang
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {

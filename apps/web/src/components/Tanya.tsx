@@ -1438,7 +1438,7 @@ function Pengetik({ isianRef, draft, setDraft, sibuk, terkunci, kirim, jatah, ko
         {BANTUAN_BISNIS.map(f => <button key={f.judul} type="button" className={styles.suggestion} title={f.detail} onClick={() => pilihIde(f.pesan)}><TanyaIcon nama="analisis" size={17} /><strong>{f.judul}</strong></button>)}
       </div>}
       <form onSubmit={e => { e.preventDefault(); kirim(draft); }} className={styles.composer}>
-        <textarea ref={isianRef} rows={1} maxLength={2000} value={draft} onChange={e => setDraft(e.target.value)}
+        <textarea data-fokus-tenang ref={isianRef} rows={1} maxLength={2000} value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(hover: hover) and (pointer: fine)").matches) { e.preventDefault(); kirim(draft); }
           }} placeholder={sibuk ? "Tulis pertanyaan berikutnya..." : "Minta apa saja ke Palwise AI"}
