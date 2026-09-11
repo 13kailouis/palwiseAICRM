@@ -323,7 +323,7 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
       setRiwayatBuka(false);
       await muatDaftar();
       router.replace(`/app/tanya?s=${data.id}`, { scroll: false });
-      isianRef.current?.focus();
+      isianRef.current?.focus({ preventScroll: true });
     }
     } catch (error) {
       setGalat(error instanceof Error ? error.message : "Tidak bisa menghubungi server.");
@@ -507,7 +507,15 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
   function pilihIde(teks: string) {
     setDraft(teks);
     setIdeBuka(false);
-    isianRef.current?.focus();
+    // Focused from code, so Safari must not scroll the page to "reveal" a composer that already
+    // sits above the keyboard (the same jump as a direct tap). Wait a frame so the picked text is
+    // in the box, then put the caret at its end.
+    requestAnimationFrame(() => {
+      const el = isianRef.current;
+      if (!el) return;
+      el.focus({ preventScroll: true });
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
   }
 
   return (
