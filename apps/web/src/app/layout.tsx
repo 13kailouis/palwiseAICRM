@@ -45,10 +45,10 @@ const huruf = localFont({
   ],
 });
 
-/** Search and sharing copy follows the chat workspace and WhatsApp offering. */
-const JUDUL = "Palwise, chat AI bisnis dan sales WhatsApp";
+/** Search and sharing copy leads with the loss the owner already feels, same as the hero and share card. */
+const JUDUL = "Palwise: sales WhatsApp AI yang bales chat 24 jam";
 const RINGKAS =
-  "Tanya kabar pelanggan, siapkan draf follow up, dan atur asisten lewat chat AI. Palwise juga membantu membalas WhatsApp dari info bisnismu. Mulai gratis.";
+  "Chat WhatsApp jam 11 malam tetap dibales dalam hitungan detik, pakai harga dan info tokomu sendiri. Calon pembeli tercatat rapi, tanpa nambah gaji. Mulai gratis, tanpa kartu kredit.";
 
 export const metadata: Metadata = {
   // Template judul: tiap halaman menambahkan namanya sendiri di depan, dan

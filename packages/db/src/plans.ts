@@ -144,7 +144,7 @@ export const TANYA_BELUM_VERIFIKASI = 5;
 
 function fiturTanya(id: PlanId): string {
   const q = KUOTA_TANYA[id];
-  return `${q.bulanan.toLocaleString("id-ID")} pertanyaan AI di Tanya per bulan, maksimal ${q.harian} per hari${id === "free" ? " setelah verifikasi email" : ""}`;
+  return `${q.bulanan.toLocaleString("id-ID")} pertanyaan ke Palwise AI per bulan, maksimal ${q.harian} per hari${id === "free" ? " setelah verifikasi email" : ""}`;
 }
 
 export interface Plan {

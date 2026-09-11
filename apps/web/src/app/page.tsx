@@ -15,6 +15,7 @@ import { IDENTITAS, tautanBantuanWa } from "@/lib/identitas";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { PRESET } from "@/lib/preset";
 import { ContohTanya } from "@/components/ContohTanya";
+import { HitungRugi } from "@/components/HitungRugi";
 import { ContohChat } from "@/components/ContohChat";
 import { SorotanTab, type IsiSorotan } from "@/components/SorotanTab";
 import {
@@ -180,7 +181,7 @@ const FEATURES: {
    */
   hpSembunyi?: true;
 }[] = [
-  { ikon: "chat", title: "Minta bantuan lewat satu chat", body: "Cari pelanggan, baca kabar bisnis, dan revisi draf follow up lewat Tanya. Kamu tetap menyetujui pengiriman dan perubahan data." },
+  { ikon: "chat", title: "Minta bantuan lewat satu chat", body: "Cari pelanggan, baca kabar bisnis, dan revisi draf follow up lewat Palwise AI. Kamu tetap menyetujui pengiriman dan perubahan data." },
   {
     ikon: "qr" as NamaIkon,
     title: "Mulai jualan dalam semenit",
@@ -278,8 +279,8 @@ const LANGKAH = [
   {
     ikon: "info" as NamaIkon,
     judul: "Kasih tahu dia jualan kamu",
-    body: "Ceritakan bisnismu lewat Tanya. Periksa cara bicara dan info yang disusun Palwise, lalu simpan. Daftar harga atau alamat website juga bisa jadi sumber informasi.",
-    pendek: "Ceritakan bisnismu lewat Tanya, periksa hasilnya, lalu simpan.",
+    body: "Ceritakan bisnismu ke Palwise AI. Periksa cara bicara dan info yang dia susun, lalu simpan. Daftar harga atau alamat website juga bisa jadi sumber informasi.",
+    pendek: "Ceritakan bisnismu ke Palwise AI, periksa hasilnya, lalu simpan.",
   },
   {
     ikon: "chat" as NamaIkon,
@@ -348,8 +349,6 @@ const JAMINAN: { ikon: NamaIkon; judul: string; body: string }[] = [
  * paragraf lima baris di dalam panel lipat praktis tidak terbaca.
  */
 const TANYA_JAWAB: { t: string; j: string }[] = [
-  { t: "Tanya Palwise itu bisa bantu apa?", j: "Tanya adalah ruang chat AI untuk pemilik bisnis. Minta daftar pelanggan, ringkasan data chat, draf pesan, atau bantuan menyiapkan asisten. Hasilnya memakai data bisnis yang tersedia. Draf kirim dan perubahan data menunggu persetujuanmu." },
-  { t: "Chat dengan Palwise ada batasnya?", j: `Ada. Empat paket menyediakan ${KUOTA_TANYA.free.bulanan}, ${KUOTA_TANYA.starter.bulanan}, ${KUOTA_TANYA.growth.bulanan}, dan ${KUOTA_TANYA.pro.bulanan} pertanyaan AI per bulan, dengan batas harian. Gratis sebelum verifikasi mendapat 5 percobaan. Kuota Tanya terpisah dari balasan WhatsApp; lihat rincian di paket dan indikator kuota.` },
   {
     t: "Saya harus install apa?",
     j: "Nggak ada. Semuanya jalan di browser. HP kamu cuma dipakai sekali buat scan QR.",
@@ -361,6 +360,10 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
     // berbeda, dan yang membaca tidak punya cara tahu mana yang benar.
     j: `Bisa, tanpa denda. Langganannya bulanan, dan bulan yang udah kamu bayar tetep jalan sampai tanggal habisnya. Paket gratisnya ${PLANS.free.aiCredits} balasan per bulan, bisa dipakai selamanya.`,
   },
+  // The owner-side tool questions sit after the buying questions: a visitor is deciding whether
+  // their customers get answered, not yet how the owner's own chat works.
+  { t: "Palwise AI itu bisa bantu apa?", j: "Palwise AI itu chat khusus buat kamu, pemilik usahanya. Minta daftar pelanggan yang perlu dibalas, ringkasan chat, draf follow up, atau suruh dia ubah sapaan dan info bisnismu. Semua kiriman dan perubahan nunggu kamu setujui dulu." },
+  { t: "Chat dengan Palwise AI ada batasnya?", j: `Ada. Empat paket menyediakan ${KUOTA_TANYA.free.bulanan}, ${KUOTA_TANYA.starter.bulanan}, ${KUOTA_TANYA.growth.bulanan}, dan ${KUOTA_TANYA.pro.bulanan} pertanyaan per bulan, dengan batas harian. Gratis sebelum verifikasi dapat 5 percobaan. Jatah ini terpisah dari balasan WhatsApp ke pelangganmu.` },
   {
     t: "Pelanggan saya tahu ini dibalas mesin?",
     j: "Kamu yang nentuin. Dia bisa ngaku asisten, bisa juga ngomong sebagai tim usahamu. Saran kami yang pertama: orang jarang keberatan dibalas mesin kalau jawabannya bener.",
@@ -592,7 +595,7 @@ export default async function LandingPage() {
               halamannya terbaca berat sebelah. Di HP semuanya hilang dan
               digantikan baris pintasan di bawah hero. */}
           <nav className="hidden items-center gap-1 text-sm lg:flex">
-            <a href="#tanya-ai" className="rounded-lg px-3 py-2 text-ink-600 hover:bg-ink-50">Tanya AI</a>
+            <a href="#palwise-ai" className="rounded-lg px-3 py-2 text-ink-600 transition hover:bg-ink-50 hover:text-ink-900">Palwise AI</a>
             <a href="#cara" className="rounded-lg px-3 py-2 text-ink-600 transition hover:bg-ink-50 hover:text-ink-900">
               Cara kerjanya
             </a>
@@ -658,23 +661,23 @@ export default async function LandingPage() {
           className={`${KOLOM} relative pb-10 pt-10 sm:pb-20 sm:pt-20 lg:pb-24 lg:pt-24`}
         >
           <div className="mx-auto max-w-4xl text-center">
-            <span className="badge border border-ink-200 bg-white px-3 py-1 text-ink-700">Asisten AI untuk kamu dan pelangganmu</span>
+            {/* The pain first, then the product (rombakan 9 Agustus, restored 11 September 2026).
+                For a while the hero led with the owner-chat tool ("Urus bisnis lewat chat.
+                WhatsApp juga terlayani."): that sells a vitamin and demotes the part people
+                pay for, answering buyers at night, to an afterthought. It also opened with a
+                quota. Signups were ~3 in four weeks under that version. */}
+            <span className="badge border border-ink-200 bg-white px-3 py-1 text-ink-700">Sales WhatsApp AI · mulai {formatIDR(PLANS.starter.pricePerMonth)}/bulan</span>
             <h1 className="mt-4 text-balance text-[30px] font-bold leading-[1.14] tracking-[-0.03em] text-ink-950 sm:mt-6 sm:text-[46px] lg:text-[54px]">
-              Urus bisnis lewat chat.<br className="hidden sm:inline" /> <span className="text-ink-500">WhatsApp juga terlayani.</span>
+              Ada yang chat WhatsApp kamu jam 11 malam.<br className="hidden sm:inline" /> <span className="text-ink-500">Besoknya, dia udah beli di sebelah.</span>
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-600 sm:mt-6 sm:text-[18px]">
-              Tanya kabar pelanggan, siapkan draf follow up, dan atur asistenmu sambil ngobrol. Palwise membantu membalas WhatsApp dari info bisnismu, tanpa nambah gaji.
+              Palwise bales tiap chat WhatsApp dalam hitungan detik, siang malam, pakai harga dan info tokomu sendiri. Calon pembeli tercatat rapi, tanpa nambah gaji.
             </p>
             <div className="mt-6 flex flex-col items-stretch gap-2.5 sm:flex-row sm:justify-center sm:gap-3">
               <Link href={keApp("/daftar")} className="btn-primary btn-besar">Mulai gratis</Link>
-              <a href="#tanya-ai" className="btn-ghost btn-besar">Lihat contoh chat</a>
+              <a href="#hitung" className="btn-ghost btn-besar">Hitung yang lepas tiap bulan</a>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-ink-500">Tanpa kartu kredit. Draf kamu periksa sebelum dikirim.</p>
-            <div className="mx-auto mt-5 flex max-w-xl flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-ink-600">
-              <span>{KUOTA_TANYA.free.bulanan} pertanyaan AI/bulan setelah verifikasi</span>
-              <span>{PLANS.free.aiCredits} balasan WhatsApp gratis/bulan</span>
-              <a href="#harga" className="underline underline-offset-4">4 paket · mulai {formatIDR(PLANS.starter.pricePerMonth)}/bulan</a>
-            </div>
+            <p className="mt-3 text-xs leading-relaxed text-ink-500">Tanpa kartu kredit · {PLANS.free.aiCredits} balasan gratis tiap bulan · berhenti kapan aja</p>
           </div>
 
           {/* Wujud produknya ditaruh setinggi mungkin. Orang menilai barang yang
@@ -685,7 +688,11 @@ export default async function LandingPage() {
               saja selalu terbaca sebagai stiker yang ditempel, bukan sebagai
               layar yang berdiri di atas halaman. */}
           <div className="relative mx-auto mt-10 max-w-5xl sm:mt-14">
-            <ContohTanya />
+            {/* The night chat IS the product people buy: a 23.41 question answered with the
+                right price and shipping. The owner-side Palwise AI demo moved below the fold. */}
+            <div className="flex justify-center">
+              <ContohChat />
+            </div>
           </div>
 
           {/* Pintasan, CUMA DI HP.
@@ -700,7 +707,8 @@ export default async function LandingPage() {
             className="thin-scroll -mx-5 mt-7 flex gap-2 overflow-x-auto px-5 pb-1 sm:hidden"
           >
             {[
-              ["#tanya-ai", "Tanya AI"],
+              ["#hitung", "Hitung"],
+              ["#palwise-ai", "Palwise AI"],
               ["#cara", "Cara kerjanya"],
               ["#fitur", "Fitur"],
               ["#harga", "Harga"],
@@ -778,16 +786,35 @@ export default async function LandingPage() {
           tingginya mirip dengan punya kita, tapi tulisan yang benar-benar
           digambar cuma sekitar 193 kata, punya kita 1.659. Bedanya bukan
           panjang halaman, tapi bahwa mereka menunjukkan dan kita menjelaskan. */}
-      <section className={`${KOLOM} ${JARAK}`}>
+      {/* ─── Hitung sendiri ──────────────────────────────────────────────
+          Turns the headline's loss into rupiah using only the owner's own
+          numbers (see HitungRugi). Placed right after the facts strip, while
+          the pain is fresh, and the hero's second button points here. */}
+      <section id="hitung" className={`scroll-mt-16 sm:scroll-mt-20 ${KOLOM} ${JARAK}`}>
         <div className="mx-auto max-w-2xl text-center">
-          <p className="kicker">Jam berapa pun</p>
-          <h2 className="judul-bagian mt-3">
-            Jam 23.41 tokonya udah tutup. Yang nanya tetep dibales.
-          </h2>
+          <p className="kicker">Hitung sendiri</p>
+          <h2 className="judul-bagian mt-3">Berapa order yang lepas tiap bulan?</h2>
+          <p className="teks-bagian mt-3">Pakai angka tokomu. Nggak ada yang dikirim ke mana-mana.</p>
         </div>
+        <div className="saat-terlihat mt-9 sm:mt-12">
+          <HitungRugi hargaStarter={PLANS.starter.pricePerMonth} keDaftar={keApp("/daftar")} />
+        </div>
+      </section>
 
-        <div className="saat-terlihat mt-9 flex justify-center sm:mt-12">
-          <ContohChat />
+      {/* ─── Paginya: Palwise AI ─────────────────────────────────────────
+          The night chat now sits in the hero. This is the morning after: the
+          owner asks Palwise AI who needs a reply. It is the owner-side tool, so
+          it supports the sale here instead of leading the page. */}
+      <section id="palwise-ai" className={`scroll-mt-16 border-t border-ink-200 sm:scroll-mt-20`}>
+        <div className={`${KOLOM} ${JARAK}`}>
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="kicker">Paginya</p>
+            <h2 className="judul-bagian mt-3">Bangun tidur, tinggal tanya: siapa yang perlu aku balas?</h2>
+            <p className="teks-bagian mt-3">Palwise AI ngerangkum chat semalam, nyiapin draf follow up, dan ngatur asistenmu. Semua nunggu kamu setujui dulu.</p>
+          </div>
+          <div className="saat-terlihat relative mx-auto mt-9 max-w-5xl sm:mt-12">
+            <ContohTanya />
+          </div>
         </div>
       </section>
 

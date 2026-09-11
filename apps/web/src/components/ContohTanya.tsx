@@ -15,8 +15,8 @@ const CONTOH = [
 export function ContohTanya() {
   const [aktif, setAktif] = useState(0);
   const item = CONTOH[aktif];
-  return <section id="tanya-ai" className={styles.demo} aria-label="Contoh Tanya Palwise">
-    <div className={styles.top}><span><Logo ukuran={26} /><strong>Tanya Palwise</strong></span><small>Contoh penggunaan · data ilustrasi</small></div>
+  return <section className={styles.demo} aria-label="Contoh Palwise AI">
+    <div className={styles.top}><span><Logo ukuran={26} /><strong>Palwise AI</strong></span><small>Contoh penggunaan · data ilustrasi</small></div>
     <div className={styles.layout}>
       <div className={styles.choices} aria-label="Pilih contoh penggunaan">
         <p>Satu chat untuk urusan bisnismu.</p>

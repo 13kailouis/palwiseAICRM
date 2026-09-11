@@ -6099,7 +6099,14 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // ditanyakan pelanggan tiap hari. Dua, dia TIDAK memakai nama halaman dari
     // dalam dashboard, karena orang yang baru pertama kali mendengar Palwise
     // tidak tahu apa itu "info bisnis".
-    check("hero memberi contoh pekerjaan pemilik bisnis", /pelanggan/.test(hero) && /draf follow up/.test(hero));
+    // 11 September 2026: the hero sells the result the owner feels (a WhatsApp
+    // chat answered with THEIR prices), not the owner-side tool. The earlier
+    // Palwise-AI-first hero pinned "draf follow up" here; signups were ~3 in
+    // four weeks under it, so the check now guards the selling property.
+    check(
+      "hero menyebut hasil yang dirasakan pemilik toko",
+      /chat WhatsApp/.test(hero) && /harga/.test(hero) && !/Info bisnis/.test(hero),
+    );
     // Posisinya SALES, bukan admin, dan ini keputusan produk bukan selera.
     //
     // Admin itu pos biaya: orang membelinya semurah mungkin lalu membatalkannya
@@ -6117,10 +6124,18 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     //
     // Yang tetap dijaga sama: posisinya SALES bukan admin, dan itu masih harus
     // ada di hero, cuma pindah satu baris ke bawah.
-    check("hero menjelaskan dua sisi asisten bisnis", /atur asistenmu/.test(hero) && /membalas WhatsApp/.test(hero));
+    const lencanaSampaiJudul = depan.slice(depan.indexOf("latar-kisi"), depan.indexOf("</h1>"));
+    check(
+      "hero memposisikan Palwise sebagai sales, bukan asisten atau admin",
+      /[Ss]ales WhatsApp/.test(lencanaSampaiJudul) && !/admin/i.test(judulDepan) && !/Asisten AI untuk/.test(lencanaSampaiJudul),
+    );
     // Judulnya harus menyebut kejadian yang dialami pembacanya, bukan nama
-    // produknya. Yang dicari: dia bercerita, bukan mendeklarasikan fitur.
-    check("judul tetap jelas tentang kegunaan produk", /bisnis/.test(judulDepan) && /WhatsApp/.test(judulDepan));
+    // produknya. Yang dicari: dia bercerita (jam malam, pembeli pindah ke
+    // tempat lain), bukan mendeklarasikan fitur.
+    check(
+      "judul menyebut kejadian yang dialami pemilik toko, bukan nama fiturnya",
+      /WhatsApp/.test(judulDepan) && /(jam|malam)/.test(judulDepan) && /(sebelah|tempat lain)/.test(judulDepan),
+    );
     // Produknya tetap harus disebut tepat di bawah judulnya, kalau tidak orang
     // mengenali masalahnya lalu tidak tahu ini jualan apa.
     check("produk dan manfaatnya disebut tepat di bawah judul", /Palwise/.test(hero) && /tanpa nambah gaji/.test(hero));
@@ -9493,7 +9508,17 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       jualanTampil.indexOf("latar-kisi"),
       jualanTampil.indexOf("<MockupDashboard"),
     );
-    check("hero menonjolkan bantuan chat AI untuk pemilik", /Tanya kabar pelanggan/.test(heroPenuh) && /atur asistenmu/.test(heroPenuh));
+    // The hero's own slice, from its background grid to the mobile jump links.
+    const heroAtas = jualanTampil.slice(
+      jualanTampil.indexOf("latar-kisi"),
+      jualanTampil.indexOf("Loncat ke bagian"),
+    );
+    // The picture people judge is an answered customer chat, and the first
+    // screen never opens with a usage limit (it once led with the AI-question quota).
+    check(
+      "hero menunjukkan chat pelanggan yang dibalas dan tidak dibuka dengan kuota",
+      /<ContohChat \/>/.test(heroAtas) && !/KUOTA_TANYA/.test(heroAtas),
+    );
     check("hero menyebut harga paket dari sumber yang sama", /formatIDR\(PLANS\.starter\.pricePerMonth\)/.test(heroPenuh));
     // NAMA PESAINGNYA TIDAK BOLEH ADA DI LAYAR, dan ini keputusan pemilik
     // produk pada 4 September 2026.
@@ -9534,7 +9559,12 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // Dan kalimatnya tidak boleh berbunyi "tanpa daftar": halaman Coba dulu
     // ada di dalam dashboard, jadi akunnya tetap harus dibuat. Gratis dan
     // tanpa kartu kredit itu benar; tanpa daftar tidak.
-    check("tombol kedua hero menuju contoh chat nyata di halaman", /href="#tanya-ai"/.test(heroPenuh) && !/tanpa daftar/i.test(heroPenuh));
+    // The chat example now IS the hero picture, so the second button goes to
+    // the loss calculator. Its target must really exist on the page.
+    check(
+      "tombol kedua hero menuju hitungan yang benar-benar ada di halaman",
+      /href="#hitung"/.test(heroAtas) && /id="hitung"/.test(jualan) && !/tanpa daftar/i.test(heroAtas),
+    );
     check(
       "bagian bukti benar-benar ada dan tidak mendarat di balik kepala halaman",
       /id="bukti"[\s\S]{0,120}scroll-mt-16/.test(jualan),
