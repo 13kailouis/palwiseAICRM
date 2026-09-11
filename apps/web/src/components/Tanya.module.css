@@ -239,11 +239,11 @@
 @media (max-height: 720px) { .workspaceEmpty { justify-content: flex-start; padding-top: 24px; padding-bottom: 24px; } .welcomeLogo { margin-bottom: 12px; } .welcome { margin-bottom: 20px; } }
 @media (max-height: 500px) and (max-width: 1023px) { .workspaceEmpty { padding-top: 12px; } .welcomeLogo, .eyebrow, .welcome p:last-child { display: none; } .welcome h1 { font-size: 24px; } .welcome { margin-bottom: 14px; } .workspaceEmpty .suggestions { display: none; } }
 @media (max-width: 1023px) {
-  :global(html[data-tanya-keyboard="1"]) .workspaceEmpty { justify-content: flex-end; padding: 8px 0; }
-  :global(html[data-tanya-keyboard="1"]) .workspaceEmpty .conversationArea,
-  :global(html[data-tanya-keyboard="1"]) .suggestions,
-  :global(html[data-tanya-keyboard="1"]) .composerHint { display: none; }
-  :global(html[data-tanya-keyboard="1"]) .textarea { max-height: 100px; }
+  :global(html[data-keyboard="1"]) .workspaceEmpty { justify-content: flex-end; padding: 8px 0; }
+  :global(html[data-keyboard="1"]) .workspaceEmpty .conversationArea,
+  :global(html[data-keyboard="1"]) .suggestions,
+  :global(html[data-keyboard="1"]) .composerHint { display: none; }
+  :global(html[data-keyboard="1"]) .textarea { max-height: 100px; }
 }
 .welcome { margin-bottom: 22px; }
 .welcomeLogo { width: 48px; height: 48px; border-radius: 15px; margin-bottom: 14px; }
@@ -341,7 +341,7 @@
   .suggestion, .ideaButton, .send { min-height: 44px; }
   .send, .ideaButton { min-width: 44px; }
   .takeOver { margin-left: 0; }
-  :global(html[data-tanya-keyboard="1"]) .workspaceEmpty { padding: 0; }
+  :global(html[data-keyboard="1"]) .workspaceEmpty { padding: 0; }
 }
 .recoverAnswer { display: inline-flex; min-height: 44px; align-items: center; margin-top: 8px; padding: 0 12px; border: 1px solid #e2e6ed; border-radius: 10px; color: #1557b0; font-size: 12px; }
 .recoverAnswer:hover { background: #f6f8fb; }

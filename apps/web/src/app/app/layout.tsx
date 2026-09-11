@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { NavBawah } from "@/components/NavBawah";
 import { BarAtas } from "@/components/BarAtas";
 import { KirimMasukan } from "@/components/KirimMasukan";
+import { LayarHp } from "@/components/LayarHp";
 import { kirimMasukanAction } from "@/app/actions/masukan";
 import { bolehLihatFounder } from "@/lib/founder";
 import type { Metadata } from "next";
@@ -57,6 +58,8 @@ export default async function AppLayout({
   return (
     <div className="app-shell flex h-screen overflow-hidden">
       <GarisMuat />
+      {/* Keeps the phone layout inside the visible area when a keyboard opens. */}
+      <LayarHp />
 
       <Sidebar
         workspaceName={workspace.name}

@@ -499,7 +499,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
               lagi. */}
           <div
             key={detail.conversation.id}
-            className="anim-obrolan fixed inset-0 z-50 flex flex-col bg-white lg:static lg:z-auto lg:min-w-0 lg:flex-1"
+            className="anim-obrolan layar-penuh fixed inset-0 z-50 flex flex-col bg-white lg:static lg:z-auto lg:min-w-0 lg:flex-1"
           >
             <div className="flex items-center gap-2.5 border-b border-ink-200 bg-white px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5 lg:pt-2.5">
               {/* Kembali ke daftar. Cuma di HP; di layar lebar daftarnya tidak

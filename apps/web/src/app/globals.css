@@ -43,9 +43,33 @@ html[data-tanya="1"] .isi-utama {
   overflow: hidden;
   padding-bottom: 0;
 }
+
+/* Phones: the app is pinned to the area actually visible (see LayarHp).
+   iOS pans the page when a keyboard opens; a shell that only shrank its
+   height stayed at the top while the visible part was lower, so Palwise AI's
+   composer jumped to the top of the screen with blank space above the keyboard.
+   `html .app-shell` outranks the h-screen utility (100vh is taller than the
+   visible screen on iPhone). Desktop is untouched. */
 @media (max-width: 1023px) {
-  html[data-tanya="1"] .app-shell {
-    height: var(--tanya-viewport, 100dvh);
+  html .app-shell {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--layar-atas, 0px);
+    height: var(--layar-tinggi, 100dvh);
+  }
+  /* Full-screen chats (Chat masuk on a phone) follow the same visible area. */
+  .layar-penuh {
+    top: var(--layar-atas, 0px) !important;
+    bottom: auto !important;
+    height: var(--layar-tinggi, 100dvh) !important;
+  }
+  /* While typing, bottom bars would float in the middle of the screen. */
+  html[data-keyboard="1"] .sembunyi-saat-ketik {
+    display: none !important;
+  }
+  html[data-keyboard="1"] .isi-utama {
+    padding-bottom: 0;
   }
 }
 

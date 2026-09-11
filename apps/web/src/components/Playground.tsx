@@ -125,7 +125,7 @@ export function Playground({
           jadi kolom ketiknya terdorong keluar layar dan orang tidak menemukan
           tempat mengetik. Di HP tingginya ikut layar, dikurangi kepala halaman
           dan bar bawah. */}
-      <div className="card flex h-[calc(100dvh-230px)] min-h-[380px] flex-col overflow-hidden lg:h-[600px]">
+      <div className="card flex h-[calc(var(--layar-tinggi,100dvh)_-_230px)] min-h-[320px] flex-col overflow-hidden lg:h-[600px]">
         <div className="flex items-center justify-between gap-3 border-b border-ink-200 px-4 py-2.5 sm:px-5">
           <div className="flex items-center gap-2.5">
             <Avatar nama={agentName} ukuran={38} />

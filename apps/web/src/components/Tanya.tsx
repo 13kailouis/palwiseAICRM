@@ -187,23 +187,14 @@ export function Tanya({ sesiAwal, pesanAwal = "" }: { sesiAwal: string | null; p
     return () => observer.disconnect();
   }, [memuat, whatsappBuka]);
 
-  // Keep the composer inside the visible viewport when a phone keyboard opens.
+  // The chat scrolls its own messages (html[data-tanya] in globals.css). The phone keyboard is
+  // handled app-wide by LayarHp: this page's old handler only listened to `resize`, missed the
+  // iOS pan, and left the composer at the top of the screen with blank space under it.
   useEffect(() => {
-    const viewport = window.visualViewport;
     const el = document.documentElement;
     el.dataset.tanya = "1";
-    const ukur = () => {
-      el.style.setProperty("--tanya-viewport", `${viewport?.height ?? window.innerHeight}px`);
-      if (viewport && window.innerHeight - viewport.height > 140 && viewport.scale === 1) el.dataset.tanyaKeyboard = "1";
-      else delete el.dataset.tanyaKeyboard;
-    };
-    ukur();
-    viewport?.addEventListener("resize", ukur);
     return () => {
       delete el.dataset.tanya;
-      delete el.dataset.tanyaKeyboard;
-      el.style.removeProperty("--tanya-viewport");
-      viewport?.removeEventListener("resize", ukur);
     };
   }, []);
 

@@ -62,6 +62,8 @@
   .launcher:hover{transform:none;box-shadow:none;background:#f0f0f0}
   .launcher>span{display:none}
   .launcher[data-buka]{opacity:1}
+  /* While a keyboard is open the pinned header button would float over the page. */
+  :global(html[data-keyboard="1"]) .launcher:not([data-buka]){display:none}
   .panel{inset:auto 0 var(--feedback-bottom,0px) 0;width:100%;max-width:100%;max-height:calc(var(--feedback-height,100dvh) - 12px);border-radius:22px 22px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -10px 40px rgba(15,15,15,.14);transform-origin:bottom center}
   .panel[open]{animation:naik-sheet var(--gerak-pelan) var(--lengkung-masuk)}
   .panel::backdrop{background:rgba(15,15,15,.4)}
