@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, formatJanji } from "@/components/ui";
 import { InfoTip } from "@/components/InfoTip";
 import { Ikon } from "@/components/Ikon";
@@ -214,15 +214,25 @@ function relatif(iso: string) {
  * Dipisah dari daftarnya supaya dua urusan tidak bercampur: di daftar tinggal
  * urutan dan pemisah hari, di sini bentuk gelembung, lampiran, dan jamnya.
  */
-function PesanBaris({ m }: { m: Msg }) {
+function PesanBaris({
+  m,
+  rapat,
+  tampilkanJam,
+}: {
+  m: Msg;
+  /** Menempel ke pesan di atasnya: pengirim sama, jarak dekat. */
+  rapat: boolean;
+  /** Pesan terakhir di kelompoknya, jadi dia yang membawa jam. */
+  tampilkanJam: boolean;
+}) {
   // Catatan sistem: keterangan kenapa asisten sengaja tidak
   // membalas. Sengaja TIDAK berbentuk bubble dan tidak menempel
   // ke sisi mana pun, supaya tidak sedetik pun terbaca sebagai
   // pesan yang terkirim ke pelanggan.
   if (m.role === "system") {
     return (
-      <div className="flex justify-center">
-        <div className="max-w-[85%] rounded-lg bg-ink-100 px-3 py-1.5 text-center text-xs leading-relaxed text-ink-600">
+      <div className="mt-3 flex justify-center">
+        <div className="max-w-[85%] rounded-lg bg-ink-200 px-3 py-1.5 text-center text-xs leading-relaxed text-ink-700">
           {m.content}
         </div>
       </div>
@@ -231,27 +241,28 @@ function PesanBaris({ m }: { m: Msg }) {
 
   const mine = m.role !== "customer";
   return (
-    <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-      {/* Tiap gelembung harus BEDA dari latarnya, jadi tidak ada
-          yang lebur.
+    <div
+      className={`flex ${mine ? "justify-end" : "justify-start"} ${
+        rapat ? "mt-[3px]" : "mt-3"
+      }`}
+    >
+      {/* Tiap gelembung harus BEDA dari latarnya DAN dari gelembung
+          sebelahnya.
           - Latar obrolan: abu sangat muda (ink-50).
-          - Pelanggan (mereka, kiri): PUTIH dengan bayangan tipis, jadi
-            dia mengambang di atas latar. Dulu latarnya putih dan
-            gelembung ini abu; dua-duanya pernah putih sekaligus dan
-            waktu itu gelembungnya tidak kelihatan sama sekali.
-          - Kamu (kanan): BIRU, seperti pesanmu di aplikasi chat
-            populer.
+          - Pelanggan (kiri): biru sangat muda (brand-50) bergaris tipis.
+            Sempat PUTIH, dan putih di atas latar yang hampir putih itu
+            hampir tidak terbaca sebagai gelembung sama sekali.
+          - Kamu (kanan): biru penuh (brand-600).
           - Asisten (kanan): gelap (ink-900).
-          Biru cuma untuk pesanmu dan asisten yang gelap: sekilas
-          langsung kelihatan mana yang kamu ketik sendiri dan mana
-          yang dijawab asisten, diperkuat labelnya di bawah. */}
+          Jadi kiri selalu terang dan kanan selalu pekat, dan di sisi
+          kanan biru berarti kamu sementara gelap berarti asisten. */}
       <div
-        className={`min-w-0 max-w-[78%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm sm:max-w-[70%] ${
+        className={`min-w-0 max-w-[82%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed sm:max-w-[70%] ${
           m.role === "customer"
-            ? "rounded-bl-sm bg-white text-ink-900"
+            ? `border border-brand-200/70 bg-brand-50 text-ink-900 ${rapat ? "rounded-tl-md" : "rounded-bl-md"}`
             : m.role === "human"
-              ? "rounded-br-sm bg-brand-600 text-white"
-              : "rounded-br-sm bg-ink-900 text-white"
+              ? `bg-brand-600 text-white ${rapat ? "rounded-tr-md" : "rounded-br-md"}`
+              : `bg-ink-900 text-white ${rapat ? "rounded-tr-md" : "rounded-br-md"}`
         }`}
       >
         {m.mediaUrl && m.mediaType === "image" && (
@@ -294,18 +305,19 @@ function PesanBaris({ m }: { m: Msg }) {
           </p>
         )}
         {m.content && <TeksPesan isi={m.content} />}
-        <p
-          className={`mt-1 text-[10px] ${
-            mine ? "text-white/60" : "text-ink-400"
-          }`}
-        >
-          {m.role === "human"
-            ? "kamu · "
-            : m.role === "ai"
-              ? "asisten · "
-              : ""}
-          {jam(m.createdAt)}
-        </p>
+        {/* Jam cuma di pesan TERAKHIR tiap kelompok. Lima pesan pendek
+            berturut-turut dulu membawa lima baris jam, dan barisan jam itu
+            memakan tempat sebanyak isinya sendiri. */}
+        {tampilkanJam && (
+          <p
+            className={`mt-1 text-[10px] ${
+              mine ? "text-white/60" : "text-ink-400"
+            }`}
+          >
+            {m.role === "human" ? "kamu · " : m.role === "ai" ? "asisten · " : ""}
+            {jam(m.createdAt)}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -648,11 +660,36 @@ export function Inbox({ initialId }: { initialId: string | null }) {
             tampil.map((c) => {
               const rasa = tampilanRasa(c.rasaLabel);
               const belumDibaca = c.unreadCount > 0;
+              /**
+               * SATU lencana saja yang tampil, sisanya pindah ke keterangan
+               * sorot.
+               *
+               * Dulu tiap baris bisa memuat tiga lencana plus satu baris alasan,
+               * dan empat puluh baris seperti itu berubah jadi dinding tulisan
+               * yang justru tidak terbaca. Yang dipilih tampil selalu yang
+               * paling menentukan tindakan: obrolan yang menunggu kamu lebih
+               * mendesak daripada perasaan pelanggannya, dan perasaannya lebih
+               * menentukan daripada siapa yang sedang memegang obrolan.
+               */
+              const lencana = c.needsHuman
+                ? { teks: "nunggu kamu", kelas: "bg-amber-100 text-amber-800" }
+                : rasa
+                  ? { teks: rasa.teks, kelas: rasa.kelas }
+                  : !c.aiEnabled
+                    ? { teks: "kamu pegang", kelas: "bg-ink-100 text-ink-600" }
+                    : null;
+              // Keterangan lengkapnya, dipakai kotak sorot di layar lebar.
+              const rinci = [
+                rasa?.teks,
+                c.needsHuman ? "nunggu kamu" : null,
+                !c.aiEnabled ? "kamu yang pegang" : null,
+                c.rasaAlasan && rasa ? c.rasaAlasan : null,
+              ].filter(Boolean);
               return (
                 <button
                   key={c.id}
                   onClick={() => setSelectedId(c.id)}
-                  className={`relative flex w-full items-start gap-3 px-3 pt-2.5 text-left transition ${
+                  className={`group/baris relative flex w-full items-start gap-3 px-3 pt-2.5 text-left transition ${
                     selectedId === c.id ? "bg-ink-100" : "hover:bg-ink-50 active:bg-ink-100"
                   }`}
                 >
@@ -675,8 +712,15 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                       >
                         {c.name}
                       </span>
+                      {/* Lencananya duduk di baris nama, bukan di baris
+                          sendiri. Satu baris daftar jadi cukup dua baris. */}
+                      {lencana && (
+                        <span className={`badge shrink-0 ${lencana.kelas}`}>
+                          {lencana.teks}
+                        </span>
+                      )}
                       <span
-                        className={`shrink-0 text-[11px] ${
+                        className={`ml-auto shrink-0 text-[11px] ${
                           belumDibaca ? "font-medium text-brand-700" : "text-ink-400"
                         }`}
                       >
@@ -701,45 +745,18 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                         </span>
                       )}
                     </div>
-                    {/* Lencana keadaan orangnya (rasa) + status. "Nunggu kamu"
-                        menerangkan STATUS obrolan; lencana rasa menerangkan
-                        KEADAAN orangnya, dan yang kedua yang menjawab "mulai dari
-                        mana". Cuma digambar kalau memang ada. */}
-                    {/* Satu baris, TIDAK membungkus. Tiga lencana yang turun ke
-                        baris berikutnya bikin tiap baris daftar tumbuh sampai
-                        empat baris, dan empat puluh baris seperti itu tidak bisa
-                        dipindai sama sekali. */}
-                    {(rasa || c.needsHuman || !c.aiEnabled) && (
-                      <div className="mt-1.5 flex items-center gap-1.5 overflow-hidden">
-                        {rasa && (
-                          <span className={`badge shrink-0 ${rasa.kelas}`}>
-                            {rasa.teks}
-                          </span>
-                        )}
-                        {c.needsHuman && (
-                          <span className="badge shrink-0 bg-amber-100 text-amber-800">
-                            nunggu kamu
-                          </span>
-                        )}
-                        {!c.aiEnabled && (
-                          <span className="badge shrink-0 bg-ink-100 text-ink-600">
-                            kamu pegang
-                          </span>
-                        )}
-                        {/* Alasan lencana rasa, apa adanya. Tebakan yang tidak
-                            bisa dijelaskan akan dimatikan orang di minggu kedua.
+                    {/* Keterangan lengkapnya muncul waktu barisnya disorot,
+                        dan CUMA di layar lebar. Di HP tidak ada sorot sama
+                        sekali, dan keterangan yang sama sudah menunggu di
+                        kepala obrolan begitu barisnya diketuk.
 
-                            Sekarang dia BERBAGI baris dengan lencananya, dan cuma
-                            ikut untuk keadaan yang menuntut tindakan. Dulu dia
-                            baris keempat di TIAP baris, termasuk untuk "hangat"
-                            yang tidak menuntut apa-apa, jadi daftarnya penuh
-                            tulisan yang tidak mengubah keputusan siapa pun. */}
-                        {c.rasaAlasan && rasa && RASA_MENDESAK.has(c.rasaLabel ?? "") && (
-                          <span className="min-w-0 truncate text-[11px] text-ink-400">
-                            {c.rasaAlasan}
-                          </span>
-                        )}
-                      </div>
+                        `pointer-events-none` penting: kotak ini menutupi
+                        barisnya sendiri waktu muncul, dan tanpa itu ketukan
+                        justru mendarat di kotaknya, bukan di obrolannya. */}
+                    {rinci.length > 0 && (
+                      <span className="pointer-events-none absolute right-3 top-1/2 z-30 hidden max-w-[16rem] -translate-y-1/2 rounded-lg bg-ink-900 px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-[0_8px_24px_-8px_rgba(15,15,15,0.45)] lg:group-hover/baris:block">
+                        {rinci.join(" · ")}
+                      </span>
                     )}
                   </div>
                 </button>
@@ -974,24 +991,43 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                 gelembungnya mengambang di tengah. */}
             <div
               ref={gulungRef}
-              className="thin-scroll relative min-h-0 flex-1 space-y-3 overflow-y-auto bg-ink-50 px-4 py-5 sm:px-5"
+              className="thin-scroll relative min-h-0 flex-1 overflow-y-auto bg-ink-50 px-4 py-5 sm:px-5"
             >
               {detail.messages.map((m, i) => {
                 const hari = hariDari(m.createdAt);
-                const gantiHari =
-                  i === 0 || hariDari(detail.messages[i - 1].createdAt) !== hari;
+                const sebelum = detail.messages[i - 1];
+                const sesudah = detail.messages[i + 1];
+                const gantiHari = !sebelum || hariDari(sebelum.createdAt) !== hari;
+                // Pesan beruntun dari orang yang sama, berjarak dekat, jadi SATU
+                // kelompok: rapat di dalam, lega dengan kelompok berikutnya, dan
+                // jamnya cuma ditulis sekali di pesan terakhir. Tanpa ini tiap
+                // pesan membawa baris jamnya sendiri, dan orang yang menulis
+                // lima pesan pendek berturut-turut memakan setengah layar.
+                const serumpun = (a?: Msg, b?: Msg) =>
+                  !!a &&
+                  !!b &&
+                  a.role === b.role &&
+                  a.role !== "system" &&
+                  b.role !== "system" &&
+                  Math.abs(
+                    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+                  ) < 5 * 60_000;
+                const rapat = !gantiHari && serumpun(sebelum, m);
+                const akhirKelompok =
+                  !serumpun(m, sesudah) ||
+                  hariDari(sesudah!.createdAt) !== hari;
                 return (
-                  <div key={m.id} className="contents">
+                  <Fragment key={m.id}>
                     {/* Pemisah tanggal, digambar sekali tiap ganti hari. */}
                     {gantiHari && (
-                      <div className="flex justify-center py-1">
+                      <div className={`flex justify-center ${i === 0 ? "" : "mt-5"} mb-3`}>
                         <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-ink-500 shadow-sm">
                           {labelHari(hari)}
                         </span>
                       </div>
                     )}
-                    <PesanBaris m={m} />
-                  </div>
+                    <PesanBaris m={m} rapat={rapat} tampilkanJam={akhirKelompok} />
+                  </Fragment>
                 );
               })}
               {/* "Sedang mengirim" sebagai gelembung titik di sisi kita,
