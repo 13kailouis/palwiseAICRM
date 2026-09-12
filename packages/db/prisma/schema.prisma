@@ -102,6 +102,7 @@ model Workspace {
   pembayaran    Pembayaran[]
   sesiTanya     SesiTanya[]
   pemakaianTanya PemakaianTanya[]
+  sambunganSheet SambunganSheet?
 }
 
 /// Satu reservasi pertanyaan AI. Tidak terkait sesi: hapus obrolan tidak
@@ -458,11 +459,71 @@ model KnowledgeSource {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Alamat Google Sheet asal catatan ini. Cuma diisi untuk type "sheet".
+  ///
+  /// Catatan dari Sheet TIDAK disunting di Palwise. Isinya ditimpa tiap kali
+  /// Sheet-nya berubah, jadi suntingan di sini akan hilang diam-diam pada
+  /// sinkron berikutnya. Yang benar menyunting Sheet-nya.
+  sheetUrl       String?
+  /// Kapan isi Sheet terakhir BERHASIL dibaca. Ini yang dipajang sebagai
+  /// "diperbarui", bukan updatedAt, karena updatedAt ikut maju waktu gagal.
+  sheetDisinkron DateTime?
+  /// Kapan terakhir kali DICOBA, berhasil atau tidak. Dipakai penjadwal.
+  sheetDicek     DateTime?
+  /// Kenapa sinkron terakhir gagal. Kosong = sehat.
+  ///
+  /// Gagal membaca Sheet TIDAK mengosongkan catatannya. Isi terakhir yang
+  /// berhasil tetap dipakai asisten, karena Sheet yang sebentar tidak bisa
+  /// dibuka jauh lebih ringan daripada asisten yang tiba-tiba lupa semua
+  /// harga. Tapi gagalnya wajib kelihatan, kalau tidak pemiliknya mengira
+  /// stok yang dia ubah sudah sampai padahal belum.
+  sheetGagal     String?
+  /// Keterangan yang bukan galat, mis. "yang terbaca 2.000 dari 3.400 baris".
+  sheetCatatan   String?
+  /// Cara Palwise membaca bentuk Sheet ini, JSON: baris judul, nama kolom,
+  /// kolom rahasia, plus kalimat penjelasannya untuk pemilik toko. Disimpan
+  /// supaya AI cuma diminta membaca bentuknya sekali, bukan tiap sinkron.
+  sheetStruktur  String?
+
   agentId String
   agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
   chunks  KnowledgeChunk[]
 
   @@index([agentId])
+  @@index([sheetUrl])
+}
+
+/// Salinan data pelanggan ke Google Sheet milik pemilik usaha.
+///
+/// Satu per workspace. Palwise menulis ulang SATU tab khusus ("Pelanggan
+/// Palwise") di Sheet itu, dan tidak pernah menyentuh tab lain. Jadi pemiliknya
+/// bebas membuat rumus, pivot, atau catatan sendiri di tab lain yang membaca
+/// tab ini, dan itu memang cara pakainya.
+///
+/// Arahnya satu: dari Palwise ke Sheet. Yang diketik di tab itu akan tertimpa
+/// pada salinan berikutnya, dan layar pengaturannya mengatakan itu.
+model SambunganSheet {
+  id            String  @id @default(cuid())
+  workspaceId   String  @unique
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sheetUrl      String
+  spreadsheetId String
+  aktif         Boolean @default(true)
+
+  /// Kapan terakhir kali BERHASIL menulis.
+  terakhirKirim DateTime?
+  /// Kapan terakhir kali dicoba. Dipakai penjadwal.
+  terakhirCoba  DateTime?
+  /// Berapa baris pelanggan yang tertulis di salinan terakhir.
+  jumlahBaris   Int     @default(0)
+  /// Sidik jari isi salinan terakhir. Kalau sama, tidak ditulis ulang, supaya
+  /// jatah Google yang dipakai bersama semua akun tidak habis untuk menulis
+  /// isi yang tidak berubah.
+  sidik         String?
+  galat         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model KnowledgeChunk {

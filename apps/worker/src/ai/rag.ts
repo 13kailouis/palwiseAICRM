@@ -201,6 +201,59 @@ export function chunkText(raw: string): string[] {
   return merged.slice(0, MAX_CHUNKS_PER_SOURCE);
 }
 
+/** Sebanyak-banyaknya potongan untuk catatan dari Sheet. Lihat [chunkBarisSheet]. */
+const MAKS_POTONGAN_SHEET = 800;
+
+function sidikBaris(teks: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < teks.length; i++) {
+    h ^= teks.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h;
+}
+
+/**
+ * Pemotong khusus catatan dari Google Sheet: batasnya ditentukan ISI BARIS,
+ * bukan hitungan huruf dari awal.
+ *
+ * [chunkText] memotong begitu jumlah huruf lewat target. Untuk catatan yang
+ * diketik itu tidak masalah, tapi catatan Sheet dihafal ulang tiap stok
+ * berubah, dan stok 9 yang jadi 10 menambah satu huruf. Satu huruf itu cukup
+ * menggeser SEMUA batas potongan sesudahnya, jadi potongan yang isinya sama
+ * tidak lagi sama persis, dan embedding seluruh katalog dibayar ulang padahal
+ * yang berubah satu angka.
+ *
+ * Di sini batas jatuh sesudah baris yang sidik jarinya kebetulan habis dibagi
+ * lima (setelah potongannya cukup panjang). Baris yang tidak berubah
+ * menghasilkan batas yang sama, jadi perubahan satu baris cuma mengubah satu,
+ * paling banyak dua potongan di sekitarnya. Tanpa tumpang tindih, karena tiap
+ * baris Sheet sudah utuh sendiri dan membawa nama kolomnya.
+ */
+export function chunkBarisSheet(raw: string): string[] {
+  const baris = raw
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  const hasil: string[] = [];
+  let buf: string[] = [];
+  let panjang = 0;
+  for (const b of baris) {
+    buf.push(b);
+    panjang += b.length + 1;
+    const jangkar = panjang >= 400 && sidikBaris(b) % 5 === 0;
+    if (jangkar || panjang >= CHUNK_TARGET * 2) {
+      hasil.push(buf.join("\n"));
+      buf = [];
+      panjang = 0;
+    }
+  }
+  if (buf.length) hasil.push(buf.join("\n"));
+  return hasil.slice(0, MAKS_POTONGAN_SHEET);
+}
+
 export function cosineSimilarity(a: number[], b: number[]): number {
   let dot = 0;
   let na = 0;
@@ -406,7 +459,8 @@ export async function indexSource(sourceId: string): Promise<number> {
   if (!source) throw new Error("Knowledge source tidak ditemukan");
 
   try {
-    const chunks = chunkText(source.content);
+    const chunks =
+      source.type === "sheet" ? chunkBarisSheet(source.content) : chunkText(source.content);
     if (chunks.length === 0) {
       await prisma.knowledgeChunk.deleteMany({ where: { sourceId } });
       await prisma.knowledgeSource.update({
@@ -417,7 +471,35 @@ export async function indexSource(sourceId: string): Promise<number> {
       return 0;
     }
 
-    const vectors = await getEmbedder().embed(chunks);
+    // Potongan yang isinya SAMA PERSIS dengan potongan lama memakai ulang
+    // vektornya, cuma yang baru atau berubah yang dikirim ke embedder.
+    //
+    // Ada karena catatan dari Google Sheet dihafal ulang tiap stoknya berubah.
+    // Tanpa ini, satu angka stok yang berubah di katalog 800 baris membayar
+    // embedding seluruh katalog, setengah jam sekali, sepanjang hari. Dengan
+    // ini yang dibayar cuma satu dua potongan tempat angka itu berada.
+    //
+    // Vektor lama cuma dipakai kalau panjangnya cocok dengan embedder yang
+    // sekarang. Ganti model embedding berarti semuanya dihitung ulang.
+    const embedder = getEmbedder();
+    const lama = await prisma.knowledgeChunk.findMany({
+      where: { sourceId },
+      select: { content: true, embedding: true },
+    });
+    const vektorLama = new Map<string, number[]>();
+    for (const l of lama) {
+      try {
+        const v = JSON.parse(l.embedding) as number[];
+        if (Array.isArray(v) && v.length === embedder.dimensions) vektorLama.set(l.content, v);
+      } catch {
+        // rusak, dihitung ulang
+      }
+    }
+    const perlu = [...new Set(chunks.filter((c) => !vektorLama.has(c)))];
+    const baru = perlu.length > 0 ? await embedder.embed(perlu) : [];
+    const hasilBaru = new Map(perlu.map((c, i) => [c, baru[i]]));
+    const vectors = chunks.map((c) => vektorLama.get(c) ?? hasilBaru.get(c));
+    if (vectors.some((v) => !v)) throw new Error("Embedding tidak lengkap");
 
     await prisma.$transaction([
       prisma.knowledgeChunk.deleteMany({ where: { sourceId } }),
@@ -436,7 +518,9 @@ export async function indexSource(sourceId: string): Promise<number> {
     ]);
 
     invalidateAgentCache(source.agentId);
-    log.info(`knowledge "${source.title}" ter-index: ${chunks.length} chunk`);
+    log.info(
+      `knowledge "${source.title}" ter-index: ${chunks.length} chunk (${perlu.length} dihitung baru)`,
+    );
     return chunks.length;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

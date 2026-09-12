@@ -1380,6 +1380,7 @@ const HALAMAN_TANYA: Record<string, { href: string; label: string; ikon: React.C
   knowledge: { href: "/app/knowledge", label: "Info bisnis", ikon: "info" },
   galeri: { href: "/app/galeri", label: "Gambar & berkas", ikon: "gambar" },
   kontak: { href: "/app/kontak", label: "Pelanggan", ikon: "pelanggan" },
+  sambungan: { href: "/app/sambungan", label: "Google Sheet", ikon: "sheet" },
 };
 
 /** A change as "label: old → new"; long texts stack under their label. */

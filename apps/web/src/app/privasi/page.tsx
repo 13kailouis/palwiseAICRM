@@ -125,6 +125,15 @@ export default function PrivasiPage() {
           pesan melewati sistem mereka sebagaimana chat WhatsApp biasa.
         </li>
         <li>
+          <strong>Google Sheets</strong>, hanya kalau kamu sendiri
+          menyambungkannya. Palwise membaca Sheet yang kamu sambungkan sebagai
+          Info bisnis, dan kalau kamu memilih menyalin data pelanggan, nama,
+          nomor, dan catatan pelangganmu ditulis ke Sheet milikmu itu. Siapa
+          yang bisa membuka Sheet itu kamu yang mengatur di Google. Kalau
+          sambungannya diputus, Palwise berhenti memperbarui, dan isi yang sudah
+          tersalin tetap ada di Sheet-mu sampai kamu hapus sendiri.
+        </li>
+        <li>
           <strong>Resend</strong> mengirimkan email dari kami ke kamu, seperti
           tautan lupa password. Yang dikirim ke sana cuma alamat email dan isi
           surat itu, tidak ada data pelanggan.

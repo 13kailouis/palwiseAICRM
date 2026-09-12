@@ -187,6 +187,11 @@ export const PLANS: Record<PlanId, Plan> = {
       fiturTanya("free"),
       "1 nomor WhatsApp",
       "Isi harga, layanan, dan aturan usahamu",
+      // Cuma arah MEMBACA yang dijanjikan di sini. Menyalin data pelanggan ke
+      // Sheet butuh robot Google yang dipasang di server, dan fitur yang
+      // ditulis di daftar ini harus jalan di setiap server, bukan cuma yang
+      // kebetulan sudah dipasangi.
+      "Stok dan harga bisa diambil dari Google Sheet, ikut terbaru otomatis",
       // Batas dua menitnya ikut disebut, bukan disembunyikan.
       //
       // Ini fitur yang paling sering kepakai di pesan PERTAMA pelanggan, dan

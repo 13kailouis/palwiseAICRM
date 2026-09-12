@@ -203,6 +203,15 @@ export async function updateKnowledgeAction(
     });
     if (!owned) return { error: "Catatan ini bukan milik akun kamu." };
 
+    // Catatan dari Google Sheet ditimpa tiap kali Sheet-nya berubah, jadi
+    // suntingan di sini akan hilang diam-diam setengah jam kemudian. Ditolak di
+    // server juga, bukan cuma kolomnya dikunci di layar.
+    if (owned.type === "sheet") {
+      return {
+        error: "Catatan ini ikut Google Sheet. Ubah isinya di Sheet-nya, Palwise memperbarui otomatis.",
+      };
+    }
+
     const content = String(formData.get("content") ?? "").trim();
     if (content.length < 20) return { error: "Isinya terlalu pendek." };
 
@@ -240,6 +249,109 @@ export async function updateKnowledgeAction(
     return { ok: true, message: "Perubahan tersimpan dan sudah dihafal ulang." };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Gagal menyimpan." };
+  }
+}
+
+/**
+ * Sambungkan satu tab Google Sheet sebagai catatan Info bisnis.
+ *
+ * Membacanya di worker, bukan di sini: worker yang memegang kunci robot Google
+ * dan penjadwal yang membacanya ulang tiap setengah jam.
+ */
+export async function tambahSheetAction(
+  _prev: KnowledgeState,
+  formData: FormData,
+): Promise<KnowledgeState> {
+  try {
+    const user = await requireUser();
+    const agentId = await resolveAgentId(
+      user.workspaceId,
+      String(formData.get("agentId") ?? "") || null,
+    );
+    const url = String(formData.get("url") ?? "").trim();
+    if (!url) return { error: "Tempel dulu tautan Google Sheet-nya." };
+
+    const workspace = await prisma.workspace.findUniqueOrThrow({
+      where: { id: user.workspaceId },
+    });
+    const plan = getPlan(workspace.plan);
+    const count = await prisma.knowledgeSource.count({
+      where: { agent: { workspaceId: user.workspaceId } },
+    });
+    if (count >= plan.maxKnowledgeSources) {
+      return {
+        error: `Paket ${plan.name} muat ${plan.maxKnowledgeSources} catatan, dan satu Sheet dihitung satu catatan. Naikkan paket dulu kalau mau nambah.`,
+      };
+    }
+
+    const hasil = await callWorker<{
+      judul: string;
+      jumlahBaris: number;
+      terbaca: number;
+      sudahAda: boolean;
+      dihafal: boolean;
+    }>("/sheets/sumber", {
+      method: "POST",
+      body: { agentId, url, judul: String(formData.get("title") ?? "") },
+      timeoutMs: 120_000,
+    });
+
+    revalidatePath("/app/knowledge");
+    revalidatePath("/app/sambungan");
+    if (hasil.sudahAda) {
+      return {
+        ok: true,
+        message: `Sheet ini sudah tersambung sebagai "${hasil.judul}". Isinya barusan diperbarui.`,
+      };
+    }
+    const baris = hasil.jumlahBaris.toLocaleString("id-ID");
+    if (!hasil.dihafal) {
+      return {
+        ok: true,
+        message: `"${hasil.judul}" tersambung (${baris} baris), tapi belum sempat dihafal. Palwise mencoba lagi otomatis.`,
+      };
+    }
+    return {
+      ok: true,
+      message:
+        hasil.terbaca < hasil.jumlahBaris
+          ? `"${hasil.judul}" tersambung. Yang muat ${hasil.terbaca.toLocaleString("id-ID")} dari ${baris} baris, lihat keterangannya di catatan itu.`
+          : `"${hasil.judul}" tersambung dan sudah dihafal, ${baris} baris. Kalau Sheet-nya kamu ubah, asistenmu ikut tahu dalam 30 menit.`,
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Gagal menyambungkan Sheet." };
+  }
+}
+
+/** Baca ulang satu Sheet sekarang juga, tanpa menunggu putaran berikutnya. */
+export async function sinkronSheetAction(
+  _prev: KnowledgeState,
+  formData: FormData,
+): Promise<KnowledgeState> {
+  try {
+    const user = await requireUser();
+    const id = String(formData.get("id") ?? "");
+    const owned = await prisma.knowledgeSource.findFirst({
+      where: { id, type: "sheet", agent: { workspaceId: user.workspaceId } },
+      select: { id: true },
+    });
+    if (!owned) return { error: "Catatan ini bukan milik akun kamu." };
+
+    const hasil = await callWorker<{ berubah: boolean }>(
+      `/sheets/sumber/${id}/sinkron`,
+      { method: "POST", timeoutMs: 120_000 },
+    );
+    revalidatePath("/app/knowledge");
+    revalidatePath("/app/sambungan");
+    return {
+      ok: true,
+      message: hasil.berubah
+        ? "Ada yang berubah di Sheet-nya, sudah dihafal ulang."
+        : "Sudah dicek, isinya sama dengan yang dihafal.",
+    };
+  } catch (err) {
+    revalidatePath("/app/knowledge");
+    return { error: err instanceof Error ? err.message : "Gagal membaca Sheet." };
   }
 }
 

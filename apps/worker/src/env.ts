@@ -125,6 +125,21 @@ export const env = {
   MEDIA_DIR: ensureDir(abs(process.env.MEDIA_DIR ?? "./data/media")),
 
   TIMEZONE: process.env.TIMEZONE?.trim() || "Asia/Jakarta",
+
+  /**
+   * Akun layanan Google untuk sambungan Google Sheet. Boleh kosong.
+   *
+   * Kosong berarti Palwise masih bisa MEMBACA Sheet yang dibagikan "siapa saja
+   * yang punya link", tapi tidak bisa membaca Sheet pribadi dan tidak bisa
+   * MENULIS data pelanggan ke Sheet mana pun. Layar pengaturannya membaca
+   * keadaan ini dan tidak menawarkan yang tidak bisa dikerjakan.
+   *
+   * Isi salah satu: jalur berkas JSON kuncinya, atau isi JSON-nya langsung.
+   */
+  GOOGLE_SERVICE_ACCOUNT_FILE: process.env.GOOGLE_SERVICE_ACCOUNT_FILE?.trim()
+    ? abs(process.env.GOOGLE_SERVICE_ACCOUNT_FILE.trim())
+    : "",
+  GOOGLE_SERVICE_ACCOUNT_JSON: process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim() ?? "",
 };
 
 /**

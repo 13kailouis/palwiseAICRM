@@ -125,7 +125,7 @@ export type Usul =
 
 export type KunciPelanggan = "stage" | "notes" | "janjiPada" | "janjiCatatan" | "bereskanMasalah" | "name" | "businessName" | "industry";
 export interface UbahanPelanggan { kunci: KunciPelanggan; lama: string | null; baru: string | null }
-export const HALAMAN_TUJUAN = ["tagihan", "akun", "whatsapp", "agent", "knowledge", "galeri", "kontak"] as const;
+export const HALAMAN_TUJUAN = ["tagihan", "akun", "whatsapp", "agent", "knowledge", "galeri", "kontak", "sambungan"] as const;
 export type TujuanHalaman = (typeof HALAMAN_TUJUAN)[number];
 const TAHAP_PELANGGAN = ["baru", "tertarik", "negosiasi", "closing", "selesai", "batal"];
 /** Proposals that change or delete data. Setup threads never get them. */
@@ -734,8 +734,8 @@ function daftarAlatUntukPrompt(mode: ModeTanya): string {
 /** Bentuk balasan JSON, sama di dua mode supaya pembacanya cuma satu. */
 function bentukJawaban(mode: ModeTanya): string {
   const usulHalaman = `
-13) Yang HARUS lewat halaman resminya (ganti paket atau pembayaran, ganti email atau sandi, menambah nomor WhatsApp baru): jangan cuma menolak. Jelaskan singkat, lalu beri tombol ke halamannya:
-{"jawab":"kalimat singkat","usul":{"jenis":"buka_halaman","tujuan":"tagihan|akun|whatsapp|agent|knowledge|galeri|kontak","alasan":"apa yang bisa dia lakukan di sana"}}
+13) Yang HARUS lewat halaman resminya (ganti paket atau pembayaran, ganti email atau sandi, menambah nomor WhatsApp baru, menyambungkan Google Sheet): jangan cuma menolak. Jelaskan singkat, lalu beri tombol ke halamannya:
+{"jawab":"kalimat singkat","usul":{"jenis":"buka_halaman","tujuan":"tagihan|akun|whatsapp|agent|knowledge|galeri|kontak|sambungan","alasan":"apa yang bisa dia lakukan di sana"}}
 `;
   const usulKelola = mode === "pasang" ? usulHalaman : `
 8) Mengubah data SATU pelanggan (wajib cari_kontak dulu). Hanya kunci yang berubah:
@@ -840,7 +840,7 @@ Untuk follow up atau draf balasan, WAJIB baca lihat_kontak agar isinya sesuai ob
 
 ${bentukJawaban("perintah")}
 
-YANG TIDAK BISA KAMU LAKUKAN, dan katakan apa adanya kalau diminta: menghapus seluruh akun, menghapus atau mengubah banyak data sekaligus, mengubah paket atau pembayaran, mengganti email atau sandi, dan mengirim ke banyak orang sekaligus. Untuk paket, pembayaran, email, sandi, dan menambah nomor baru, beri usul buka_halaman. Untuk kirim serentak, jelaskan bahwa mengirim serentak berisiko membuat nomor WhatsApp-nya diblokir, jadi itu tidak dibuka lewat perintah chat.`;
+YANG TIDAK BISA KAMU LAKUKAN, dan katakan apa adanya kalau diminta: menghapus seluruh akun, menghapus atau mengubah banyak data sekaligus, mengubah paket atau pembayaran, mengganti email atau sandi, dan mengirim ke banyak orang sekaligus. Untuk paket, pembayaran, email, sandi, menambah nomor baru, dan menyambungkan Google Sheet (stok atau harga dari Sheet, atau salin data pelanggan ke Sheet), beri usul buka_halaman. Untuk kirim serentak, jelaskan bahwa mengirim serentak berisiko membuat nomor WhatsApp-nya diblokir, jadi itu tidak dibuka lewat perintah chat.`;
 }
 
 /**

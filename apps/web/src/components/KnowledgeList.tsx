@@ -11,6 +11,7 @@ import {
   type KnowledgeState,
 } from "@/app/actions/knowledge";
 import { Ikon } from "@/components/Ikon";
+import { PerbaruiSheet } from "@/components/SambungSheet";
 
 export interface KnowledgeItemData {
   id: string;
@@ -21,6 +22,13 @@ export interface KnowledgeItemData {
   error: string | null;
   chunkCount: number;
   addedLabel: string;
+  /** Cuma untuk catatan dari Google Sheet. */
+  sheetUrl?: string | null;
+  sheetDisinkronLabel?: string | null;
+  sheetGagal?: string | null;
+  sheetCatatan?: string | null;
+  /** Cara Palwise membaca bentuk Sheet-nya: baris judul, kolom yang disembunyikan. */
+  sheetBacaan?: string | null;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -29,6 +37,7 @@ const TYPE_LABEL: Record<string, string> = {
   file: "Dari file",
   website: "Dari website",
   ai: "Dari AI lain",
+  sheet: "Dari Google Sheet",
   image: "Dari gambar",
 };
 
@@ -195,8 +204,25 @@ function KnowledgeItem({ source }: { source: KnowledgeItemData }) {
               {source.error}
             </span>
           )}
+          {/* Gagal membaca Sheet tidak mengosongkan catatannya, jadi dari luar
+              semuanya kelihatan normal. Justru karena itu gagalnya wajib
+              tampil di kartu, bukan cuma di dalam jendela: pemiliknya mengira
+              stok yang dia ubah sudah sampai padahal belum. */}
+          {source.sheetGagal && (
+            <span className="mt-2 block rounded bg-red-50 px-2 py-1 text-xs leading-relaxed text-red-700">
+              Pembaruan terakhir gagal, asisten masih memakai isi sebelumnya.{" "}
+              {source.sheetGagal}
+            </span>
+          )}
+          {source.sheetCatatan && (
+            <span className="mt-2 block rounded bg-amber-50 px-2 py-1 text-xs leading-relaxed text-amber-800">
+              {source.sheetCatatan}
+            </span>
+          )}
           <span className="mt-2 block text-xs text-ink-400">
-            Ditambahkan {source.addedLabel}
+            {source.type === "sheet" && source.sheetDisinkronLabel
+              ? `Diperbarui otomatis, terakhir ${source.sheetDisinkronLabel}`
+              : `Ditambahkan ${source.addedLabel}`}
           </span>
         </button>
 
@@ -231,8 +257,9 @@ function KnowledgeItem({ source }: { source: KnowledgeItemData }) {
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-700 hover:bg-ink-50"
                 >
                   <Ikon nama="catat" size={16} className="shrink-0 text-ink-500" />
-                  Lihat &amp; edit
+                  {source.type === "sheet" ? "Lihat isi" : "Lihat & edit"}
                 </button>
+                {source.type !== "sheet" && (
                 <form action={reindexKnowledgeAction}>
                   <input type="hidden" name="id" value={source.id} />
                   <button
@@ -244,6 +271,7 @@ function KnowledgeItem({ source }: { source: KnowledgeItemData }) {
                     Hafalkan lagi
                   </button>
                 </form>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -355,6 +383,10 @@ function EditorModal({
             </button>
           </div>
 
+          {source.type === "sheet" ? (
+            <IsiDariSheet source={source} onHapus={() => setKonfirmHapus(true)} />
+          ) : (
+          <>
           <form
             action={formAction}
             className="flex min-h-0 flex-1 flex-col"
@@ -460,6 +492,8 @@ function EditorModal({
               </button>
             </form>
           </div>
+          </>
+          )}
 
           {/* Konfirmasi hapus, sebagai lapisan di dalam jendela. Form hapusnya
               berdiri sendiri, bukan di dalam form suntingan (form di dalam form
@@ -520,6 +554,106 @@ function EditorModal({
         </div>
       </div>
     </Portal>
+  );
+}
+
+/**
+ * Isi jendela untuk catatan dari Google Sheet: dibaca saja, tidak disunting.
+ *
+ * Suntingan di sini akan ditimpa pada pembaruan berikutnya tanpa bekas, jadi
+ * kolomnya dikunci dan jalan yang benar (ubah di Sheet-nya) ditaruh tepat di
+ * atasnya sebagai tombol, bukan cuma kalimat.
+ */
+function IsiDariSheet({
+  source,
+  onHapus,
+}: {
+  source: KnowledgeItemData;
+  onHapus: () => void;
+}) {
+  return (
+    <>
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
+        <p className="font-medium text-ink-900">{source.title}</p>
+        <div className="rounded-xl border border-ink-200 bg-ink-50 p-3">
+          <p className="text-sm leading-relaxed text-ink-700">
+            Isinya ikut Google Sheet. Ubah stok atau harga di Sheet-nya, asistenmu
+            ikut tahu dalam 30 menit.
+            {source.sheetDisinkronLabel && (
+              <span className="text-ink-500">
+                {" "}
+                Terakhir diperbarui {source.sheetDisinkronLabel}.
+              </span>
+            )}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {source.sheetUrl && (
+              <a
+                href={source.sheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-ghost inline-flex items-center gap-1.5"
+              >
+                <Ikon nama="sheet" size={15} />
+                Buka Sheet
+              </a>
+            )}
+            <PerbaruiSheet id={source.id} />
+          </div>
+        </div>
+
+        {source.sheetGagal && (
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-700">
+            Pembaruan terakhir gagal, asisten masih memakai isi sebelumnya.{" "}
+            {source.sheetGagal}
+          </p>
+        )}
+        {source.sheetCatatan && (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+            {source.sheetCatatan}
+          </p>
+        )}
+        {source.error && (
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{source.error}</p>
+        )}
+        {/* Bacaan yang tidak bisa dilihat itu bacaan yang tidak bisa
+            dibetulkan. Terutama kolom yang disembunyikan dari asisten. */}
+        {source.sheetBacaan && (
+          <div className="flex gap-2.5 rounded-lg border border-ink-200 px-3 py-2.5">
+            <Ikon nama="sheet" size={15} className="mt-0.5 shrink-0 text-ink-400" />
+            <p className="text-xs leading-relaxed text-ink-600">
+              <span className="font-medium text-ink-800">Cara Palwise membaca Sheet ini. </span>
+              {source.sheetBacaan} Kalau ada yang keliru, betulkan judul kolomnya di Sheet.
+            </p>
+          </div>
+        )}
+
+        <div>
+          <p className="label">Yang dihafal asistenmu</p>
+          <textarea
+            readOnly
+            value={source.content}
+            aria-label="Isi yang dihafal"
+            className="textarea min-h-[240px] w-full bg-ink-50 text-ink-700 sm:min-h-[320px]"
+          />
+          <p className="hint">
+            Satu baris satu barang, nama kolomnya ikut di tiap baris supaya asisten
+            tidak tertukar antara stok dan harga. Isi selnya disalin apa adanya,
+            tidak ada angka yang diubah.
+          </p>
+        </div>
+      </div>
+
+      <div className="border-t border-ink-100 px-4 py-3 sm:px-5">
+        <button
+          type="button"
+          onClick={onHapus}
+          className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+        >
+          Hapus sambungan ini
+        </button>
+      </div>
+    </>
   );
 }
 

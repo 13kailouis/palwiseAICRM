@@ -9,6 +9,7 @@ import { indexPendingSources } from "./ai/rag.js";
 import { lepasSemuaKunci, restoreChannels } from "./wa/manager.js";
 import { startFollowUpScheduler } from "./jobs/followup.js";
 import { startLanggananScheduler } from "./jobs/langganan.js";
+import { startSheetScheduler } from "./integrasi/sinkronSheet.js";
 
 const app = express();
 
@@ -49,6 +50,7 @@ const server = app.listen(env.PORT, env.HOST, () => {
   // tetap turun walau kunci AI belum diisi, kalau tidak akun berbayar yang
   // kedaluwarsa akan bertahan selamanya di server yang kunci AI-nya kosong.
   startLanggananScheduler();
+  startSheetScheduler();
 });
 
 function shutdown(signal: string) {

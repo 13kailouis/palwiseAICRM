@@ -5,24 +5,41 @@ import { PageHeader, formatWaktu } from "@/components/ui";
 import { KnowledgeAdd } from "@/components/KnowledgeAdd";
 import { KnowledgeList } from "@/components/KnowledgeList";
 import { AgentTabs } from "@/components/AgentTabs";
+import { callWorker } from "@/lib/worker";
 
 export const dynamic = "force-dynamic";
+
+/** Kalimat "cara Palwise membaca Sheet ini" dari simpanan worker. */
+function bacaanSheet(json: string | null): string | null {
+  if (!json) return null;
+  try {
+    const b = JSON.parse(json)?.bacaan;
+    return typeof b === "string" && b ? b : null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function KnowledgePage({
   searchParams,
 }: {
-  searchParams: Promise<{ a?: string }>;
+  searchParams: Promise<{ a?: string; tambah?: string }>;
 }) {
   const user = await requireUser();
-  const { a } = await searchParams;
+  const { a, tambah } = await searchParams;
 
-  const [workspace, agents] = await Promise.all([
+  const [workspace, agents, infoSheet] = await Promise.all([
     prisma.workspace.findUniqueOrThrow({ where: { id: user.workspaceId } }),
     prisma.agent.findMany({
       where: { workspaceId: user.workspaceId },
       orderBy: { createdAt: "asc" },
       select: { id: true, name: true },
     }),
+    // Worker mati tidak boleh menjatuhkan halaman ini. Tanpa jawabannya, tab
+    // Sheet tetap jalan untuk Sheet berlink, cuma tidak menawarkan email robot.
+    callWorker<{ robot: string | null }>("/sheets/info", { timeoutMs: 4000 }).catch(
+      () => ({ robot: null }),
+    ),
   ]);
 
   if (agents.length === 0) {
@@ -146,12 +163,22 @@ export default async function KnowledgePage({
               error: s.error,
               chunkCount: s.chunkCount,
               addedLabel: formatWaktu(s.createdAt),
+              sheetUrl: s.sheetUrl,
+              sheetDisinkronLabel: s.sheetDisinkron ? formatWaktu(s.sheetDisinkron) : null,
+              sheetGagal: s.sheetGagal,
+              sheetCatatan: s.sheetCatatan,
+              sheetBacaan: bacaanSheet(s.sheetStruktur),
             }))}
           />
         </div>
 
         <div className="lg:sticky lg:top-6 lg:self-start">
-          <KnowledgeAdd agentId={active.id} namaBisnis={workspace.name} />
+          <KnowledgeAdd
+            agentId={active.id}
+            namaBisnis={workspace.name}
+            robotSheet={infoSheet.robot}
+            bukaSheet={tambah === "sheet"}
+          />
         </div>
       </div>
     </>

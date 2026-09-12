@@ -137,6 +137,7 @@ import {
 } from "../core/conversation.js";
 import { resetProviders } from "../ai/provider.js";
 import { env } from "../env.js";
+import { ujiSheet } from "./ujiSheet.js";
 
 // ─── Stub provider ────────────────────────────────────────────────────────────
 
@@ -9042,7 +9043,9 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // mereka menabrak dinding di langkah paling pertama.
     check(
       "website tidak dijadikan tab bawaan",
-      /useState<Tab>\("text"\)/.test(tambahInfo),
+      // Dibuka dari halaman Google Sheet boleh langsung ke tab Sheet; selain
+      // itu yang terbuka tetap Ketik sendiri.
+      /useState<Tab>\((bukaSheet \? "sheet" : )?"text"\)/.test(tambahInfo),
     );
     // Website itu tulisan pemasaran, dan pemasaran jarang memuat harga persis,
     // ongkir, jam buka, atau aturan retur. Tumpukan tulisan pemasaran malah
@@ -10550,6 +10553,9 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       );
     }
   }
+
+  // Google Sheet ----------------------------------------------------------------
+  await ujiSheet(check, env.ROOT_DIR);
 
   // Bersih-bersih --------------------------------------------------------------
   await prisma.workspace.delete({ where: { id: workspace.id } });

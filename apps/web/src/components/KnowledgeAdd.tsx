@@ -10,8 +10,9 @@ import { CONTOH_INFO } from "@/lib/contohInfo";
 import { ContohModal } from "@/components/ContohModal";
 import { IsiBesar, TombolBesar } from "@/components/IsiBesar";
 import { InfoTip } from "@/components/InfoTip";
+import { TambahSheet } from "@/components/SambungSheet";
 
-type Tab = "text" | "qna" | "file" | "website" | "ai";
+type Tab = "text" | "qna" | "file" | "website" | "sheet" | "ai";
 
 /**
  * Lima pilihan dulu berjejer jadi satu baris yang membungkus ke baris kedua.
@@ -51,6 +52,10 @@ const TULIS: { id: Tab; label: string }[] = [
 const AMBIL: { id: Tab; label: string; ikon: NamaIkon; saran?: string }[] = [
   { id: "website", label: "Website", ikon: "website", saran: "Paling cepat" },
   { id: "file", label: "Berkas", ikon: "berkas" },
+  // Sheet ada di deret AMBIL, bukan TULIS: isinya diambil dari tempat yang
+  // sudah dipakai pemiliknya tiap hari, dan beda dengan Berkas, dia ikut
+  // terbaru sendiri. Itu satu-satunya jalur yang tidak basi.
+  { id: "sheet", label: "Google Sheet", ikon: "sheet" },
   { id: "ai", label: "AI lain", ikon: "salin" },
 ];
 
@@ -68,11 +73,17 @@ function Submit() {
 export function KnowledgeAdd({
   agentId,
   namaBisnis,
+  robotSheet = null,
+  bukaSheet = false,
 }: {
   agentId: string;
   namaBisnis: string;
+  /** Email robot Google, kalau dipasang di server. Null = cuma Sheet berlink. */
+  robotSheet?: string | null;
+  /** Dibuka dari halaman Google Sheet: langsung ke tabnya. */
+  bukaSheet?: boolean;
 }) {
-  const [tab, setTab] = useState<Tab>("text");
+  const [tab, setTab] = useState<Tab>(bukaSheet ? "sheet" : "text");
   // Isi textarea dipegang di sini supaya tombol "Pakai contoh" bisa mengisinya.
   const [isi, setIsi] = useState("");
   // Deret contoh sengaja tertutup dulu. Kolom isian yang sudah ditemani satu
@@ -89,7 +100,7 @@ export function KnowledgeAdd({
 
   // Lagi mengambil dari sumber luar (website/berkas/AI lain)? Deret "Ketik
   // sendiri / Tanya jawab" cuma jadi gangguan saat itu, jadi disembunyikan.
-  const ambilAktif = tab === "website" || tab === "file" || tab === "ai";
+  const ambilAktif = tab === "website" || tab === "file" || tab === "sheet" || tab === "ai";
 
   return (
     <div className="card p-5">
@@ -110,7 +121,7 @@ export function KnowledgeAdd({
           seperti pengganti, bukan seperti yang disarankan. */}
       <div className="mb-2 mt-4 flex items-center gap-1.5">
         <p className="text-xs font-medium text-ink-600">
-          Ambil dari website atau berkas
+          Ambil dari website, berkas, atau Sheet
         </p>
         {/* Jebakan impornya penting, tapi tidak perlu jadi paragraf yang selalu
             terpampang. Dipindah ke lambang info: yang butuh tinggal ketuk. */}
@@ -196,13 +207,19 @@ export function KnowledgeAdd({
         </div>
       )}
 
+      {tab === "sheet" && (
+        <div className="mt-5">
+          <TambahSheet agentId={agentId} robot={robotSheet} />
+        </div>
+      )}
+
       {tab === "ai" && (
         <div className="mt-5">
           <DariAiLain agentId={agentId} namaBisnis={namaBisnis} />
         </div>
       )}
 
-      {tab !== "website" && tab !== "file" && tab !== "ai" && (
+      {!ambilAktif && (
       <form action={formAction} className="mt-5 space-y-4">
         <input type="hidden" name="type" value={tab} />
         <input type="hidden" name="agentId" value={agentId} />

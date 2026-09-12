@@ -46,6 +46,7 @@ export const KELOMPOK: Kelompok[] = [
     judul: "Pengaturan",
     menu: [
       { href: "/app/whatsapp", label: "Nomor WhatsApp", pendek: "Nomor", ikon: "whatsapp" },
+      { href: "/app/sambungan", label: "Google Sheet", pendek: "Sheet", ikon: "sheet" },
       { href: "/app/tagihan", label: "Paket & pemakaian", pendek: "Paket", ikon: "paket" },
       { href: "/app/akun", label: "Akun", ikon: "akun" },
     ],

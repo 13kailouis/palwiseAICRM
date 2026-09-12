@@ -37,6 +37,13 @@ import {
   runFollowUpTick,
   runPengingatTick,
 } from "./jobs/followup.js";
+import { emailRobot, GalatSheet } from "./integrasi/sheets.js";
+import {
+  pasangSambunganPelanggan,
+  salinPelangganKeSheet,
+  sinkronSumberSheet,
+  tambahSumberSheet,
+} from "./integrasi/sinkronSheet.js";
 
 export const router = express.Router();
 
@@ -154,6 +161,68 @@ router.post("/knowledge/:id/delete", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     fail(res, err);
+  }
+});
+
+// Google Sheet ---------------------------------------------------------------
+
+router.get("/sheets/info", (_req, res) => {
+  res.json({ robot: emailRobot() });
+});
+
+/**
+ * Galat Sheet dijawab 400 dengan kalimat manusia, bukan 500. Pesannya memang
+ * untuk pemilik toko ("bagikan Sheet-nya ke ..."), dan 500 membuat dashboard
+ * menggantinya dengan kalimat umum "gangguan di pihak kami" yang salah alamat.
+ */
+function gagalSheet(res: Response, err: unknown) {
+  if (err instanceof GalatSheet) {
+    res.status(400).json({ error: err.message, sementara: err.sementara });
+    return;
+  }
+  fail(res, err);
+}
+
+router.post("/sheets/sumber", async (req, res) => {
+  try {
+    const agentId = String(req.body?.agentId ?? "");
+    const url = String(req.body?.url ?? "");
+    const judul = typeof req.body?.judul === "string" ? req.body.judul : undefined;
+    res.json({ ok: true, ...(await tambahSumberSheet({ agentId, url, judul })) });
+  } catch (err) {
+    gagalSheet(res, err);
+  }
+});
+
+router.post("/sheets/sumber/:id/sinkron", async (req, res) => {
+  try {
+    const hasil = await sinkronSumberSheet(req.params.id);
+    if (hasil.galat) {
+      res.status(400).json({ error: hasil.galat });
+      return;
+    }
+    res.json({ ok: true, ...hasil });
+  } catch (err) {
+    gagalSheet(res, err);
+  }
+});
+
+router.post("/sheets/pelanggan", async (req, res) => {
+  try {
+    const workspaceId = String(req.body?.workspaceId ?? "");
+    const url = String(req.body?.url ?? "");
+    res.json({ ok: true, ...(await pasangSambunganPelanggan(workspaceId, url)) });
+  } catch (err) {
+    gagalSheet(res, err);
+  }
+});
+
+router.post("/sheets/pelanggan/salin", async (req, res) => {
+  try {
+    const workspaceId = String(req.body?.workspaceId ?? "");
+    res.json({ ok: true, ...(await salinPelangganKeSheet(workspaceId, { paksa: true })) });
+  } catch (err) {
+    gagalSheet(res, err);
   }
 });
 

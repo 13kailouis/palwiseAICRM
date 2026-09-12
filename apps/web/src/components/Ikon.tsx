@@ -58,7 +58,8 @@ export type NamaIkon =
   | "amplop"
   | "gembok"
   | "unggah"
-  | "lokasi";
+  | "lokasi"
+  | "sheet";
 
 const GAMBAR: Record<NamaIkon, React.ReactNode> = {
   // Bidang-bidang halaman, cara paling umum menggambarkan "ringkasan".
@@ -318,6 +319,18 @@ const GAMBAR: Record<NamaIkon, React.ReactNode> = {
     <>
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
       <path d="M14 3v5h5" />
+    </>
+  ),
+
+  // Lembar tabel: satu baris judul kolom yang tebal di atas, lalu kotak-kotak
+  // sel. Garis judulnya yang membuat dia terbaca sebagai spreadsheet, bukan
+  // kalender atau jendela.
+  sheet: (
+    <>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M4 8.5h16" />
+      <path d="M4 14.5h16" />
+      <path d="M10 8.5V21" />
     </>
   ),
 
