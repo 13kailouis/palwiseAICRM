@@ -84,13 +84,28 @@ interface Detail {
  * urutannya beda, dan angka kembar di dua pil bersebelahan bikin orang mengira
  * dua-duanya daftar yang berbeda.
  */
-const FILTERS: { id: string; label: string; hitung?: "open" | "human" | "all" }[] = [
+const FILTERS: {
+  id: string;
+  label: string;
+  hitung?: "open" | "human" | "all" | "panas" | "tenangkan";
+}[] = [
   { id: "open", label: "Masih jalan", hitung: "open" },
+  { id: "human", label: "Nunggu kamu", hitung: "human" },
+  // Dua ini dulu cuma chip angka di barisnya sendiri di atas daftar: memakan
+  // satu baris penuh dan tidak bisa diapa-apakan. Sebagai saringan mereka
+  // menyatu ke baris ini, dan angkanya sekalian jadi jalan masuk.
+  //
+  // Tulisannya sengaja SAMA dengan lencana di baris daftar ("mau beli",
+  // "kesal"), jadi pil dan lencana saling menjelaskan tanpa keterangan
+  // tambahan. Yang baik tetap ditulis sebelum yang buruk: kotak masuk yang
+  // tiap pagi menyodorkan kemarahan duluan lama-lama tidak dibuka lagi.
+  { id: "panas", label: "Mau beli", hitung: "panas" },
+  { id: "tenangkan", label: "Kesal", hitung: "tenangkan" },
   // Bukan saringan, tapi URUTAN: isinya sama dengan "Masih jalan", disusun
   // menurut siapa yang paling mahal kalau ditinggalkan. Lihat catatannya di
-  // api/inbox/conversations/route.ts.
+  // api/inbox/conversations/route.ts. Ditaruh sesudah yang menyaring karena
+  // empat pil pertama yang dipakai tiap hari.
   { id: "duluin", label: "Duluin ini" },
-  { id: "human", label: "Nunggu kamu", hitung: "human" },
   { id: "all", label: "Semua", hitung: "all" },
 ];
 
@@ -326,10 +341,6 @@ function PesanBaris({
 export function Inbox({ initialId }: { initialId: string | null }) {
   const [filter, setFilter] = useState("open");
   const [list, setList] = useState<ConvSummary[]>([]);
-  const [ringkas, setRingkas] = useState<{
-    siapBeli: number;
-    perluDitenangkan: number;
-  } | null>(null);
   /** Angka per saringan, dihitung server. Lihat api/inbox/conversations. */
   const [jumlah, setJumlah] = useState<Record<string, number>>({});
   // Pencarian di daftar. Kotaknya TERTUTUP sampai ikonnya diketuk: kolom yang
@@ -370,7 +381,6 @@ export function Inbox({ initialId }: { initialId: string | null }) {
       if (!res.ok) return;
       const data = await res.json();
       setList(data.conversations);
-      setRingkas(data.ringkas ?? null);
       setJumlah(data.jumlah ?? {});
       // Auto-pilih obrolan pertama CUMA di layar lebar.
       //
@@ -529,7 +539,10 @@ export function Inbox({ initialId }: { initialId: string | null }) {
       <div
         className={[
           "flex flex-col border-r border-ink-200 bg-white",
-          "w-full lg:w-[21rem] lg:shrink-0",
+          // 23rem, bukan 21rem: saringannya sekarang enam (dua di antaranya
+          // lahir dari baris hitungan yang dibuang), dan yang paling perlu
+          // kelihatan tanpa digeser adalah angka "siap beli".
+          "w-full lg:w-[23rem] lg:shrink-0",
           selectedId ? "hidden lg:flex" : "flex",
         ].join(" ")}
       >
@@ -586,7 +599,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                         setFilter(f.id);
                         setSelectedId(null);
                       }}
-                      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs transition ${
+                      className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] transition ${
                         aktif
                           ? "bg-ink-900 font-medium text-white"
                           : "text-ink-600 hover:bg-ink-100"
@@ -623,25 +636,6 @@ export function Inbox({ initialId }: { initialId: string | null }) {
             lencana merah menarik mata jauh lebih kuat daripada lencana hitam,
             jadi tanpa baris ini hal pertama yang dibaca pemilik toko tiap pagi
             selalu kemarahan. */}
-        {ringkas &&
-          (ringkas.siapBeli > 0 || ringkas.perluDitenangkan > 0) &&
-          !cariBuka && (
-            <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-ink-100 px-3 py-2">
-              {ringkas.siapBeli > 0 && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-ink-900 px-2.5 py-1 text-[11px] font-medium text-white">
-                  <span className="tabular-nums">{ringkas.siapBeli}</span>
-                  siap beli
-                </span>
-              )}
-              {ringkas.perluDitenangkan > 0 && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-800">
-                  <span className="tabular-nums">{ringkas.perluDitenangkan}</span>
-                  perlu ditenangkan
-                </span>
-              )}
-            </div>
-          )}
-
         {/* anim-urut: baris masuk berurutan sekali waktu daftar dibuka, dan
             obrolan baru yang datang belakangan ikut muncul lembut. Karena
             key-nya id percakapan, baris lama tidak dianimasikan ulang tiap
@@ -689,7 +683,13 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                 <button
                   key={c.id}
                   onClick={() => setSelectedId(c.id)}
-                  className={`group/baris relative flex w-full items-start gap-3 px-3 pt-2.5 text-left transition ${
+                  // Keterangan lengkapnya lewat tooltip bawaan browser: dia
+                  // muncul di dekat kursor, hilang sendiri, dan tidak memakan
+                  // satu piksel pun tata letak. Kotak hitam buatan sendiri
+                  // sempat dicoba dan justru menutupi baris yang sedang
+                  // diterangkannya.
+                  title={rinci.length > 0 ? rinci.join(" · ") : undefined}
+                  className={`relative flex w-full items-start gap-3 px-3 pt-2 text-left transition ${
                     selectedId === c.id ? "bg-ink-100" : "hover:bg-ink-50 active:bg-ink-100"
                   }`}
                 >
@@ -698,12 +698,12 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                   {selectedId === c.id && (
                     <span className="absolute inset-y-0 left-0 hidden w-0.5 bg-ink-900 lg:block" />
                   )}
-                  <Avatar nama={c.name} ukuran={42} fotoPath={c.waFotoPath} />
+                  <Avatar nama={c.name} ukuran={38} fotoPath={c.waFotoPath} />
                   {/* Pemisah baris ditaruh di kolom isi, bukan di seluruh
                       baris, jadi garisnya mulai sejajar nama seperti aplikasi
                       chat. Garis penuh dari tepi ke tepi bikin daftar terbaca
                       seperti tabel, bukan seperti daftar orang. */}
-                  <div className="min-w-0 flex-1 border-b border-ink-100 pb-2.5">
+                  <div className="min-w-0 flex-1 border-b border-ink-100 pb-2">
                     <div className="flex items-baseline justify-between gap-2">
                       <span
                         className={`truncate text-sm text-ink-900 ${
@@ -745,19 +745,6 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                         </span>
                       )}
                     </div>
-                    {/* Keterangan lengkapnya muncul waktu barisnya disorot,
-                        dan CUMA di layar lebar. Di HP tidak ada sorot sama
-                        sekali, dan keterangan yang sama sudah menunggu di
-                        kepala obrolan begitu barisnya diketuk.
-
-                        `pointer-events-none` penting: kotak ini menutupi
-                        barisnya sendiri waktu muncul, dan tanpa itu ketukan
-                        justru mendarat di kotaknya, bukan di obrolannya. */}
-                    {rinci.length > 0 && (
-                      <span className="pointer-events-none absolute right-3 top-1/2 z-30 hidden max-w-[16rem] -translate-y-1/2 rounded-lg bg-ink-900 px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-[0_8px_24px_-8px_rgba(15,15,15,0.45)] lg:group-hover/baris:block">
-                        {rinci.join(" · ")}
-                      </span>
-                    )}
                   </div>
                 </button>
               );

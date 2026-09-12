@@ -5727,9 +5727,10 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     const ruteDaftar = baca("apps/web/src/app/api/inbox/conversations/route.ts");
     check(
       "angka tiap saringan dihitung server, bukan dari daftar yang sedang tampil",
-      /jumlah: \{ open: jumlahJalan, human: jumlahNunggu, all: jumlahSemua \}/.test(
-        ruteDaftar,
-      ),
+      // Sifatnya yang dikunci: angkanya diturunkan dari hitungan server, bukan
+      // dari panjang daftar yang kebetulan sedang tampil.
+      /jumlah: \{[\s\S]*?open: jumlahJalan[\s\S]*?human: jumlahNunggu/.test(ruteDaftar) &&
+        !/jumlah:[\s\S]{0,80}conversations\.length/.test(ruteDaftar),
     );
     check(
       "pencarian daftar tidak menambah permintaan ke server",
@@ -9371,8 +9372,10 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // sistematis membuat kabar buruk lebih terlihat daripada kabar baik. Yang
     // memakai layar ini pemilik usaha kecil yang sudah cemas soal uang, dan
     // layar yang tiap pagi menyodorkan ancaman duluan lama-lama tidak dibuka.
-    const posBeli = layarInbox.indexOf("siap beli");
-    const posTenang = layarInbox.indexOf("perlu ditenangkan");
+    // Yang dikunci URUTANNYA, bukan kalimatnya: pil "mau beli" harus ditulis
+    // sebelum pil "kesal", apa pun sebutan yang dipakai nanti.
+    const posBeli = layarInbox.indexOf('hitung: "panas"');
+    const posTenang = layarInbox.indexOf('hitung: "tenangkan"');
     check(
       "hitungan yang baik ditulis sebelum yang buruk",
       posBeli > 0 && posTenang > 0 && posBeli < posTenang,

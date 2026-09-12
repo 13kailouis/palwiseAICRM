@@ -31,6 +31,22 @@ export async function GET(req: Request) {
     where.needsHuman = true;
   }
   if (filter === "duluin") where.status = "open";
+  /**
+   * Dua saringan yang lahir dari baris hitungan.
+   *
+   * Dulu "siap beli" dan "perlu ditenangkan" cuma dua chip angka di baris
+   * sendiri di atas daftar: memakan satu baris penuh, dan tidak bisa diapa-
+   * apakan. Sekarang keduanya jadi saringan betulan, jadi barisnya menyatu
+   * dengan pil saringan yang lain dan angkanya sekalian jadi jalan masuk.
+   */
+  if (filter === "panas") {
+    where.status = "open";
+    where.rasaLabel = "panas";
+  }
+  if (filter === "tenangkan") {
+    where.status = "open";
+    where.rasaLabel = { in: ["marah", "kesal"] };
+  }
 
   /**
    * "Duluin ini": urutkan menurut siapa yang paling perlu dipegang, bukan
@@ -126,7 +142,13 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ringkas: { siapBeli, perluDitenangkan },
-    jumlah: { open: jumlahJalan, human: jumlahNunggu, all: jumlahSemua },
+    jumlah: {
+      open: jumlahJalan,
+      human: jumlahNunggu,
+      all: jumlahSemua,
+      panas: siapBeli,
+      tenangkan: perluDitenangkan,
+    },
     conversations: conversations.map((c) => ({
       id: c.id,
       name: displayName(c.contact),
