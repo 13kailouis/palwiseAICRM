@@ -59,7 +59,8 @@ export type NamaIkon =
   | "gembok"
   | "unggah"
   | "lokasi"
-  | "sheet";
+  | "sheet"
+  | "cari";
 
 const GAMBAR: Record<NamaIkon, React.ReactNode> = {
   // Bidang-bidang halaman, cara paling umum menggambarkan "ringkasan".
@@ -412,6 +413,16 @@ const GAMBAR: Record<NamaIkon, React.ReactNode> = {
   // siku sudutnya. Dipakai tombol yang membuka kotak isian jadi satu layar
   // penuh. Sengaja BUKAN kaca pembesar: kaca pembesar sudah berarti "cari" di
   // hampir semua aplikasi, dan dipakai di sini dia menjanjikan pencarian.
+  // Kaca pembesar. Sengaja TERPISAH dari "perbesar" (panah diagonal): di
+  // hampir semua aplikasi kaca pembesar berarti MENCARI, dan panah diagonal
+  // berarti melebarkan. Dua arti berbeda tidak boleh berbagi satu gambar.
+  cari: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M16.2 16.2L21 21" />
+    </>
+  ),
+
   perbesar: (
     <>
       <path d="M14 4h6v6" />

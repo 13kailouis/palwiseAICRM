@@ -86,7 +86,21 @@ export async function GET(req: Request) {
    * Yang dihitung selalu SELURUH obrolan yang masih jalan, bukan cuma yang
    * sedang tampil, supaya angkanya tidak berubah tiap ganti saringan.
    */
-  const [siapBeli, perluDitenangkan] = await Promise.all([
+  /**
+   * Angka di tiap pil saringan.
+   *
+   * Angka menggantikan kalimat: "Nunggu kamu 3" memberi tahu lebih banyak
+   * daripada satu baris keterangan di bawahnya, dan tidak memakan satu baris
+   * pun. Dihitung untuk SEMUA saringan sekaligus, bukan cuma yang sedang
+   * dipilih, supaya pemiliknya tahu ada yang menunggu tanpa harus mengetuk
+   * pilnya satu per satu.
+   *
+   * "Duluin ini" sengaja tidak punya angkanya sendiri: isinya sama persis
+   * dengan "Masih jalan", cuma urutannya beda.
+   */
+  const dasar = { workspaceId: user.workspaceId, ...HANYA_OBROLAN_ASLI };
+  const [siapBeli, perluDitenangkan, jumlahJalan, jumlahNunggu, jumlahSemua] =
+    await Promise.all([
     prisma.conversation.count({
       where: {
         workspaceId: user.workspaceId,
@@ -103,10 +117,16 @@ export async function GET(req: Request) {
         rasaLabel: { in: ["marah", "kesal"] },
       },
     }),
+    prisma.conversation.count({ where: { ...dasar, status: "open" } }),
+    prisma.conversation.count({
+      where: { ...dasar, status: "open", needsHuman: true },
+    }),
+    prisma.conversation.count({ where: dasar }),
   ]);
 
   return NextResponse.json({
     ringkas: { siapBeli, perluDitenangkan },
+    jumlah: { open: jumlahJalan, human: jumlahNunggu, all: jumlahSemua },
     conversations: conversations.map((c) => ({
       id: c.id,
       name: displayName(c.contact),

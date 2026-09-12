@@ -5721,6 +5721,38 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
         baca("apps/web/src/components/KirimMasukan.tsx"),
       ),
     );
+    // Rombakan tampilan 12 September 2026: daftar dipadatkan, dan yang dipotong
+    // TULISANNYA, bukan keterangannya. Yang dikunci di sini sifatnya, bukan
+    // kalimatnya.
+    const ruteDaftar = baca("apps/web/src/app/api/inbox/conversations/route.ts");
+    check(
+      "angka tiap saringan dihitung server, bukan dari daftar yang sedang tampil",
+      /jumlah: \{ open: jumlahJalan, human: jumlahNunggu, all: jumlahSemua \}/.test(
+        ruteDaftar,
+      ),
+    );
+    check(
+      "pencarian daftar tidak menambah permintaan ke server",
+      /const tampil = kunciCari/.test(kotakMasuk) &&
+        !/filter=\$\{filter\}&cari/.test(kotakMasuk),
+    );
+    check(
+      "pesan dipisah per tanggal, jadi riwayat panjang tidak jadi satu dinding",
+      /labelHari\(hari\)/.test(kotakMasuk) && /Kemarin/.test(kotakMasuk),
+    );
+    // Keterangan yang cuma berlaku sedetik sebelum tombol kirim ditekan tidak
+    // boleh membayar satu baris tetap di tiap obrolan.
+    check(
+      "keterangan asisten berhenti muncul cuma waktu sedang mengetik",
+      /detail\.conversation\.aiEnabled && draft\.trim\(\)\.length > 0/.test(kotakMasuk),
+    );
+    // Kaca pembesar berarti MENCARI dan panah diagonal berarti MELEBARKAN.
+    // Dua arti itu tidak boleh berbagi satu gambar.
+    check(
+      "tombol cari memakai ikon kaca pembesar, bukan ikon perbesar",
+      /nama="cari"/.test(kotakMasuk) && !/nama="perbesar"/.test(kotakMasuk),
+    );
+
     check(
       "kapan pelanggan selesai kelihatan di layar lebar",
       /c\.closedAt/.test(halamanKontak),
