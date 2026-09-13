@@ -57,7 +57,7 @@ export function DataTerstruktur({
     operatingSystem: "Web",
     inLanguage: "id-ID",
     description:
-      "Asisten WhatsApp AI untuk membantu admin kursus dan pelatihan menjawab pertanyaan program, biaya, dan jadwal dari info bisnis. Mencatat calon peserta dan permintaan trial untuk dikonfirmasi tim, dengan chat AI bagi pemilik untuk ringkasan dan draf tindak lanjut.",
+      "Asisten WhatsApp yang membalas pertanyaan pelanggan soal harga, jadwal, dan cara pesan dalam hitungan detik, memakai info bisnis yang diisi pemiliknya sendiri. Mencatat data pelanggan dan janji temu otomatis dari obrolan.",
     ...(asal ? { url: asal } : {}),
     // Tiap paket jadi satu penawaran dengan harganya sendiri. Ini yang dibaca
     // mesin jawaban waktu ditanya "harganya berapa".

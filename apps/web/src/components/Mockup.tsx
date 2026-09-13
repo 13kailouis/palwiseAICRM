@@ -1,4 +1,11 @@
 import { Ikon } from "@/components/Ikon";
+import {
+  JUALAN_UMUM,
+  type JanjiContoh,
+  type RasaContoh,
+  type SapaContoh,
+  type SumberInfo,
+} from "@/lib/jualan";
 
 /**
  * Gambar tampilan produk untuk halaman jualan.
@@ -31,7 +38,7 @@ function Jendela({
         <span className="h-2.5 w-2.5 rounded-full bg-ink-300" />
         <span className="h-2.5 w-2.5 rounded-full bg-ink-200" />
         <span className="h-2.5 w-2.5 rounded-full bg-ink-200" />
-        <span className="ml-2 truncate text-[11px] text-ink-500">{judul} · Ilustrasi</span>
+        <span className="ml-2 truncate text-[11px] text-ink-500">{judul}</span>
       </div>
       {children}
     </div>
@@ -55,25 +62,25 @@ const OBROLAN: {
 }[] = [
   {
     nama: "Pak Deni",
-    cuplikan: "Saya mau daftar kelas dewasa kak",
+    cuplikan: "Sudah saya transfer ya kak",
     jam: "22.10",
     tandai: true,
     rasa: { teks: "mau beli", kelas: "bg-ink-900 text-white" },
   },
   {
     nama: "Bu Ratna",
-    cuplikan: "Biaya kelas bahasa Inggris anak…",
+    cuplikan: "Kalau kirim ke Bandung ongkirnya…",
     jam: "23.42",
     aktif: true,
   },
   {
-    nama: "Bu Yuni",
+    nama: "Toko Bu Yuni",
     cuplikan: "Kok lama banget ya balesnya",
     jam: "19.30",
     tandai: true,
     rasa: { teks: "kesal", kelas: "bg-amber-50 text-amber-800" },
   },
-  { nama: "Sinta", cuplikan: "Kelas IELTS belajarnya apa saja?", jam: "20.55" },
+  { nama: "Sinta", cuplikan: "Yang sampler isinya apa aja?", jam: "20.55" },
 ];
 
 /** Kotak masuk: daftar obrolan di kiri, percakapan di kanan. */
@@ -140,7 +147,7 @@ export function MockupDashboard() {
           <div className="flex items-center justify-between border-b border-ink-200 px-3.5 py-2.5">
             <div>
               <p className="text-[11.5px] font-medium text-ink-900">Bu Ratna</p>
-              <p className="text-[10px] text-ink-500">Calon peserta · data contoh</p>
+              <p className="text-[10px] text-ink-500">+62 812 8834 2210</p>
             </div>
             <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[9.5px] font-medium text-ink-700">
               Dibalas AI
@@ -160,7 +167,7 @@ export function MockupDashboard() {
           <div className="flex-1 space-y-2 bg-ink-50 px-3.5 py-3 min-h-[124px] sm:min-h-[132px]">
             <div className="demo-gel-1 flex justify-start">
               <div className="max-w-[85%] rounded-xl rounded-bl-sm border border-ink-200 bg-white px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-800">
-                Biaya kelas bahasa Inggris anak berapa ya?
+                Kalau kirim ke Bandung ongkirnya berapa ya
               </div>
             </div>
             {/* Titik-titik mengetik ditumpuk DI ATAS gelembung balasannya,
@@ -177,14 +184,14 @@ export function MockupDashboard() {
               </div>
               <div className="demo-gel-2 flex justify-end">
                 <div className="max-w-[85%] rounded-xl rounded-br-sm bg-[#d9fdd3] px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-900">
-                  Rp400.000 per bulan untuk 8 pertemuan, kak. Ada biaya
-                  pendaftaran Rp100.000 dan modul Rp75.000 di awal.
+                  Kami kirimnya dari Bandung kak, jadi buat area Bandung bisa
+                  COD. Di atas Rp 300.000 gratis ongkir.
                 </div>
               </div>
             </div>
             <div className="demo-gel-3 flex justify-start">
               <div className="max-w-[85%] rounded-xl rounded-bl-sm border border-ink-200 bg-white px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-800">
-                Bisa coba kelasnya dulu kak?
+                Oke deh, saya ambil 2 ya
               </div>
             </div>
           </div>
@@ -216,21 +223,19 @@ export function MockupDashboard() {
  * packages/rasa, jadi gambar ini tidak menjanjikan apa pun yang tidak
  * benar-benar dikerjakan.
  */
-export function MockupRasa() {
+export function MockupRasa({ rasa = JUALAN_UMUM.rasa }: { rasa?: RasaContoh }) {
   const kolom = [
     {
       keadaan: "Pas dia santai",
       tanda: null as string | null,
-      pesan: "Kak, biaya kelas Inggris anak berapa?",
-      jawab:
-        "Halo kak! Kelas anak Rp 400.000 per bulan, 8 pertemuan. Pendaftaran Rp 100.000 dan modul Rp 75.000 per semester.",
+      pesan: rasa.pesan,
+      jawab: rasa.santai,
     },
     {
       keadaan: "Pas dia udah nunggu",
       tanda: "3 pesan belum dibalas, 22 menit",
-      pesan: "Kak, biaya kelas Inggris anak berapa?",
-      jawab:
-        "Maaf sudah menunggu kak. Kelas anak Rp 400.000 per bulan, pendaftaran Rp 100.000, dan modul Rp 75.000 per semester.",
+      pesan: rasa.pesan,
+      jawab: rasa.nunggu,
     },
   ];
 
@@ -267,14 +272,11 @@ export function MockupRasa() {
 }
 
 /** Halaman Info bisnis: sumber pengetahuan yang sudah terbaca. */
-export function MockupInfoBisnis() {
-  const sumber = [
-    { judul: "Program & biaya kursus", asal: "Ditempel manual", potongan: 14, siap: true },
-    { judul: "Halaman program lembaga", asal: "Dibaca dari website", potongan: 26, siap: true },
-    { judul: "Aturan trial & pendaftaran", asal: "Ditempel manual", potongan: 6, siap: true },
-    { judul: "Dari ChatGPT", asal: "Dipindahkan dari AI lain", potongan: 0, siap: false },
-  ];
-
+export function MockupInfoBisnis({
+  sumber = JUALAN_UMUM.info,
+}: {
+  sumber?: SumberInfo[];
+}) {
   return (
     <Jendela judul="app.palwise.id/app/knowledge">
       <div className="divide-y divide-ink-100">
@@ -307,35 +309,13 @@ export function MockupInfoBisnis() {
 
 /** Sapaan setelah pembelian dan ajakan beli lagi. */
 /**
- * Daftar janji temu di Ringkasan.
+ * Daftar janji temu di Ringkasan. Isinya per bidang usaha, dari `lib/jualan.ts`.
  *
- * Contoh permintaan trial dan konsultasi program; konfirmasi tetap oleh tim.
+ * Nama di satu gambar tidak boleh kembar, dan tidak boleh sama dengan tanda
+ * tangan pendiri di halaman yang sama: nama yang sama muncul sebagai dua orang
+ * berbeda bikin gambar ini terbaca sebagai contoh yang asal comot.
  */
-export function MockupJanji() {
-  const janji = [
-    {
-      nama: "Bu Ratna",
-      untuk: "trial kelas Bahasa Inggris anak",
-      kapan: "Hari ini jam 14.00",
-      pasti: true,
-    },
-    {
-      nama: "Pak Anwar",
-      untuk: "konsultasi program IELTS",
-      kapan: "Besok jam 09.30",
-      pasti: true,
-    },
-    {
-      // Bukan "Kai" lagi: nama itu sekarang tanda tangan pendirinya di halaman
-      // yang sama, dan nama yang sama muncul dua kali sebagai dua orang berbeda
-      // bikin gambar ini terbaca sebagai contoh yang asal comot.
-      nama: "Pak Arif",
-      untuk: "trial kelas dewasa lewat Google Meet",
-      kapan: "Sabtu jam 10.00",
-      pasti: false,
-    },
-  ];
-
+export function MockupJanji({ janji = JUALAN_UMUM.janji }: { janji?: JanjiContoh[] }) {
   return (
     <Jendela judul="app.palwise.id/app">
       <div className="px-4 py-3">
@@ -367,22 +347,18 @@ export function MockupJanji() {
   );
 }
 
-export function MockupSapaLagi() {
-  const baris = [
-    { hari: "Percakapan tercatat", teks: "Maya menanyakan trial Bahasa Inggris anak", jenis: "netral" },
-    { hari: "Minta draf di Tanya", teks: "“Bantu balas Maya, jadwal trial masih aku cek.”", jenis: "kirim" },
-    { hari: "Periksa sebelum kirim", teks: "“Permintaan trial sudah kami catat. Tim akan mengabari setelah jadwal dipastikan.”", jenis: "kirim" },
-  ];
+export function MockupSapaLagi({ sapa = JUALAN_UMUM.sapa }: { sapa?: SapaContoh }) {
+  const baris = sapa.baris;
 
   return (
-    <Jendela judul="Draf tindak lanjut calon peserta">
+    <Jendela judul={sapa.judul}>
       <div className="space-y-0 px-4 py-4">
         {baris.map((b, i) => (
           <div key={b.hari} className="flex gap-3">
             <div className="flex flex-col items-center">
               <span
                 className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-                  b.jenis === "kirim" ? "bg-ink-900" : "border-2 border-ink-300 bg-white"
+                  b.kirim ? "bg-ink-900" : "border-2 border-ink-300 bg-white"
                 }`}
               />
               {i < baris.length - 1 && <span className="w-px flex-1 bg-ink-200" />}
@@ -391,7 +367,7 @@ export function MockupSapaLagi() {
               <p className="text-[10px] font-medium text-ink-500">{b.hari}</p>
               <p
                 className={`mt-0.5 text-[12px] leading-relaxed ${
-                  b.jenis === "kirim" ? "text-ink-900" : "text-ink-600"
+                  b.kirim ? "text-ink-900" : "text-ink-600"
                 }`}
               >
                 {b.teks}
@@ -401,8 +377,7 @@ export function MockupSapaLagi() {
         ))}
       </div>
       <div className="border-t border-ink-200 bg-ink-50 px-4 py-2.5 text-[10.5px] leading-relaxed text-ink-500">
-        Ilustrasi draf lewat Tanya. Kamu memeriksa dan menyetujui sebelum
-        pesan dikirim; belum ada slot trial yang dipastikan.
+        {sapa.catatan}
       </div>
     </Jendela>
   );

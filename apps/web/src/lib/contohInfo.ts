@@ -273,6 +273,43 @@ Bisa datang hari ini juga? Tergantung teknisi yang kosong, dicek dulu ke tim.
 Melayani borongan kantor? Melayani, minimal 5 unit, harganya beda, tanya tim.
 Kalau sudah dicek tapi tidak jadi diperbaiki? Biaya ceknya tetap dibayar.`;
 
+const OTOMOTIF = `DAFTAR TIPE DAN HARGA OTR
+Tipe S manual, Rp 176.000.000 OTR kota
+Tipe E CVT, Rp 198.500.000 OTR kota
+Tipe RS CVT, Rp 221.000.000 OTR kota
+Harga luar kota beda, dicek dulu ke sales.
+Tipe RS warna merah sedang kosong, inden sekitar 2 bulan.
+Warna lain dan inden tiap tipe dicek dulu ke tim, tidak dijawab dari ingatan.
+
+PROMO BULAN INI
+Potongan Rp 5.000.000 untuk pembelian kredit lewat leasing rekanan.
+Gratis kaca film untuk pembelian tunai.
+Promo berlaku sampai akhir bulan, tidak bisa digabung.
+
+CARA BELI, DP, DAN KREDIT
+Bisa tunai atau kredit. Tanda jadi Rp 5.000.000 saat SPK, dikembalikan kalau leasing menolak.
+DP mulai Rp 20.000.000 lewat leasing rekanan.
+Tenor 1 sampai 5 tahun.
+Simulasi cicilan resmi dan persetujuan leasing hanya dari sales, tidak dihitung lewat chat.
+Tukar tambah bisa, harga mobil lama ditaksir langsung di showroom.
+
+TEST DRIVE
+Senin sampai Minggu, 09.00 sampai 16.00, di showroom.
+Wajib bawa SIM A.
+Jadwal dicatat sebagai permintaan dulu, sales mengabari setelah unit test drive dipastikan tersedia.
+
+SERVIS BERKALA
+Servis 10.000 km, Rp 650.000 termasuk oli dan filter oli
+Servis 20.000 km, Rp 1.150.000 termasuk oli, filter oli, dan filter udara
+Ganti kampas rem depan, harganya ikut sparepart, dicek mekanik dulu
+Biaya perbaikan tidak bisa dipastikan sebelum kendaraan diperiksa mekanik.
+Bengkel buka Senin sampai Sabtu, 08.00 sampai 16.00.
+
+YANG SERING DITANYA
+Bisa servis tanpa janji? Bisa, tapi yang sudah janjian didahulukan.
+Bisa antar jemput mobil untuk servis? Belum ada.
+Garansi mesin? Mengikuti buku garansi pabrikan, dicek dulu ke tim untuk kasus tertentu.`;
+
 const KURSUS = `DAFTAR KELAS DAN BIAYA
 Matematika SD kelas 4 sampai 6, Rp 350.000 per bulan, 8 pertemuan
 Matematika SMP, Rp 450.000 per bulan, 8 pertemuan
@@ -292,6 +329,7 @@ Kimia SMA, Senin dan Kamis, 18.30 sampai 20.00.
 Bahasa Inggris anak, Selasa dan Kamis, 16.00 sampai 17.00.
 Bahasa Inggris dewasa, Rabu dan Jumat, 19.00 sampai 20.30.
 Penerimaan peserta dibuka setiap bulan. Ketersediaan kelas dikonfirmasi admin; jadwal umum bukan jaminan slot kosong.
+Kelas Kimia SMA hari Senin sedang penuh, kelas baru dibuka bulan depan.
 
 KELAS PERCOBAAN
 Boleh ikut satu pertemuan gratis, daftar dulu lewat chat.
@@ -507,6 +545,7 @@ const ISI: Record<string, string> = {
   klinik: KLINIK,
   properti: PROPERTI,
   servis: SERVIS,
+  otomotif: OTOMOTIF,
   kursus: KURSUS,
   agency: AGENCY,
   skincare: SKINCARE,

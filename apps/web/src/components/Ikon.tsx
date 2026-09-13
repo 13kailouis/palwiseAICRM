@@ -48,6 +48,7 @@ export type NamaIkon =
   | "properti"
   | "kursus"
   | "servis"
+  | "mobil"
   | "kalender"
   | "centang"
   | "silang"
@@ -308,6 +309,18 @@ const GAMBAR: Record<NamaIkon, React.ReactNode> = {
   servis: (
     <>
       <path d="M15.2 3.4a5.5 5.5 0 0 0-6 8.7l-6.1 6.1a1.8 1.8 0 0 0 2.6 2.6l6.1-6.1a5.5 5.5 0 0 0 8.7-6l-3.3 3.3-3-3 3-3Z" />
+    </>
+  ),
+
+  /* Mobil dari samping: atap, kaca, dua roda. Untuk dealer dan bengkel.
+     Rodanya lingkaran utuh yang memotong badan, bukan setengah lingkaran,
+     supaya di 15px tetap terbaca sebagai roda dan bukan titik. */
+  mobil: (
+    <>
+      <path d="M5 16.5H3.8a.8.8 0 0 1-.8-.8v-3a2 2 0 0 1 1.4-1.9l2.3-.7 2.1-3.3A2 2 0 0 1 10.5 6h3.9a2 2 0 0 1 1.6.8l2.6 3.4 1.9.6a2 2 0 0 1 1.5 1.9v3a.8.8 0 0 1-.8.8H19" />
+      <path d="M9 16.5h6" />
+      <circle cx="7" cy="16.5" r="2" />
+      <circle cx="17" cy="16.5" r="2" />
     </>
   ),
 

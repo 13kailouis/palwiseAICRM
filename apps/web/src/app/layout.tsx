@@ -45,10 +45,10 @@ const huruf = localFont({
   ],
 });
 
-/** Fokus akuisisi awal: lembaga kursus dengan pertanyaan calon peserta lewat WA. */
-const JUDUL = "Palwise: asisten WhatsApp AI untuk kursus & pelatihan";
+/** Search and sharing copy leads with the loss the owner already feels, same as the hero and share card. */
+const JUDUL = "Palwise: sales WhatsApp AI yang bales chat 24 jam";
 const RINGKAS =
-  "Bantu admin kursus menjawab pertanyaan program, biaya, dan jadwal lewat WhatsApp. Catat calon peserta, siapkan draf follow up, dan konfirmasi permintaan trial bersama tim. Coba gratis.";
+  "Chat WhatsApp jam 11 malam tetap dibales dalam hitungan detik, pakai harga dan info tokomu sendiri. Calon pembeli tercatat rapi, tanpa nambah gaji. Mulai gratis, tanpa kartu kredit.";
 
 export const metadata: Metadata = {
   // Template judul: tiap halaman menambahkan namanya sendiri di depan, dan

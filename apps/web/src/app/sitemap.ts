@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { ALAMAT_SITUS } from "@/lib/situs";
+import { HALAMAN_BIDANG } from "@/lib/jualan";
 
 /**
  * sitemap.xml.
@@ -15,6 +16,10 @@ import { ALAMAT_SITUS } from "@/lib/situs";
  */
 const HALAMAN: { jalur: string; prioritas: number }[] = [
   { jalur: "/", prioritas: 1 },
+  // Halaman per bidang usaha ("/klinik", "/dealer", ...). Diturunkan dari
+  // lib/jualan.ts, jadi bidang baru tidak bisa lupa didaftarkan di sini.
+  // Orang mencari "chatbot WhatsApp klinik", bukan nama produknya.
+  ...HALAMAN_BIDANG.map((h) => ({ jalur: `/${h.id}`, prioritas: 0.9 })),
   // Prioritas tinggi dan itu disengaja. Orang mencari "cara pakai" dan "cara
   // menyambungkan WhatsApp ke AI" jauh lebih sering daripada nama produknya,
   // dan halaman ini yang menjawabnya. Dia juga tautan yang paling sering

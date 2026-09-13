@@ -5946,7 +5946,12 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // keduanya sudah sempat berbeda. Yang lebih mahal bukan bedanya, tapi
     // bidang baru yang ditambahkan di preset lalu tidak pernah muncul di
     // halaman jualan karena tidak ada yang ingat ada berkas kedua.
-    const depan = baca("apps/web/src/app/page.tsx");
+    // Sejak 13 September 2026 halaman depan cuma memanggil HalamanJualan, dan
+    // kalimat per bidang usaha (termasuk hero versi umum) ada di lib/jualan.ts.
+    // Dua berkas itu digabung di sini supaya pemeriksaan di bawah tetap membaca
+    // halaman yang sama dengan yang dibaca orang.
+    const dataJualan = baca("apps/web/src/lib/jualan.ts");
+    const depan = baca("apps/web/src/components/HalamanJualan.tsx") + "\n" + dataJualan;
     const daftarPreset = baca("apps/web/src/lib/preset.ts");
     check(
       "daftar bidang di halaman depan diturunkan dari preset, tidak diketik ulang",
@@ -5967,6 +5972,50 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     ]) {
       check(`halaman depan menyebut ${bidang}`, daftarPreset.includes(bidang));
     }
+
+    // Halaman per bidang usaha ("/klinik", "/dealer", ...).
+    //
+    // Tiap isi di lib/jualan.ts wajib punya folder rutenya sendiri di akar.
+    // Bidang yang ditulis datanya tapi lupa dibuatkan folder tetap muncul di
+    // kaki halaman dan sitemap, lalu tautannya 404, tanpa satu pun galat.
+    // Alamatnya sengaja pendek, bukan "/untuk/klinik", atas permintaan pemilik
+    // produk, dan sengaja folder per bidang, bukan satu rute dinamis di akar
+    // yang diam-diam menelan alamat apa pun.
+    const idBidang = [...dataJualan.matchAll(/^  id: "([a-z]+)",$/gm)]
+      .map((m) => m[1])
+      .filter((id) => id !== "umum");
+    check("ada halaman jualan per bidang usaha", idBidang.length >= 8, idBidang.join(", "));
+    for (const id of idBidang) {
+      const rute = path.join(akar, `apps/web/src/app/${id}/page.tsx`);
+      check(
+        `halaman /${id} punya rutenya sendiri`,
+        fs.existsSync(rute) && fs.readFileSync(rute, "utf8").includes(`jualanUntuk("${id}")`),
+      );
+    }
+    check(
+      "tidak ada rute dinamis di akar dan tidak ada /untuk",
+      !fs.readdirSync(path.join(akar, "apps/web/src/app")).some((n) => n.startsWith("[")) &&
+        !fs.existsSync(path.join(akar, "apps/web/src/app/untuk")),
+    );
+    check(
+      "halaman bidang masuk sitemap lewat data yang sama",
+      /HALAMAN_BIDANG\.map/.test(baca("apps/web/src/app/sitemap.ts")),
+    );
+    check(
+      "tiap halaman bidang menunjuk preset yang benar-benar ada",
+      [...dataJualan.matchAll(/presetId: "([a-z]+)"/g)].every((m) =>
+        daftarPreset.includes(`id: "${m[1]}"`),
+      ),
+    );
+    // Telepon suara sedang dikembangkan terpisah dan BELUM ada di produk.
+    // Komentarnya boleh menyebutnya; teks yang tampil tidak.
+    const dataJualanTampil = dataJualan
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    check(
+      "halaman jualan tidak menjanjikan telepon suara yang belum ada",
+      !/telepon suara|AI voice|menelepon pelanggan|angkat telepon/i.test(dataJualanTampil),
+    );
 
     // Halaman depan harus menjual HASIL, bukan mekanik. "Chat masuk, langsung
     // dijawab" itu menjelaskan cara kerjanya, dan cara kerja bukan yang dibeli
@@ -6012,7 +6061,18 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // Kalimat lamanya masih ada di komentar yang menjelaskan kenapa dia
     // diganti, dan pemeriksaan seluruh berkas akan gagal menuduh kode yang
     // sudah benar. Kejadian kedua kalinya; polanya selalu sama.
-    const judulDepan = /<h1[\s\S]*?<\/h1>/.exec(depan)?.[0] ?? "";
+    //
+    // 13 September 2026: kalimat hero versi umum sekarang DATA di lib/jualan.ts
+    // (blok JUALAN_UMUM), bukan tulisan di dalam <h1>. Yang diperiksa tetap
+    // kalimat yang tampil di halaman depan, cuma dibaca dari sumbernya.
+    const blokUmum = dataJualan.slice(
+      dataJualan.indexOf("export const JUALAN_UMUM"),
+      dataJualan.indexOf("const KLINIK"),
+    );
+    const heroUmum = /hero: \{([\s\S]*?)\n  \},/.exec(blokUmum)?.[1] ?? "";
+    const ambilHero = (kunci: string) =>
+      new RegExp(`\\b${kunci}: "([^"]*)"`).exec(heroUmum)?.[1] ?? "";
+    const judulDepan = `${ambilHero("judul")} ${ambilHero("judulAbu")}`;
     // Judulnya harus menyebut kategorinya sendiri. Orang yang datang dari
     // pencarian atau dari tautan yang dibagikan teman tidak akan membaca
     // sampai paragraf ketiga untuk tahu ini soal apa.
@@ -6139,7 +6199,9 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // four weeks under it, so the check now guards the selling property.
     check(
       "hero menyebut hasil yang dirasakan pemilik toko",
-      /chat WhatsApp/.test(hero) && /harga/.test(hero) && !/Info bisnis/.test(hero),
+      /chat WhatsApp/.test(ambilHero("sub")) &&
+        /harga/.test(ambilHero("sub")) &&
+        !/Info bisnis/.test(ambilHero("sub")),
     );
     // Posisinya SALES, bukan admin, dan ini keputusan produk bukan selera.
     //
@@ -6158,7 +6220,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     //
     // Yang tetap dijaga sama: posisinya SALES bukan admin, dan itu masih harus
     // ada di hero, cuma pindah satu baris ke bawah.
-    const lencanaSampaiJudul = depan.slice(depan.indexOf("latar-kisi"), depan.indexOf("</h1>"));
+    const lencanaSampaiJudul = ambilHero("lencana");
     check(
       "hero memposisikan Palwise sebagai sales, bukan asisten atau admin",
       /[Ss]ales WhatsApp/.test(lencanaSampaiJudul) && !/admin/i.test(judulDepan) && !/Asisten AI untuk/.test(lencanaSampaiJudul),
@@ -6172,7 +6234,12 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     );
     // Produknya tetap harus disebut tepat di bawah judulnya, kalau tidak orang
     // mengenali masalahnya lalu tidak tahu ini jualan apa.
-    check("produk dan manfaatnya disebut tepat di bawah judul", /Palwise/.test(hero) && /tanpa nambah gaji/.test(hero));
+    check(
+      "produk dan manfaatnya disebut tepat di bawah judul",
+      /Palwise/.test(ambilHero("sub")) &&
+        /tanpa nambah gaji/.test(ambilHero("sub")) &&
+        /\{isi\.hero\.sub\}/.test(hero),
+    );
     // Kata "admin" tetap boleh muncul di halaman ini, tapi cuma sebagai
     // PEMBANDING biaya ("dibanding gaji admin"), bukan sebagai nama produknya.
     check(
@@ -8031,7 +8098,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       fs.readFileSync(path.join(akar, relatif), "utf8");
 
     const halamanFounder = baca("apps/web/src/app/app/founder/page.tsx");
-    const depan = baca("apps/web/src/app/page.tsx");
+    const depan = baca("apps/web/src/components/HalamanJualan.tsx");
     const modulFounder = baca("apps/web/src/lib/founder.ts");
     const kirimMasukan = baca("apps/web/src/components/KirimMasukan.tsx");
 
@@ -9483,7 +9550,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
 
     // ── Halaman jualan: yang dijual "membaca", bukan "punya" ────────────────
     const jualan = fs.readFileSync(
-      path.join(akarRasa, "apps/web/src/app/page.tsx"),
+      path.join(akarRasa, "apps/web/src/components/HalamanJualan.tsx"),
       "utf8",
     );
 
@@ -9555,7 +9622,7 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // screen never opens with a usage limit (it once led with the AI-question quota).
     check(
       "hero menunjukkan chat pelanggan yang dibalas dan tidak dibuka dengan kuota",
-      /<ContohChat \/>/.test(heroAtas) && !/KUOTA_TANYA/.test(heroAtas),
+      /<ContohChat chat=\{isi\.chat\} \/>/.test(heroAtas) && !/KUOTA_TANYA/.test(heroAtas),
     );
     check("hero menyebut harga paket dari sumber yang sama", /formatIDR\(PLANS\.starter\.pricePerMonth\)/.test(heroPenuh));
     // NAMA PESAINGNYA TIDAK BOLEH ADA DI LAYAR, dan ini keputusan pemilik
@@ -9636,7 +9703,11 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     // Jumlah tab dan jumlah panel WAJIB sama. Kalau tabnya lima dan panelnya
     // empat, tab terakhir membuka panel kosong, dan itu juga tidak melempar
     // galat apa pun.
-    const isiTab = (jualan.match(/^\s{4}tab: "/gm) ?? []).length;
+    // Tabnya sekarang disusun per bidang usaha di sorotanUntuk(), jadi yang
+    // dihitung isi fungsi itu, bukan baris `tab: "` di akar berkas.
+    const mulaiSorotan = jualan.indexOf("function sorotanUntuk");
+    const blokSorotan = jualan.slice(mulaiSorotan, jualan.indexOf("\n}\n", mulaiSorotan));
+    const isiTab = (blokSorotan.match(/\btab: /g) ?? []).length;
     const panelTab = (
       jualan.slice(jualan.indexOf("<SorotanTab")).match(/key="/g) ?? []
     ).length;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogoNama } from "@/components/Logo";
 import { IDENTITAS, identitasBelumLengkap } from "@/lib/identitas";
 import { keApp } from "@/lib/situs";
+import { HALAMAN_BIDANG } from "@/lib/jualan";
 
 /**
  * Kerangka untuk halaman berisi tulisan panjang: privasi, ketentuan,
@@ -120,6 +121,12 @@ const TAUTAN: { judul: string; isi: { href: string; label: string }[] }[] = [
       { href: "/#tanya", label: "Tanya jawab" },
     ],
   },
+  // Halaman per bidang usaha. Diturunkan dari lib/jualan.ts, jadi bidang yang
+  // ditambahkan di sana otomatis ikut di kaki semua halaman umum.
+  {
+    judul: "Bidang usaha",
+    isi: HALAMAN_BIDANG.map((h) => ({ href: `/${h.id}`, label: h.nama })),
+  },
   {
     judul: "Bantuan",
     isi: [
@@ -146,7 +153,7 @@ export function KakiHalaman() {
           kolom memotongnya hampir separuh tanpa menghilangkan satu tautan pun,
           dan tautan hukum wajib tetap bisa ditemukan. */}
       <div className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:gap-10 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:gap-10 lg:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))]">
           <div className="col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2">
               <LogoNama />
@@ -156,8 +163,8 @@ export function KakiHalaman() {
                 tiga baris tambahan di dasar halaman, menjelaskan lagi hal yang
                 baru saja dijelaskan seluruh halaman di atasnya. */}
             <p className="mt-4 hidden max-w-xs text-sm leading-relaxed text-ink-600 sm:block">
-              Asisten WhatsApp untuk pertanyaan calon peserta dan AI yang
-              membantu pemilik kursus menyiapkan tindak lanjut.
+              Sales WhatsApp yang membalas chat pelanggan 24 jam dan mencatat
+              calon pembeli, buat usaha di Indonesia.
             </p>
             {/* Alamat suratnya ditaruh di kaki halaman, bukan cuma di halaman
                 ketentuan. Orang yang menimbang membayar mencari tanda bahwa di
@@ -207,7 +214,7 @@ export function KakiHalaman() {
               usahanya tetap harus tertulis, karena dialah yang menandatangani
               ketentuan dan menerima pembayaran. */}
           <p className="max-w-sm">
-            Palwise. Asisten WhatsApp untuk kursus & pelatihan.
+            Palwise. Sales WhatsApp untuk usaha di Indonesia.
             {IDENTITAS.dioperasikanOleh
               ? ` Dioperasikan oleh ${IDENTITAS.dioperasikanOleh}.`
               : ""}

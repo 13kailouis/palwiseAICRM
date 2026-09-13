@@ -1,6 +1,8 @@
+import Image from "next/image";
+import { JUALAN_UMUM, type ChatContoh } from "@/lib/jualan";
 
 /**
- * Ilustrasi percakapan kursus, dibuat semirip mungkin dengan WhatsApp DI iPhONE
+ * Contoh percakapan sungguhan, dibuat semirip mungkin dengan WhatsApp DI iPhONE
  * KELUARAN BARU, MODE GELAP.
  *
  * Ini bagian terpenting halaman jualan. Orang tidak membeli asisten WhatsApp
@@ -23,7 +25,7 @@
  *
  * Avatar pelanggan sengaja pakai inisial, bukan foto orang. Memakai wajah orang
  * asing sebagai pelanggan karangan berarti memakai wajah seseorang untuk
- * mengarang kesaksian. Data contoh tidak berasal dari pelanggan produksi.
+ * mengarang kesaksian. Foto kopinya foto produk sungguhan.
  */
 
 /** Motif doodle WhatsApp mode gelap: garis abu tua di atas latar hampir hitam. */
@@ -40,25 +42,14 @@ function Centang() {
   );
 }
 
-type Pesan = {
-  dari: "pelanggan" | "asisten";
-  teks: string;
-  jam: string;
-};
+/**
+ * Isi percakapannya datang dari `lib/jualan.ts`, satu per bidang usaha.
+ * Tanpa prop yang dipakai versi umum (kopi), yang juga dipakai panduan.
+ */
+export function ContohChat({ chat = JUALAN_UMUM.chat }: { chat?: ChatContoh }) {
+  // Inisial dari nama orangnya, bukan dari sapaan "Bu"/"Pak" di depannya.
+  const inisial = chat.nama.replace(/^(Kak|Bu|Pak|Mbak|Mas)\s+/, "").slice(0, 1);
 
-const PERCAKAPAN: Pesan[] = [
-  { dari: "pelanggan", teks: "Kak, kursus Inggris buat anak 9 tahun berapa?", jam: "20.41" },
-  { dari: "asisten", teks: "Halo kak! Kelas anak usia 7–12 tahun Rp 400.000 per bulan, 8 pertemuan. Pendaftaran Rp 100.000 dan modul Rp 75.000 per semester.", jam: "20.41" },
-  { dari: "pelanggan", teks: "Boleh coba dulu sebelum daftar?", jam: "20.42" },
-  { dari: "asisten", teks: "Boleh satu kali trial gratis kak. Ingin mengajukan hari apa? Tim kami akan cek jadwalnya dulu.", jam: "20.42" },
-  { dari: "pelanggan", teks: "Sabtu pagi bisa? Nama anak saya Dira.", jam: "20.43" },
-  { dari: "asisten", teks: "Permintaan trial Dira hari Sabtu pagi saya catat ya. Jadwalnya belum dikonfirmasi; tim akan mengabari setelah mengecek pengajar.", jam: "20.43" },
-];
-
-/** Di mana pemisah "belum dibaca" muncul: tepat sebelum pesan pelanggan terakhir. */
-const IDX_BELUM_DIBACA = 4;
-
-export function ContohChat() {
   return (
     <div className="w-full max-w-[340px]">
       {/* Bingkai iPhone: sudut sangat bulat, tepi hitam tebal. */}
@@ -100,12 +91,12 @@ export function ContohChat() {
 
           {/* Avatar dengan cincin story hijau. */}
           <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-[#2a3942] text-[13px] font-semibold text-[#cfd6da] ring-2 ring-[#25d366] ring-offset-2 ring-offset-[#1d282e]">
-            M
+            {inisial}
           </span>
 
           {/* Nama, rata kiri, dengan status di bawahnya. */}
           <div className="flex min-w-0 flex-1 flex-col justify-center leading-tight">
-            <span className="truncate text-[15px] font-semibold text-white">Kak Maya</span>
+            <span className="truncate text-[15px] font-semibold text-white">{chat.nama}</span>
             <span className="text-[11px] leading-tight text-[#8696a0]">online</span>
           </div>
 
@@ -133,15 +124,15 @@ export function ContohChat() {
             Tadi malam
           </p>
 
-          {PERCAKAPAN.map((p, i) => {
+          {chat.pesan.map((p, i) => {
             const kanan = p.dari === "asisten";
             // Ekor cuma di gelembung pertama tiap giliran bicara, persis WhatsApp.
-            const ekor = i === 0 || PERCAKAPAN[i - 1].dari !== p.dari;
+            const ekor = i === 0 || chat.pesan[i - 1].dari !== p.dari;
             const warna = kanan ? "#005c4b" : "#202c33";
 
             return (
               <div key={i}>
-                {i === IDX_BELUM_DIBACA && (
+                {i === chat.belumDibaca && (
                   <p className="my-2 py-1 text-center text-[11px] font-medium text-[#8696a0]">
                     1 pesan belum dibaca
                   </p>
@@ -166,6 +157,18 @@ export function ContohChat() {
                             : "polygon(0 0, 100% 0, 100% 100%)",
                         }}
                       />
+                    )}
+
+                    {p.foto && (
+                      <span className="mb-1 block overflow-hidden rounded-[9px]">
+                        <Image
+                          src={p.foto.src}
+                          alt={p.foto.alt}
+                          width={260}
+                          height={195}
+                          className="h-[130px] w-full object-cover"
+                        />
+                      </span>
                     )}
 
                     <span className="px-0.5 pr-11">{p.teks}</span>
@@ -211,8 +214,7 @@ export function ContohChat() {
       </div>
 
       <p className="mt-4 text-center text-xs leading-relaxed text-ink-500">
-        Ilustrasi chat kursus · nama, biaya, dan percakapan adalah contoh.
-        Permintaan trial tetap menunggu konfirmasi tim.
+        {chat.catatan}
       </p>
     </div>
   );

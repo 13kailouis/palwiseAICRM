@@ -42,7 +42,7 @@ export function AuthForm({
               id="businessName"
               name="businessName"
               className="input"
-              placeholder="Kursus Cakrawala"
+              placeholder="Kopi Nusantara"
             />
           </div>
         </>
