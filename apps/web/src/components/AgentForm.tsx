@@ -340,11 +340,11 @@ export function AgentForm({
             <InfoTip label="Lihat contoh" judul="Contoh cara nulisnya">
               <span className="block space-y-2">
                 <span className="block">
-                  <span className="font-medium text-ink-700">Contoh toko:</span>{" "}
-                  &ldquo;Kamu pegawai toko Kopi Nusantara, namanya Nara. Ramah
-                  dan santai, panggil pelanggan pakai &lsquo;kak&rsquo;. Kalau
-                  ada yang baru chat, tanyakan dulu namanya dan mau cari kopi
-                  seperti apa.&rdquo;
+                  <span className="font-medium text-ink-700">Contoh kursus:</span>{" "}
+                  &ldquo;Kamu asisten Kursus Cakrawala, namanya Nara. Ramah
+                  dan jelas, panggil calon peserta pakai &lsquo;kak&rsquo;.
+                  Jawab pertanyaannya dari info program. Catat permintaan trial
+                  untuk dikonfirmasi admin; jangan menjamin slot tersedia.&rdquo;
                 </span>
                 <span className="block">
                   <span className="font-medium text-ink-700">Contoh jasa:</span>{" "}

@@ -289,13 +289,14 @@ Matematika SD, Senin dan Rabu, 15.30 sampai 17.00.
 Matematika SMP, Selasa dan Kamis, 16.00 sampai 17.30.
 Fisika SMA, Selasa dan Jumat, 18.30 sampai 20.00.
 Kimia SMA, Senin dan Kamis, 18.30 sampai 20.00.
-Bahasa Inggris anak, Sabtu, 09.00 sampai 10.30.
+Bahasa Inggris anak, Selasa dan Kamis, 16.00 sampai 17.00.
 Bahasa Inggris dewasa, Rabu dan Jumat, 19.00 sampai 20.30.
-Kelas Bahasa Inggris anak Sabtu pagi sedang penuh, kelas baru dibuka bulan depan.
+Penerimaan peserta dibuka setiap bulan. Ketersediaan kelas dikonfirmasi admin; jadwal umum bukan jaminan slot kosong.
 
 KELAS PERCOBAAN
 Boleh ikut satu pertemuan gratis, daftar dulu lewat chat.
 Kelas percobaan cuma sekali untuk tiap calon murid.
+Pilihan trial Sabtu pagi dapat diajukan; tim harus mengecek pengajar dan mengonfirmasi sebelum peserta datang.
 
 CARA DAFTAR DAN BAYAR
 Sebutkan nama murid, kelasnya berapa, dan mata pelajaran yang mau diambil.

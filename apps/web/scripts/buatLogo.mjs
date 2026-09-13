@@ -25,7 +25,7 @@ const SUMBER = path.join(AKAR, "aseet/logo.jpg");
 const PUBLIC = path.join(AKAR, "apps/web/public");
 const APP = path.join(AKAR, "apps/web/src/app");
 
-/** Biru Palwise. Dipakai untuk latar ikon Apple dan kartu bagikan. */
+/** Biru Palwise. */
 const BIRU = { r: 26, g: 92, b: 232 };
 
 /**
@@ -84,99 +84,6 @@ async function persegi(tanda, sisi, latar = { r: 0, g: 0, b: 0, alpha: 0 }) {
     .toBuffer();
 }
 
-/**
- * Kartu yang muncul waktu tautannya dibagikan.
- *
- * Tulisannya digambar sebagai SVG, bukan diketik di atas gambar, supaya tetap
- * tajam. Kalau mesinnya tidak bisa menggambar teks sama sekali, kartunya tetap
- * jadi, cuma berisi logonya saja: kartu tanpa tulisan masih jauh lebih baik
- * daripada kotak abu kosong.
- *
- * FONTNYA WAJIB MEMUAT NAMA YANG ADA DI LINUX. Terjadi sungguhan 9 Agustus 2026
- * waktu dipasang di VPS Ubuntu: daftarnya cuma "Segoe UI, Arial, Helvetica",
- * dan tidak satu pun ada di Ubuntu minimal. Skripnya mencetak satu baris
- * "Fontconfig error" lalu SELESAI DENGAN SUKSES, berkasnya tetap terbentuk, dan
- * satu-satunya tanda bahwa tulisannya hilang adalah ukurannya separuh dari yang
- * di laptop (24 KB lawan 50 KB). Tidak ada galat, tidak ada peringatan yang
- * menyebut tulisan.
- *
- * DejaVu Sans ditaruh paling belakang karena hampir selalu ada di Linux, dan
- * server tetap perlu `apt install fontconfig fonts-dejavu-core`. Lihat panduan
- * pemasangan VPS.
- */
-async function kartuBagikan(tanda) {
-  const L = 1200;
-  const T = 630;
-
-  const logo = await sharp(tanda)
-    .resize(190, 190, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .toBuffer();
-
-  const teks = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${T}">
-  <style>
-    .judul { font-family: Segoe UI, Arial, Helvetica, DejaVu Sans, Liberation Sans, sans-serif; font-weight: 700; fill: #0b1220; }
-    .anak  { font-family: Segoe UI, Arial, Helvetica, DejaVu Sans, Liberation Sans, sans-serif; font-weight: 400; fill: #4a5568; }
-  </style>
-  <!-- KALIMATNYA HARUS SAMA DENGAN JUDUL DI HALAMAN DEPAN.
-
-       Kartu ini yang PERTAMA dilihat orang waktu tautan Palwise dikirim lewat
-       WhatsApp, dan WhatsApp itu jalur sebar utama produk ini. Kalau kartunya
-       menjanjikan kalimat lain, orang membuka halaman yang terasa bukan yang
-       dia klik, dan itu keraguan yang tidak perlu ada.
-
-       Versi lama berbunyi "Yang chat tengah malam, jangan beli di sebelah."
-       Kalimat itu menyuruh PELANGGANNYA jangan beli di sebelah, padahal yang
-       dijual justru kebalikannya: kejadian yang sudah terjadi ke pemilik
-       tokonya. -->
-  <!-- UKURAN HURUFNYA DIHITUNG DARI LEBAR YANG TERSEDIA, bukan dikira-kira.
-       Tulisannya mulai di x=96 pada kanvas 1200, jadi yang bisa dipakai 1104px.
-       Baris terpanjang 41 huruf, dan huruf tebal di sini sekitar 0,54 kali
-       ukurannya, jadi 46px menghasilkan sekitar 1015px. Di 54px dia 1180px dan
-       kalimatnya terpotong di tepi kanan tanpa satu pun galat: SVG tidak pernah
-       mengeluh soal teks yang keluar kanvas, dia cuma memotongnya. -->
-  <text x="96" y="392" class="judul" font-size="46">Ada yang chat WhatsApp kamu jam 11 malam.</text>
-  <text x="96" y="450" class="judul" font-size="46">Besoknya, dia udah beli di sebelah.</text>
-  <text x="96" y="514" class="anak" font-size="29">Palwise, sales WhatsApp AI. Sepertujuh harga platform sebelah.</text>
-</svg>`);
-
-  // SATU panggilan composite untuk semuanya.
-  //
-  // Di sharp, memanggil composite() dua kali TIDAK menumpuk: yang kedua
-  // mengganti daftar yang pertama. Versi awal skrip ini menaruh pita dan logo
-  // di panggilan pertama lalu tulisannya di panggilan kedua, dan hasilnya
-  // kartu berisi tulisan saja tanpa logo sama sekali.
-  const lapisan = [
-    // Pita biru tipis di kiri, penanda merek tanpa menutupi tulisannya.
-    {
-      input: {
-        create: { width: 14, height: T, channels: 4, background: { ...BIRU, alpha: 1 } },
-      },
-      left: 0,
-      top: 0,
-    },
-    { input: logo, left: 96, top: 108 },
-  ];
-
-  const dasar = () =>
-    sharp({
-      create: {
-        width: L,
-        height: T,
-        channels: 4,
-        background: { r: 255, g: 255, b: 255, alpha: 1 },
-      },
-    });
-
-  try {
-    return await dasar()
-      .composite([...lapisan, { input: teks, left: 0, top: 0 }])
-      .png()
-      .toBuffer();
-  } catch {
-    return dasar().composite(lapisan).png().toBuffer();
-  }
-}
-
 async function main() {
   if (!fs.existsSync(SUMBER)) {
     console.error(`Logo sumber tidak ketemu di ${SUMBER}`);
@@ -221,14 +128,7 @@ async function main() {
   fs.writeFileSync(path.join(APP, "apple-icon.png"), apple);
   hasil.push(["src/app/apple-icon.png", apple.length]);
 
-  // Kartu yang muncul waktu tautannya dibagikan di WhatsApp, Facebook, dan X.
-  // Ukurannya 1200x630, ketentuan Open Graph.
-  //
-  // Tanpa ini, tautan Palwise yang dibagikan orang muncul sebagai kotak abu
-  // kosong, dan tautan tanpa gambar hampir tidak pernah diklik.
-  const og = await kartuBagikan(tanda);
-  fs.writeFileSync(path.join(APP, "opengraph-image.png"), og);
-  hasil.push(["src/app/opengraph-image.png", og.length]);
+  // Kartu berbagi kini dilayani oleh src/app/opengraph-image.tsx.
 
   console.log("");
   for (const [nama, ukuran] of hasil) {

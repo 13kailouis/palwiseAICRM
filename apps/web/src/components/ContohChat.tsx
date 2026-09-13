@@ -1,7 +1,6 @@
-import Image from "next/image";
 
 /**
- * Contoh percakapan sungguhan, dibuat semirip mungkin dengan WhatsApp DI iPhONE
+ * Ilustrasi percakapan kursus, dibuat semirip mungkin dengan WhatsApp DI iPhONE
  * KELUARAN BARU, MODE GELAP.
  *
  * Ini bagian terpenting halaman jualan. Orang tidak membeli asisten WhatsApp
@@ -24,7 +23,7 @@ import Image from "next/image";
  *
  * Avatar pelanggan sengaja pakai inisial, bukan foto orang. Memakai wajah orang
  * asing sebagai pelanggan karangan berarti memakai wajah seseorang untuk
- * mengarang kesaksian. Foto kopinya foto produk sungguhan.
+ * mengarang kesaksian. Data contoh tidak berasal dari pelanggan produksi.
  */
 
 /** Motif doodle WhatsApp mode gelap: garis abu tua di atas latar hampir hitam. */
@@ -45,28 +44,15 @@ type Pesan = {
   dari: "pelanggan" | "asisten";
   teks: string;
   jam: string;
-  foto?: boolean;
 };
 
 const PERCAKAPAN: Pesan[] = [
-  { dari: "pelanggan", teks: "Halo kak, arabika gayo masih ada?", jam: "23.41" },
-  {
-    dari: "asisten",
-    teks: "Halo kak! 👋 Masih ada. Arabika Gayo 200gr Rp 85.000, rasanya floral dan agak citrus. Cocok buat V60 atau tubruk.",
-    jam: "23.41",
-  },
-  { dari: "pelanggan", teks: "Kalau kirim ke Bandung ongkirnya berapa ya", jam: "23.42" },
-  {
-    dari: "asisten",
-    teks: "Kami kirimnya dari Bandung kak, jadi buat area Bandung bisa COD. Kalau belanjanya di atas Rp 300.000 gratis ongkir.",
-    jam: "23.42",
-  },
-  { dari: "pelanggan", teks: "Kalau yang ini namanya apa", jam: "23.43", foto: true },
-  {
-    dari: "asisten",
-    teks: "Itu Arabika Toraja kak, Rp 92.000 per 200gr. Rasanya lebih ke cokelat dan rempah. Mau saya catat pesanannya?",
-    jam: "23.43",
-  },
+  { dari: "pelanggan", teks: "Kak, kursus Inggris buat anak 9 tahun berapa?", jam: "20.41" },
+  { dari: "asisten", teks: "Halo kak! Kelas anak usia 7–12 tahun Rp 400.000 per bulan, 8 pertemuan. Pendaftaran Rp 100.000 dan modul Rp 75.000 per semester.", jam: "20.41" },
+  { dari: "pelanggan", teks: "Boleh coba dulu sebelum daftar?", jam: "20.42" },
+  { dari: "asisten", teks: "Boleh satu kali trial gratis kak. Ingin mengajukan hari apa? Tim kami akan cek jadwalnya dulu.", jam: "20.42" },
+  { dari: "pelanggan", teks: "Sabtu pagi bisa? Nama anak saya Dira.", jam: "20.43" },
+  { dari: "asisten", teks: "Permintaan trial Dira hari Sabtu pagi saya catat ya. Jadwalnya belum dikonfirmasi; tim akan mengabari setelah mengecek pengajar.", jam: "20.43" },
 ];
 
 /** Di mana pemisah "belum dibaca" muncul: tepat sebelum pesan pelanggan terakhir. */
@@ -114,12 +100,12 @@ export function ContohChat() {
 
           {/* Avatar dengan cincin story hijau. */}
           <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-[#2a3942] text-[13px] font-semibold text-[#cfd6da] ring-2 ring-[#25d366] ring-offset-2 ring-offset-[#1d282e]">
-            R
+            M
           </span>
 
           {/* Nama, rata kiri, dengan status di bawahnya. */}
           <div className="flex min-w-0 flex-1 flex-col justify-center leading-tight">
-            <span className="truncate text-[15px] font-semibold text-white">Bu Ratna</span>
+            <span className="truncate text-[15px] font-semibold text-white">Kak Maya</span>
             <span className="text-[11px] leading-tight text-[#8696a0]">online</span>
           </div>
 
@@ -182,18 +168,6 @@ export function ContohChat() {
                       />
                     )}
 
-                    {p.foto && (
-                      <span className="mb-1 block overflow-hidden rounded-[9px]">
-                        <Image
-                          src="/arabika-toraja.jpg"
-                          alt="Biji kopi arabika Toraja yang dikirim pelanggan"
-                          width={260}
-                          height={195}
-                          className="h-[130px] w-full object-cover"
-                        />
-                      </span>
-                    )}
-
                     <span className="px-0.5 pr-11">{p.teks}</span>
 
                     <span className="absolute bottom-1 right-2 flex items-center gap-0.5">
@@ -237,8 +211,8 @@ export function ContohChat() {
       </div>
 
       <p className="mt-4 text-center text-xs leading-relaxed text-ink-500">
-        Percakapan ini terjadi jam setengah dua belas malam, waktu tokonya sudah
-        tutup dan pemiliknya sudah tidur.
+        Ilustrasi chat kursus · nama, biaya, dan percakapan adalah contoh.
+        Permintaan trial tetap menunggu konfirmasi tim.
       </p>
     </div>
   );

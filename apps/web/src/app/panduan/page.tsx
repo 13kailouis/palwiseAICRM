@@ -55,7 +55,7 @@ const SIAPKAN: { ikon: NamaIkon; judul: string; body: string }[] = [
   },
   {
     ikon: "info",
-    judul: "Daftar harga dan aturanmu",
+    judul: "Info program, biaya, dan aturan",
     body: "Boleh masih berantakan. Boleh dari catatan HP, dari file Excel, dari PDF, atau cukup alamat websitemu. Yang penting angkanya benar, karena asistennya cuma boleh jawab dari sini.",
   },
   {
@@ -68,17 +68,17 @@ const SIAPKAN: { ikon: NamaIkon; judul: string; body: string }[] = [
 
 const SALAH_BENAR: { salah: string; benar: string; kenapa: string }[] = [
   {
-    salah: "Harga bervariasi, chat aja buat nanya",
-    benar: "Arabika Gayo 200gr Rp 85.000",
+    salah: "Biaya kursus bervariasi, chat aja",
+    benar: "Bahasa Inggris anak usia 7–12: Rp 400.000/bulan, 8 pertemuan. Pendaftaran Rp 100.000, modul Rp 75.000/semester.",
     kenapa:
       "Asisten cuma boleh menjawab dari yang tertulis. Kalau harganya nggak ada angkanya, dia nggak akan pernah bisa menjawab pertanyaan yang paling sering masuk.",
   },
   {
-    salah: "Ongkir sesuai wilayah",
+    salah: "Trial bisa kapan saja",
     benar:
-      "Dikirim dari Bandung pakai JNE dan J&T. Area Bandung bisa COD. Gratis ongkir di atas Rp 300.000",
+      "Trial gratis satu kali. Ajukan hari lewat chat; admin mengecek pengajar dan mengonfirmasi sebelum peserta datang.",
     kenapa:
-      "“Sesuai wilayah” bukan aturan yang bisa dipakai. Yang bisa dipakai: dikirim dari mana, pakai apa, dan batas gratis ongkirnya berapa.",
+      "Jadwal umum belum berarti slot tersedia. Tuliskan aturan trial dan siapa yang memastikan permintaannya.",
   },
   {
     salah: "Buka setiap hari",
@@ -87,17 +87,17 @@ const SALAH_BENAR: { salah: string; benar: string; kenapa: string }[] = [
       "Pelanggan menanyakan jam, bukan hari. Dan kalau Minggu sebenarnya tutup, “setiap hari” bikin asistenmu menjanjikan yang nggak ada.",
   },
   {
-    salah: "Stoknya banyak kok, ready semua",
+    salah: "Semua kelas pasti tersedia",
     benar:
-      "Arabika Gayo 200gr Rp 85.000 stok 12. Robusta Temanggung 200gr Rp 55.000 stok 0",
+      "Kelas anak Selasa dan Kamis pukul 16.00–17.00. Ketersediaan tempat dikonfirmasi admin; jangan menjanjikan slot dari jadwal umum saja.",
     kenapa:
-      "“Ready semua” besok jadi bohong. Tulis stoknya per barang, dan tulis 0 buat yang lagi habis. Asistenmu cuma boleh bilang sesuatu kosong kalau catatanmu memang menulis begitu, jadi barang yang nggak kamu tulis bakal dijawab “saya cek dulu ke tim”, bukan dijawab kosong.",
+      "Palwise tidak memeriksa kapasitas kelas atau kalender pengajar. Informasi yang belum tersedia perlu dicek tim.",
   },
   {
-    salah: "Nulis 5 barang yang paling laku aja, sisanya nanti",
-    benar: "Semua barangmu, satu baris satu barang, walaupun jadi ratusan baris",
+    salah: "Cukup tulis nama program yang populer",
+    benar: "Setiap program memuat peserta yang dituju, biaya, jumlah pertemuan, jadwal umum, dan cara daftar.",
     kenapa:
-      "Barang yang nggak kamu tulis nggak akan pernah bisa dia jawab, dan yang nanya barang itu bakal dilempar ke kamu terus. Daftar panjang nggak bikin dia bingung, dia nyari per baris. Kalau datamu udah ada di Excel, salin kolomnya terus tempel apa adanya.",
+      "Informasi yang lengkap membantu asisten menjawab pertanyaan awal tanpa menebak. Pisahkan program dan aturan pendaftaran agar mudah diperbarui.",
   },
 ];
 
@@ -177,7 +177,8 @@ function Catatan({ children }: { children: React.ReactNode }) {
 export default function PanduanPage() {
   const gratis = getPlan("free");
   const wa = tautanBantuanWa("Halo, saya butuh dibantu pasang Palwise.");
-  const bidang = PRESET.filter((p) => p.diHalamanDepan);
+  // Panduan melayani semua template, terpisah dari fokus pemasaran di landing page.
+  const bidang = PRESET.filter((p) => p.id !== "lainnya");
 
   return (
     <main className="min-h-screen bg-white">
@@ -187,7 +188,7 @@ export default function PanduanPage() {
       <section className="mx-auto max-w-5xl px-5 pb-4 pt-12">
         <p className="text-sm font-semibold text-ink-400">Panduan</p>
         <h1 className="mt-3 max-w-2xl text-3xl font-bold leading-tight tracking-tight text-ink-950 sm:text-4xl">
-          Dari daftar sampai asistenmu jualan sendiri
+          Siapkan info program, tes jawaban, lalu layani chat
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-600">
           Lima langkah, sekitar 15 menit. Nggak perlu ngerti teknis apa pun, dan

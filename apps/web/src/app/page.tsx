@@ -13,9 +13,8 @@ import { LogoNama } from "@/components/Logo";
 import { DataTerstruktur } from "@/components/DataTerstruktur";
 import { IDENTITAS, tautanBantuanWa } from "@/lib/identitas";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
-import { PRESET } from "@/lib/preset";
 import { ContohTanya } from "@/components/ContohTanya";
-import { HitungRugi } from "@/components/HitungRugi";
+import { HitungWaktu } from "@/components/HitungWaktu";
 import { ContohChat } from "@/components/ContohChat";
 import { SorotanTab, type IsiSorotan } from "@/components/SorotanTab";
 import {
@@ -143,7 +142,7 @@ function KepalaBagian({
  * yang menghilang, mencatat siapa yang hampir jadi. Orang membeli sales
  * sebanyak yang dia mampu, karena sales menghasilkan.
  *
- * Jadi "Data pelanggan terisi sendiri" jadi "Calon pembeli tercatat sendiri",
+ * Jadi "Data pelanggan terisi sendiri" jadi "Calon peserta tercatat dari chat",
  * dan seterusnya. Mekaniknya sama persis, yang berubah apa yang dijualnya.
  */
 const FEATURES: {
@@ -184,8 +183,8 @@ const FEATURES: {
   { ikon: "chat", title: "Minta bantuan lewat satu chat", body: "Cari pelanggan, baca kabar bisnis, dan revisi draf follow up lewat Palwise AI. Kamu tetap menyetujui pengiriman dan perubahan data." },
   {
     ikon: "qr" as NamaIkon,
-    title: "Mulai jualan dalam semenit",
-    body: "Buka WhatsApp di HP, scan QR, kelar. Nggak usah daftar ke Meta dan nunggu berhari-hari.",
+    title: "Sambungkan nomor WhatsApp",
+    body: "Hubungkan lewat Perangkat tertaut, lalu tes jawaban dari info programmu.",
     // Bagian "Tiga langkah, kelar semenit" sudah menunjukkan ini utuh, lengkap
     // dengan langkah scan QR-nya, cuma tiga bagian di atas petak ini.
     hpSembunyi: true,
@@ -197,12 +196,12 @@ const FEATURES: {
     // note panjang" diganti angka yang sebenarnya: batasnya dua menit, dan
     // menjanjikan "panjang" ke orang yang lalu mengirim rekaman sepuluh menit
     // itu bohong yang ketahuannya di depan pelanggannya sendiri.
-    body: "Pelanggan kirim foto barang sambil nanya \"ini berapa?\", atau voice note sampai 2 menit. Dua-duanya dibaca dan dibalas, termasuk di paket gratis.",
+    body: "Pelanggan bisa mengirim foto brosur atau voice note sampai 2 menit. Keduanya bisa dibaca, termasuk di paket gratis.",
   },
   {
     ikon: "kirim" as NamaIkon,
-    title: "Katalog dikirim tanpa kamu buka HP",
-    body: "Unggah foto barang, katalog, daftar harga PDF, atau QRIS sekali. Pas ada yang minta, dia yang kirim.",
+    title: "Brosur program bisa dikirim lewat chat",
+    body: "Unggah brosur, daftar biaya PDF, atau QRIS. Asisten dapat mengirimkannya saat diminta.",
     fitur: "kirimMedia",
   },
   {
@@ -223,7 +222,7 @@ const FEATURES: {
   },
   {
     ikon: "catat" as NamaIkon,
-    title: "Yang udah mau beli nggak diajak muter-muter",
+    title: "Yang siap daftar mendapat langkah berikutnya",
     body: "Pas orangnya udah bilang mau ambil, dia berhenti nawarin dan langsung ke cara bayarnya. Pas orangnya lagi kesel, jawabannya jadi pendek dan nggak sok akrab.",
     // Sorotan "orang yang udah nunggu 20 menit" menunjukkan ini dengan dua
     // gelembung berdampingan, dan itu jauh lebih meyakinkan daripada judul.
@@ -231,7 +230,7 @@ const FEATURES: {
   },
   {
     ikon: "pelanggan" as NamaIkon,
-    title: "Calon pembeli tercatat sendiri",
+    title: "Calon peserta tercatat dari chat",
     body: "Nama, nomor, dan apa yang dia cari masuk sendiri dari obrolannya, bukan ketimbun di chat.",
     // Sudah jadi salah satu pasangan sekarang-vs-Palwise di bagian pertama,
     // dengan kalimat yang hampir sama persis.
@@ -239,14 +238,14 @@ const FEATURES: {
   },
   {
     ikon: "sapa" as NamaIkon,
-    title: "Yang tanya lalu hilang, dikejar lagi",
-    body: "Yang nanya terus diem aja disapa ulang otomatis. Ini yang paling sering nambah closing.",
+    title: "Atur tindak lanjut calon peserta",
+    body: "Sapaan otomatis tersedia jika kamu aktifkan dan atur. Draf lewat Tanya tetap diperiksa sebelum dikirim.",
     fitur: "sapaOtomatis",
   },
   {
     ikon: "kalender" as NamaIkon,
-    title: "Nggak ada jadwal yang kelewat",
-    body: "Jam yang disepakati di chat tercatat sendiri, dan pelanggannya diingetin sebelum harinya.",
+    title: "Permintaan trial tercatat",
+    body: "Permintaan waktu tercatat dari chat. Tim tetap mengecek ketersediaan dan memastikan jadwal.",
     // Sorotan janji temu sudah menggambar daftarnya, lengkap dengan yang
     // belum dipastikan. Judulnya pun hampir sama kata per kata.
     hpSembunyi: true,
@@ -270,31 +269,9 @@ const FEATURES: {
 ];
 
 const LANGKAH = [
-  {
-    ikon: "qr" as NamaIkon,
-    judul: "Sambungin nomor kamu",
-    body: "Buka WhatsApp di HP, masuk ke Perangkat tertaut, scan QR yang muncul di layar. Sekitar semenit, dan chat lama kamu nggak ke mana-mana.",
-    pendek: "Buka WhatsApp, masuk ke Perangkat tertaut, scan QR. Chat lama kamu nggak ke mana-mana.",
-  },
-  {
-    ikon: "info" as NamaIkon,
-    judul: "Kasih tahu dia jualan kamu",
-    body: "Ceritakan bisnismu ke Palwise AI. Periksa cara bicara dan info yang dia susun, lalu simpan. Daftar harga atau alamat website juga bisa jadi sumber informasi.",
-    pendek: "Ceritakan bisnismu ke Palwise AI, periksa hasilnya, lalu simpan.",
-  },
-  {
-    ikon: "chat" as NamaIkon,
-    judul: "Dia mulai jualan",
-    // "Kamu bisa ambil alih kapan aja" SENGAJA DIBUANG dari sini.
-    //
-    // Janji itu dulu muncul empat kali di satu halaman: tombol di gambar hero,
-    // fitur "Kamu masih yang pegang kendali", langkah ini, dan jaminan pertama.
-    // Orang yang mau beli sudah yakin di kali pertama; kali keempat cuma bikin
-    // halamannya panjang. Yang disisakan dua tempat yang paling menentukan:
-    // daftar fitur, dan daftar jaminan tepat sebelum dia menyerahkan nomornya.
-    body: "Chat yang masuk dibalas pakai harga dan jadwal yang bener, sampai orangnya mau pesan, dan kamu tetep lihat semuanya.",
-    pendek: "Chat masuk dibalas pakai harga dan jadwal yang bener, dan kamu tetep lihat semuanya.",
-  },
+  { ikon: "info" as NamaIkon, judul: "Isi info program", body: "Masukkan program, biaya, jadwal umum, dan aturan trial. Pakai template kursus, lalu ganti dengan informasi lembagamu.", pendek: "Isi program, biaya, jadwal umum, dan aturan trial dari lembagamu." },
+  { ikon: "chat" as NamaIkon, judul: "Tes pertanyaan calon peserta", body: "Coba pertanyaan yang sering masuk. Periksa jawaban biaya, permintaan trial, dan kapan asisten perlu meneruskan ke tim.", pendek: "Tes biaya, permintaan trial, dan kapan asisten perlu bantuan tim." },
+  { ikon: "qr" as NamaIkon, judul: "Sambungkan dan pantau", body: "Sambungkan WhatsApp lewat Perangkat tertaut. Pantau percakapan dan gunakan Tanya untuk menyiapkan tindak lanjut.", pendek: "Hubungkan WhatsApp, pantau chat, lalu siapkan tindak lanjut lewat Tanya." },
 ];
 
 /**
@@ -349,6 +326,9 @@ const JAMINAN: { ikon: NamaIkon; judul: string; body: string }[] = [
  * paragraf lima baris di dalam panel lipat praktis tidak terbaca.
  */
 const TANYA_JAWAB: { t: string; j: string }[] = [
+  { t: "Palwise paling cocok untuk lembaga seperti apa?", j: "Kursus atau pelatihan yang rutin menerima pertanyaan calon peserta lewat WhatsApp, punya info program dan biaya yang jelas, serta admin yang kewalahan membalas atau menindaklanjuti. Jika pertanyaan masih sedikit, manfaatnya mungkin belum terasa." },
+  { t: "Bisa langsung memastikan slot trial atau kelas?", j: "Belum. Palwise mencatat permintaan jadwal, tetapi tidak memeriksa kapasitas kelas atau kalender pengajar. Tim kamu yang memastikan. Jangan menganggap catatan janji sebagai slot yang sudah dipesan." },
+  { t: "Kalau bisnis saya bukan kursus?", j: "Kamu tetap bisa memakai template lain atau menulis aturan sendiri. Cocokkan dulu dengan kebutuhanmu: pertanyaan masuk lewat WhatsApp, jawabannya bisa ditulis, dan ada tim untuk menangani hal khusus." },
   {
     t: "Saya harus install apa?",
     j: "Nggak ada. Semuanya jalan di browser. HP kamu cuma dipakai sekali buat scan QR.",
@@ -435,7 +415,7 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
   // sendiri, bukan disuruh percaya orang yang tidak dia kenal.
   {
     t: "Bedanya sama platform lain apa?",
-    j: "Harganya, dan itu bukan diskon-diskonan. Chat yang dimulai pelanggan nggak ditagih WhatsApp selama dibalas dalam 24 jam, jadi biaya yang bener-bener keluar cuma buat jalanin AI-nya. Itu yang kami tagih. Yang lain nagih kamu sepertujuh lebih mahal buat pekerjaan yang sama.",
+    j: "Palwise menggabungkan asisten yang menjawab WhatsApp dari info bisnismu dengan Tanya untuk membantu pemilik melihat percakapan dan menyiapkan draf tindak lanjut. Bandingkan lewat pertanyaan calon peserta kamu, kebutuhan integrasi, batas pemakaian, dan biaya paket. Kamu bisa mengetes jawabannya sebelum berlangganan.",
   },
 ];
 
@@ -451,21 +431,19 @@ const TANYA_JAWAB: { t: string; j: string }[] = [
 const FAKTA = [
   {
     nilai: "24 jam",
-    label: "Calon pembeli dibalas terus, termasuk tengah malam dan hari libur",
-    pendek: "Dibales terus, tengah malam juga",
+    label: "Jawab pertanyaan di luar jam admin saat asisten aktif dan WhatsApp tersambung",
+    pendek: "Bisa melayani di luar jam admin",
   },
   {
-    nilai: "1 menit",
-    label: "Dari scan QR sampai dia mulai jualan buat kamu",
-    pendek: "Dari scan QR sampai dia jualan",
+    nilai: "1 chat",
+    label: "Tanya Palwise AI untuk ringkasan dan draf tindak lanjut",
+    pendek: "Untuk ringkasan dan draf tindak lanjut",
   },
-  // Dibandingkan dengan gaji admin, bukan cuma disebut angkanya sendiri. Rp 33
-  // itu tidak berarti apa-apa sampai ditaruh di sebelah biaya yang selama ini
-  // orang keluarkan untuk pekerjaan yang sama.
+  // Biaya efektif bergantung pada kuota yang terpakai.
   {
     nilai: "Rp 33",
-    label: "Ongkos tiap balasan di paket Growth. Bandingin sama gaji admin sebulan",
-    pendek: "Ongkos tiap balasan di paket Growth",
+    label: "Biaya per balasan jika seluruh kuota paket Growth terpakai",
+    pendek: "Per balasan jika kuota Growth terpakai penuh",
   },
   {
     // Diturunkan dari daftar paket, jangan diketik. Angka di kartu ini dan jatah
@@ -508,40 +486,23 @@ const SOROTAN: IsiSorotan[] = [
     ikon: "info",
     tab: "Jawab dari data kamu",
     baris:
-      "Harga, stok, dan jadwal cuma dari yang kamu isi. Yang dia nggak tahu, dilempar ke kamu.",
+      "Info program dan biaya dari yang kamu isi. Permintaan khusus diteruskan ke tim.",
   },
   {
     ikon: "kalender",
-    tab: "Janji temu kecatat",
+    tab: "Permintaan trial tercatat",
     baris:
-      "Jam yang disepakati di chat langsung masuk daftar. Kamu tinggal mastiin.",
+      "Permintaan trial masuk daftar. Tim memeriksa ketersediaan lalu memastikan jadwal.",
   },
   {
     ikon: "sapa",
-    tab: "Pembeli lama balik",
+    tab: "Tindak lanjut lebih jelas",
     baris:
-      "Disapa lagi pas kira-kira kopinya udah abis atau mobilnya waktunya servis.",
+      "Lihat konteks calon peserta, siapkan draf, lalu periksa sebelum mengirim.",
   },
 ];
 
-/**
- * Bidang usaha yang cocok, DITURUNKAN dari daftar preset.
- *
- * Tiap baris memakai contoh pertanyaan yang benar-benar sering masuk di bidang
- * itu, bukan kalimat umum seperti "cocok untuk semua bisnis". Orang mengenali
- * dirinya dari pertanyaan pelanggannya, bukan dari nama kategorinya.
- *
- * Dulu daftarnya diketik ulang di sini, terpisah dari `PRESET`, dan dua daftar
- * untuk satu kebenaran selalu berakhir sama: keduanya sudah sempat berbeda.
- * Yang lebih mahal bukan bedanya, tapi bidang baru yang ditambahkan di preset
- * lalu tidak pernah muncul di halaman jualan karena tidak ada yang ingat ada
- * berkas kedua.
- */
-const BIDANG = PRESET.filter((p) => p.diHalamanDepan).map((p) => ({
-  ikon: p.ikon,
-  nama: p.nama,
-  contoh: p.contoh,
-}));
+const COCOK_UNTUK = ["Penerimaan peserta rutin", "Pertanyaan program berulang", "Admin merangkap follow up"];
 
 /**
  * Harga pembanding, dan NAMANYA SENGAJA CUMA ADA DI SINI.
@@ -661,21 +622,17 @@ export default async function LandingPage() {
           className={`${KOLOM} relative pb-10 pt-10 sm:pb-20 sm:pt-20 lg:pb-24 lg:pt-24`}
         >
           <div className="mx-auto max-w-4xl text-center">
-            {/* The pain first, then the product (rombakan 9 Agustus, restored 11 September 2026).
-                For a while the hero led with the owner-chat tool ("Urus bisnis lewat chat.
-                WhatsApp juga terlayani."): that sells a vitamin and demotes the part people
-                pay for, answering buyers at night, to an afterthought. It also opened with a
-                quota. Signups were ~3 in four weeks under that version. */}
-            <span className="badge border border-ink-200 bg-white px-3 py-1 text-ink-700">Sales WhatsApp AI · mulai {formatIDR(PLANS.starter.pricePerMonth)}/bulan</span>
+            {/* Fokus uji akuisisi: lembaga kursus/pelatihan dengan chat calon peserta yang sudah berjalan. */}
+            <span className="badge border border-ink-200 bg-white px-3 py-1 text-ink-700">Untuk kursus & pelatihan · mulai {formatIDR(PLANS.starter.pricePerMonth)}/bulan</span>
             <h1 className="mt-4 text-balance text-[30px] font-bold leading-[1.14] tracking-[-0.03em] text-ink-950 sm:mt-6 sm:text-[46px] lg:text-[54px]">
-              Ada yang chat WhatsApp kamu jam 11 malam.<br className="hidden sm:inline" /> <span className="text-ink-500">Besoknya, dia udah beli di sebelah.</span>
+              Pertanyaan kursus terjawab.<br className="hidden sm:inline" /> <span className="text-ink-500">Calon peserta tetap terpantau.</span>
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-600 sm:mt-6 sm:text-[18px]">
-              Palwise bales tiap chat WhatsApp dalam hitungan detik, siang malam, pakai harga dan info tokomu sendiri. Calon pembeli tercatat rapi, tanpa nambah gaji.
+              Bantu admin menjawab pertanyaan program, biaya, dan jadwal lewat WhatsApp. Palwise mencatat kebutuhan calon peserta dan membantu kamu menyiapkan tindak lanjut.
             </p>
             <div className="mt-6 flex flex-col items-stretch gap-2.5 sm:flex-row sm:justify-center sm:gap-3">
               <Link href={keApp("/daftar")} className="btn-primary btn-besar">Mulai gratis</Link>
-              <a href="#hitung" className="btn-ghost btn-besar">Hitung yang lepas tiap bulan</a>
+              <a href="#hitung" className="btn-ghost btn-besar">Hitung waktu admin</a>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-ink-500">Tanpa kartu kredit · {PLANS.free.aiCredits} balasan gratis tiap bulan · berhenti kapan aja</p>
           </div>
@@ -689,7 +646,7 @@ export default async function LandingPage() {
               layar yang berdiri di atas halaman. */}
           <div className="relative mx-auto mt-10 max-w-5xl sm:mt-14">
             {/* The night chat IS the product people buy: a 23.41 question answered with the
-                right price and shipping. The owner-side Palwise AI demo moved below the fold. */}
+                program information and a trial request. The owner-side Palwise AI demo moved below the fold. */}
             <div className="flex justify-center">
               <ContohChat />
             </div>
@@ -787,17 +744,15 @@ export default async function LandingPage() {
           digambar cuma sekitar 193 kata, punya kita 1.659. Bedanya bukan
           panjang halaman, tapi bahwa mereka menunjukkan dan kita menjelaskan. */}
       {/* ─── Hitung sendiri ──────────────────────────────────────────────
-          Turns the headline's loss into rupiah using only the owner's own
-          numbers (see HitungRugi). Placed right after the facts strip, while
-          the pain is fresh, and the hero's second button points here. */}
+          Simulasi waktu untuk FAQ, tanpa menganggap chat sebagai penjualan hilang. */}
       <section id="hitung" className={`scroll-mt-16 sm:scroll-mt-20 ${KOLOM} ${JARAK}`}>
         <div className="mx-auto max-w-2xl text-center">
           <p className="kicker">Hitung sendiri</p>
-          <h2 className="judul-bagian mt-3">Berapa order yang lepas tiap bulan?</h2>
-          <p className="teks-bagian mt-3">Pakai angka tokomu. Nggak ada yang dikirim ke mana-mana.</p>
+          <h2 className="judul-bagian mt-3">Berapa waktu admin habis untuk pertanyaan yang sama?</h2>
+          <p className="teks-bagian mt-3">Hitung beban kerja dari percakapan calon peserta di lembagamu.</p>
         </div>
         <div className="saat-terlihat mt-9 sm:mt-12">
-          <HitungRugi hargaStarter={PLANS.starter.pricePerMonth} keDaftar={keApp("/daftar")} />
+          <HitungWaktu keDaftar={keApp("/daftar")} />
         </div>
       </section>
 
@@ -809,8 +764,8 @@ export default async function LandingPage() {
         <div className={`${KOLOM} ${JARAK}`}>
           <div className="mx-auto max-w-2xl text-center">
             <p className="kicker">Paginya</p>
-            <h2 className="judul-bagian mt-3">Bangun tidur, tinggal tanya: siapa yang perlu aku balas?</h2>
-            <p className="teks-bagian mt-3">Palwise AI ngerangkum chat semalam, nyiapin draf follow up, dan ngatur asistenmu. Semua nunggu kamu setujui dulu.</p>
+            <h2 className="judul-bagian mt-3">Siapa yang masih menunggu kabar dari admin?</h2>
+            <p className="teks-bagian mt-3">Tanya Palwise AI tentang chat yang tercatat, minta draf tindak lanjut, lalu periksa sebelum mengirim.</p>
           </div>
           <div className="saat-terlihat relative mx-auto mt-9 max-w-5xl sm:mt-12">
             <ContohTanya />
@@ -832,11 +787,12 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-2xl text-center">
             <p className="kicker">Yang dia kerjain</p>
             <h2 className="judul-bagian mt-3">
-              Bukan cuma bales. Dia ngurusin jualannya.
+              Dari tanya program sampai tindak lanjut pendaftaran.
             </h2>
           </div>
 
           <div className="mt-9 sm:mt-12">
+            <p className="mb-4 text-center text-xs text-ink-500">Contoh penggunaan · data ilustrasi</p>
             <SorotanTab
               isi={SOROTAN}
               panel={[
@@ -879,7 +835,7 @@ export default async function LandingPage() {
         <div className={`${KOLOM} flex flex-wrap items-center justify-between gap-6`}>
           <div className="max-w-xl">
             <p className="text-xl font-semibold tracking-tight text-ink-950">
-              Udah kebayang buat jualan kamu?
+              Coba pakai pertanyaan yang sering masuk ke adminmu.
             </p>
             {/* KATA "HARGA" TIDAK BOLEH DIPAKAI DUA ARTI DI SATU BLOK.
 
@@ -890,9 +846,8 @@ export default async function LandingPage() {
                 pembayaran", persis di blok yang seharusnya meyakinkan orang
                 bahwa ini gratis. */}
             <p className="mt-2 text-[15px] leading-relaxed text-ink-600">
-              Nggak usah baca sampai bawah. Sambungin nomormu, tempel daftar
-              harga jualanmu, terus lihat sendiri dia jawabnya gimana. Gratis,
-              tanpa kartu kredit.
+              Isi program, biaya, dan aturan trial. Tes jawabannya sebelum
+              melayani calon peserta. Gratis, tanpa kartu kredit.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -917,9 +872,9 @@ export default async function LandingPage() {
         <div className={`${KOLOM} ${JARAK}`}>
           <KepalaBagian
             kicker="Cara kerjanya"
-            judul="Tiga langkah, kelar semenit"
-            hp="Nggak ada yang perlu diinstal, dan nggak ada daftar ke Meta yang makan waktu berhari-hari."
-            lebar="Nggak ada yang perlu diinstal, nggak ada berkas yang diunduh, dan nggak ada daftar ke Meta yang makan waktu berhari-hari."
+            judul="Siapkan, tes, lalu layani chat"
+            hp="Siapkan info program dan orang yang mengonfirmasi permintaan jadwal."
+            lebar="Siapkan info program, tes pertanyaan calon peserta, dan tentukan siapa yang menangani permintaan khusus."
           />
 
           {/* Di HP tiap langkah jadi satu baris memanjang: gambar di kiri,
@@ -1050,18 +1005,12 @@ export default async function LandingPage() {
               Sembilan kartu bergambar itu satu layar penuh untuk pekerjaan
               yang selesai dalam sekali lirik. */}
           <p className="mt-12 text-center text-sm font-medium text-ink-500 sm:mt-16">
-            Paling kepakai di jualan yang orangnya nanya dulu sebelum beli
+            Paling cocok untuk lembaga yang sudah menerima calon peserta lewat WhatsApp
           </p>
           <div className="thin-scroll -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:justify-center sm:px-0">
-            {BIDANG.map((b) => (
-              <span
-                key={b.nama}
-                className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-ink-200 bg-white px-3.5 py-2 text-[13px] text-ink-700"
-              >
-                <span className="text-ink-400">
-                  <Ikon nama={b.ikon} size={15} />
-                </span>
-                {b.nama}
+            {COCOK_UNTUK.map((teks) => (
+              <span key={teks} className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-ink-200 bg-white px-3.5 py-2 text-[13px] text-ink-700">
+                <Ikon nama="centang" size={15} />{teks}
               </span>
             ))}
           </div>
@@ -1093,7 +1042,7 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-2xl text-center">
             <p className="kicker">Sebelum kamu nyambungin nomor</p>
             <h2 className="judul-bagian mt-3">
-              Nggak bakal bikin kamu malu di depan pelanggan
+              Periksa jawabannya sebelum melayani calon peserta
             </h2>
           </div>
 
@@ -1317,7 +1266,7 @@ export default async function LandingPage() {
                   </h3>
                   {plan.highlight && (
                     <span className="badge bg-white text-ink-950">
-                      Paling laris
+                      Untuk banyak nomor
                     </span>
                   )}
                 </div>
@@ -1508,11 +1457,11 @@ export default async function LandingPage() {
       <section className="relative overflow-hidden border-t border-ink-900 bg-ink-950">
         <div className={`${KOLOM} ${JARAK} relative text-center`}>
           <h2 className="judul-bagian mx-auto max-w-3xl text-white">
-            Chat yang masuk malam ini, biar dia yang jawab
+            Coba dengan pertanyaan calon peserta kamu
           </h2>
           <Dua
             hp={`${PLANS.free.aiCredits} balasan gratis tiap bulan, selamanya, tanpa kartu kredit. Cukup buat kamu buktiin sendiri sebelum keluar duit.`}
-            lebar={`${PLANS.free.aiCredits} balasan gratis tiap bulan, selamanya, tanpa kartu kredit. Cukup buat kamu buktiin sendiri dia jawabnya bener atau nggak buat jualan kamu, sebelum keluar duit sepeser pun.`}
+            lebar={`${PLANS.free.aiCredits} balasan gratis tiap bulan, tanpa kartu kredit. Masukkan info program, lalu cek jawaban untuk biaya, jadwal, dan permintaan trial sebelum menghubungkan WhatsApp.`}
             className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-ink-400 sm:text-[17px]"
           />
           <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">

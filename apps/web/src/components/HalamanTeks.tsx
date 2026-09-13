@@ -156,8 +156,8 @@ export function KakiHalaman() {
                 tiga baris tambahan di dasar halaman, menjelaskan lagi hal yang
                 baru saja dijelaskan seluruh halaman di atasnya. */}
             <p className="mt-4 hidden max-w-xs text-sm leading-relaxed text-ink-600 sm:block">
-              Sales WhatsApp yang membalas chat pelanggan 24 jam dan mencatat
-              calon pembeli, buat usaha di Indonesia.
+              Asisten WhatsApp untuk pertanyaan calon peserta dan AI yang
+              membantu pemilik kursus menyiapkan tindak lanjut.
             </p>
             {/* Alamat suratnya ditaruh di kaki halaman, bukan cuma di halaman
                 ketentuan. Orang yang menimbang membayar mencari tanda bahwa di
@@ -207,7 +207,7 @@ export function KakiHalaman() {
               usahanya tetap harus tertulis, karena dialah yang menandatangani
               ketentuan dan menerima pembayaran. */}
           <p className="max-w-sm">
-            Palwise. Sales WhatsApp untuk usaha di Indonesia.
+            Palwise. Asisten WhatsApp untuk kursus & pelatihan.
             {IDENTITAS.dioperasikanOleh
               ? ` Dioperasikan oleh ${IDENTITAS.dioperasikanOleh}.`
               : ""}

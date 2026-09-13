@@ -137,8 +137,14 @@ MENGISI INFO BISNIS
   website, atau diambil dari berkas PDF, Word, txt, md, csv.
 - Bisa juga dipindahkan dari ChatGPT, Claude, atau Gemini kalau kamu sudah
   pernah cerita soal bisnismu di sana.
-- Ada contoh siap pakai per jenis usaha: toko, kafe dan katering, klinik dan
-  salon, jasa dan servis, properti, kursus.`;
+- Template awal yang ditonjolkan adalah kursus, les, dan pelatihan: program,
+  biaya, permintaan trial, dan tindak lanjut pendaftaran. Template usaha lain
+  tetap tersedia, termasuk toko via WA, katering, klinik, salon, servis, properti,
+  dan admisi sekolah.
+- Palwise paling cocok jika pertanyaan calon peserta rutin masuk lewat WA,
+  jawabannya bisa ditulis, dan admin kewalahan membalas atau menindaklanjuti.
+- Palwise tidak memastikan kapasitas kelas atau kalender pengajar. Permintaan
+  trial perlu dikonfirmasi tim.`;
 
 const CATATAN_PASANG = `CARA MULAI PAKAI PALWISE
 

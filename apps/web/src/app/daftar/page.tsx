@@ -36,7 +36,7 @@ export default async function RegisterPage({
         <div className="card p-6">
           <h1 className="text-xl font-semibold tracking-tight">Buat akun</h1>
           <p className="mb-6 mt-1 text-sm text-ink-500">
-            Asisten pertama kamu langsung disiapkan sekalian.
+            Siapkan asistenmu, isi info program atau layanan, lalu tes jawabannya.
           </p>
           <AuthForm action={registerAction} mode="register" kodeAjak={kodeAjak} />
         </div>

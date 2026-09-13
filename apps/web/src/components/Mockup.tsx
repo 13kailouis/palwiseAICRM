@@ -31,7 +31,7 @@ function Jendela({
         <span className="h-2.5 w-2.5 rounded-full bg-ink-300" />
         <span className="h-2.5 w-2.5 rounded-full bg-ink-200" />
         <span className="h-2.5 w-2.5 rounded-full bg-ink-200" />
-        <span className="ml-2 truncate text-[11px] text-ink-500">{judul}</span>
+        <span className="ml-2 truncate text-[11px] text-ink-500">{judul} · Ilustrasi</span>
       </div>
       {children}
     </div>
@@ -55,25 +55,25 @@ const OBROLAN: {
 }[] = [
   {
     nama: "Pak Deni",
-    cuplikan: "Sudah saya transfer ya kak",
+    cuplikan: "Saya mau daftar kelas dewasa kak",
     jam: "22.10",
     tandai: true,
     rasa: { teks: "mau beli", kelas: "bg-ink-900 text-white" },
   },
   {
     nama: "Bu Ratna",
-    cuplikan: "Kalau kirim ke Bandung ongkirnya…",
+    cuplikan: "Biaya kelas bahasa Inggris anak…",
     jam: "23.42",
     aktif: true,
   },
   {
-    nama: "Toko Bu Yuni",
+    nama: "Bu Yuni",
     cuplikan: "Kok lama banget ya balesnya",
     jam: "19.30",
     tandai: true,
     rasa: { teks: "kesal", kelas: "bg-amber-50 text-amber-800" },
   },
-  { nama: "Sinta", cuplikan: "Yang sampler isinya apa aja?", jam: "20.55" },
+  { nama: "Sinta", cuplikan: "Kelas IELTS belajarnya apa saja?", jam: "20.55" },
 ];
 
 /** Kotak masuk: daftar obrolan di kiri, percakapan di kanan. */
@@ -140,7 +140,7 @@ export function MockupDashboard() {
           <div className="flex items-center justify-between border-b border-ink-200 px-3.5 py-2.5">
             <div>
               <p className="text-[11.5px] font-medium text-ink-900">Bu Ratna</p>
-              <p className="text-[10px] text-ink-500">+62 812 8834 2210</p>
+              <p className="text-[10px] text-ink-500">Calon peserta · data contoh</p>
             </div>
             <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[9.5px] font-medium text-ink-700">
               Dibalas AI
@@ -160,7 +160,7 @@ export function MockupDashboard() {
           <div className="flex-1 space-y-2 bg-ink-50 px-3.5 py-3 min-h-[124px] sm:min-h-[132px]">
             <div className="demo-gel-1 flex justify-start">
               <div className="max-w-[85%] rounded-xl rounded-bl-sm border border-ink-200 bg-white px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-800">
-                Kalau kirim ke Bandung ongkirnya berapa ya
+                Biaya kelas bahasa Inggris anak berapa ya?
               </div>
             </div>
             {/* Titik-titik mengetik ditumpuk DI ATAS gelembung balasannya,
@@ -177,14 +177,14 @@ export function MockupDashboard() {
               </div>
               <div className="demo-gel-2 flex justify-end">
                 <div className="max-w-[85%] rounded-xl rounded-br-sm bg-[#d9fdd3] px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-900">
-                  Kami kirimnya dari Bandung kak, jadi buat area Bandung bisa
-                  COD. Di atas Rp 300.000 gratis ongkir.
+                  Rp400.000 per bulan untuk 8 pertemuan, kak. Ada biaya
+                  pendaftaran Rp100.000 dan modul Rp75.000 di awal.
                 </div>
               </div>
             </div>
             <div className="demo-gel-3 flex justify-start">
               <div className="max-w-[85%] rounded-xl rounded-bl-sm border border-ink-200 bg-white px-2.5 py-1.5 text-[10.5px] leading-relaxed text-ink-800">
-                Oke deh, saya ambil 2 ya
+                Bisa coba kelasnya dulu kak?
               </div>
             </div>
           </div>
@@ -221,16 +221,16 @@ export function MockupRasa() {
     {
       keadaan: "Pas dia santai",
       tanda: null as string | null,
-      pesan: "Halo kak, kopi arabika gayo masih ada?",
+      pesan: "Kak, biaya kelas Inggris anak berapa?",
       jawab:
-        "Halo kak! 👋 Masih ada ya, yang 200gr Rp 85.000. Mau sekalian saya bantu hitung ongkirnya?",
+        "Halo kak! Kelas anak Rp 400.000 per bulan, 8 pertemuan. Pendaftaran Rp 100.000 dan modul Rp 75.000 per semester.",
     },
     {
       keadaan: "Pas dia udah nunggu",
       tanda: "3 pesan belum dibalas, 22 menit",
-      pesan: "Halo kak, kopi arabika gayo masih ada?",
+      pesan: "Kak, biaya kelas Inggris anak berapa?",
       jawab:
-        "Maaf ya kak, 22 menit tanpa kabar itu kelamaan. Arabika Gayo 200gr masih ada, Rp 85.000.",
+        "Maaf sudah menunggu kak. Kelas anak Rp 400.000 per bulan, pendaftaran Rp 100.000, dan modul Rp 75.000 per semester.",
     },
   ];
 
@@ -269,9 +269,9 @@ export function MockupRasa() {
 /** Halaman Info bisnis: sumber pengetahuan yang sudah terbaca. */
 export function MockupInfoBisnis() {
   const sumber = [
-    { judul: "Katalog & harga", asal: "Ditempel manual", potongan: 14, siap: true },
-    { judul: "kopinusantara.id", asal: "Dibaca dari website", potongan: 26, siap: true },
-    { judul: "Aturan retur & ongkir", asal: "Ditempel manual", potongan: 6, siap: true },
+    { judul: "Program & biaya kursus", asal: "Ditempel manual", potongan: 14, siap: true },
+    { judul: "Halaman program lembaga", asal: "Dibaca dari website", potongan: 26, siap: true },
+    { judul: "Aturan trial & pendaftaran", asal: "Ditempel manual", potongan: 6, siap: true },
     { judul: "Dari ChatGPT", asal: "Dipindahkan dari AI lain", potongan: 0, siap: false },
   ];
 
@@ -309,21 +309,19 @@ export function MockupInfoBisnis() {
 /**
  * Daftar janji temu di Ringkasan.
  *
- * Sengaja memakai tiga bidang usaha yang berbeda dalam satu gambar: klinik,
- * properti, dan meeting online. Satu contoh saja bikin bidang lain merasa
- * gambar ini bukan tentang mereka, padahal mesinnya sama persis.
+ * Contoh permintaan trial dan konsultasi program; konfirmasi tetap oleh tim.
  */
 export function MockupJanji() {
   const janji = [
     {
       nama: "Bu Ratna",
-      untuk: "kontrol gigi dengan dokter Rina",
+      untuk: "trial kelas Bahasa Inggris anak",
       kapan: "Hari ini jam 14.00",
       pasti: true,
     },
     {
       nama: "Pak Anwar",
-      untuk: "survei unit tipe 36",
+      untuk: "konsultasi program IELTS",
       kapan: "Besok jam 09.30",
       pasti: true,
     },
@@ -332,7 +330,7 @@ export function MockupJanji() {
       // yang sama, dan nama yang sama muncul dua kali sebagai dua orang berbeda
       // bikin gambar ini terbaca sebagai contoh yang asal comot.
       nama: "Pak Arif",
-      untuk: "meeting online lewat Google Meet",
+      untuk: "trial kelas dewasa lewat Google Meet",
       kapan: "Sabtu jam 10.00",
       pasti: false,
     },
@@ -371,13 +369,13 @@ export function MockupJanji() {
 
 export function MockupSapaLagi() {
   const baris = [
-    { hari: "Hari ke-0", teks: "Pesanan selesai, paket dikirim", jenis: "netral" },
-    { hari: "Hari ke-3", teks: "“Paketnya sudah sampai kak? Kopinya cocok?”", jenis: "kirim" },
-    { hari: "Hari ke-30", teks: "“Kira-kira kopinya sudah habis ya kak? Mau saya siapkan lagi?”", jenis: "kirim" },
+    { hari: "Percakapan tercatat", teks: "Maya menanyakan trial Bahasa Inggris anak", jenis: "netral" },
+    { hari: "Minta draf di Tanya", teks: "“Bantu balas Maya, jadwal trial masih aku cek.”", jenis: "kirim" },
+    { hari: "Periksa sebelum kirim", teks: "“Permintaan trial sudah kami catat. Tim akan mengabari setelah jadwal dipastikan.”", jenis: "kirim" },
   ];
 
   return (
-    <Jendela judul="Tanya kabar & ajak beli lagi">
+    <Jendela judul="Draf tindak lanjut calon peserta">
       <div className="space-y-0 px-4 py-4">
         {baris.map((b, i) => (
           <div key={b.hari} className="flex gap-3">
@@ -403,8 +401,8 @@ export function MockupSapaLagi() {
         ))}
       </div>
       <div className="border-t border-ink-200 bg-ink-50 px-4 py-2.5 text-[10.5px] leading-relaxed text-ink-500">
-        Dua jalur terpisah. Yang satu memastikan pelanggan puas, yang satu
-        membawanya belanja lagi.
+        Ilustrasi draf lewat Tanya. Kamu memeriksa dan menyetujui sebelum
+        pesan dikirim; belum ada slot trial yang dipastikan.
       </div>
     </Jendela>
   );
