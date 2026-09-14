@@ -251,17 +251,17 @@
   .row:hover .rowAction,.rowAction:focus-visible{color:#1a73e8}
 }
 @media(prefers-reduced-motion:reduce){.spin svg,.askHint{animation:none}}
-/* The same warm, restrained workspace palette used in the public product. */
-.heading h1{font-weight:600;letter-spacing:-.045em;color:#283923}
-.period{background:#e9eedf}
-.metrics{border-color:#dce4d2;background:#dce4d2;box-shadow:0 4px 14px #34462004}
-.metric{background:#fcfdf9}
-.metric:hover{background:#edf2e5}
-.card{border-color:#dce4d2;border-radius:14px;box-shadow:none}
-.ask{background:#edf2e3}
-.iconBtn{border-color:#dce4d2}
+/* The same neutral, restrained workspace palette used in the public product. */
+.heading h1{font-weight:600;letter-spacing:-.045em;color:#2c2c2c}
+.period{background:#e7e7e7}
+.metrics{border-color:#dbdbdb;background:#dbdbdb;box-shadow:0 4px 14px #33333304}
+.metric{background:#fbfbfb}
+.metric:hover{background:#ececec}
+.card{border-color:#dbdbdb;border-radius:14px;box-shadow:none}
+.ask{background:#ebebeb}
+.iconBtn{border-color:#dbdbdb}
 @media(min-width:1024px){
- .header{padding:10px 0 22px;margin-bottom:22px;border-bottom:1px solid #dfe6d5}
+ .header{padding:10px 0 22px;margin-bottom:22px;border-bottom:1px solid #dedede}
  .heading h1{font-size:30px}
  .metrics{border-radius:14px}
  .metric{padding:23px;gap:10px}

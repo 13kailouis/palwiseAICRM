@@ -129,34 +129,14 @@ export const JUALAN_UMUM: IsiJualan = {
     sub: "AI yang membantu membalas WhatsApp pelanggan, merapikan percakapan, dan menyiapkan langkah berikutnya. Semua dalam satu ruang kerja. Kendali tetap di tanganmu.",
   },
   chat: {
-    nama: "Bu Ratna",
+    nama: "Calon pengguna Palwise",
     belumDibaca: 4,
-    catatan:
-      "Percakapan ini terjadi jam setengah dua belas malam, waktu tokonya sudah tutup dan pemiliknya sudah tidur.",
+    catatan: "Ilustrasi calon pengguna yang ingin mengenal Palwise. Bukan percakapan pelanggan asli.",
     pesan: [
-      { dari: "pelanggan", teks: "Halo kak, arabika gayo masih ada?", jam: "23.41" },
-      {
-        dari: "asisten",
-        teks: "Halo kak! 👋 Masih ada. Arabika Gayo 200gr Rp 85.000, rasanya floral dan agak citrus. Cocok buat V60 atau tubruk.",
-        jam: "23.41",
-      },
-      { dari: "pelanggan", teks: "Kalau kirim ke Bandung ongkirnya berapa ya", jam: "23.42" },
-      {
-        dari: "asisten",
-        teks: "Kami kirimnya dari Bandung kak, jadi buat area Bandung bisa COD. Kalau belanjanya di atas Rp 300.000 gratis ongkir.",
-        jam: "23.42",
-      },
-      {
-        dari: "pelanggan",
-        teks: "Kalau yang ini namanya apa",
-        jam: "23.43",
-        foto: { src: "/arabika-toraja.jpg", alt: "Biji kopi arabika Toraja yang dikirim pelanggan" },
-      },
-      {
-        dari: "asisten",
-        teks: "Itu Arabika Toraja kak, Rp 92.000 per 200gr. Rasanya lebih ke cokelat dan rempah. Mau saya catat pesanannya?",
-        jam: "23.43",
-      },
+      { dari: "pelanggan", teks: "Kalau saya lagi sibuk, Palwise bisa bantu balas pelanggan?", jam: "09.41" },
+      { dari: "asisten", teks: "Bisa. Asisten WhatsApp membantu menjawab dari info bisnis yang kamu siapkan. Kamu tetap bisa memantau dan mengambil alih percakapan.", jam: "09.41" },
+      { dari: "pelanggan", teks: "Bisa saya coba dulu sebelum sambungkan nomor?", jam: "09.42" },
+      { dari: "asisten", teks: "Bisa. Buat akun gratis, isi informasi bisnismu, lalu uji jawaban di halaman Coba dulu. Sambungkan WhatsApp setelah kamu siap.", jam: "09.42" },
     ],
   },
   hitung: {

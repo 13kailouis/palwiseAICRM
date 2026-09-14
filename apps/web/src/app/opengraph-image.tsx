@@ -11,8 +11,8 @@ export default function Image() {
         style={{
           width: "100%",
           height: "100%",
-          background: "#f0f4e7",
-          color: "#263525",
+          background: "#eeeeee",
+          color: "#2b2b2b",
           display: "flex",
           flexDirection: "column",
           padding: "62px 74px",
@@ -26,7 +26,7 @@ export default function Image() {
           }}
         >
           <span style={{ fontWeight: 700 }}>Palwise</span>
-          <span style={{ fontSize: 20, color: "#758367" }}>palwise.id</span>
+          <span style={{ fontSize: 20, color: "#757575" }}>palwise.id</span>
         </div>
         <div
           style={{
@@ -39,13 +39,13 @@ export default function Image() {
           }}
         >
           <span>Layani lebih banyak.</span>
-          <span style={{ color: "#758367" }}>Urus bisnis lebih tenang.</span>
+          <span style={{ color: "#757575" }}>Urus bisnis lebih tenang.</span>
         </div>
         <div
           style={{
             display: "flex",
             fontSize: 24,
-            color: "#5b6c4d",
+            color: "#5c5c5c",
             marginTop: 30,
           }}
         >
@@ -55,7 +55,7 @@ export default function Image() {
           <span
             style={{
               display: "flex",
-              background: "#263525",
+              background: "#2b2b2b",
               color: "white",
               padding: "17px 28px",
               borderRadius: 9,

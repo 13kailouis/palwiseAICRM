@@ -38,7 +38,7 @@ export function ProductPreview({
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
           >
-            <option value="">Contoh: Toko</option>
+            <option value="">Contoh: Kenali Palwise</option>
             {options.map((o) => (
               <option value={o.id} key={o.id}>
                 {o.label}

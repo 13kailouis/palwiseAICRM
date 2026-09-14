@@ -347,11 +347,11 @@
 .recoverAnswer:hover { background: #f6f8fb; }
 @media (min-width: 1024px) { .suggestions { margin: 0 0 14px; } }
 /* Refreshed workspace surfaces; interaction and mobile scrolling stay owned by this module. */
-.header { border-color:#e6ebdd; }
-.welcomeLogo { background:#f0f4e8; border-color:#dfe7d4; box-shadow:none; }
-.welcome h1 { color:#293c24; letter-spacing:-.05em; }
-.composer { border-color:#d9e2ce; box-shadow:0 5px 20px #364b2110; border-radius:18px; }
-.owner p { background:#edf2e5; color:#2f4027; }
-.suggestion { border-color:#e1e7d9; border-radius:12px; background:#fbfcf9; }
-.suggestion:hover { background:#edf2e5; border-color:#bbc9aa; }
-.aiBadge { background:#f4f7ed; color:#687958; border-color:#dfe6d5; }
+.header { border-color:#e5e5e5; }
+.welcomeLogo { background:#efefef; border-color:#dedede; box-shadow:none; }
+.welcome h1 { color:#2e2e2e; letter-spacing:-.05em; }
+.composer { border-color:#d8d8d8; box-shadow:0 5px 20px #36363610; border-radius:18px; }
+.owner p { background:#ececec; color:#323232; }
+.suggestion { border-color:#e0e0e0; border-radius:12px; background:#fbfbfb; }
+.suggestion:hover { background:#ececec; border-color:#bababa; }
+.aiBadge { background:#f3f3f3; color:#686868; border-color:#dedede; }

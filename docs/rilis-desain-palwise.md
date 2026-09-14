@@ -22,3 +22,10 @@ Landing utama tetap general. Halaman /klinik, /hotel, /kursus, dan tujuh bidang 
 - Tidak ada galat JavaScript dalam pengujian interaksi utama. Tidak memanggil AI atau mengirim pesan pelanggan selama verifikasi.
 
 Build produksi dan hasil pemeriksaan domain publik dicatat setelah aktivasi.
+
+## Koreksi dari pemilik — 15 September 2026
+
+- Seluruh latar hijau pada desain baru diganti putih dan abu-abu netral, termasuk landing, autentikasi, sidebar, Ringkasan, Tanya, Info bisnis, dan kartu berbagi. Biru dipakai untuk pilihan/aksi.
+- Contoh utama WhatsApp sekarang calon pengguna yang menanyakan kemampuan Palwise dan cara mencoba sebelum menyambungkan nomor. Contoh kopi tidak lagi menjadi demo utama; contoh bidang lain tetap bisa dipilih.
+- Peringatan layanan memakai bahasa pengguna pada produksi maupun pratinjau. Perintah terminal dan konfigurasi tidak ditampilkan. Saat worker tidak dapat diperiksa, penjelasan tidak menjamin chat masih tersinkron.
+- Typecheck koreksi berhasil. Pengujian browser memeriksa warna latar hasil render, contoh utama, dan pesan gangguan tanpa petunjuk teknis.

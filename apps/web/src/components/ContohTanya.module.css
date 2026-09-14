@@ -37,7 +37,7 @@
   .answer { gap: 8px; }
   .question { max-width: 96%; }
 }
-.choices { background:#f4f7ed; border-color:#e1e7d8; }
-.choices button[aria-pressed="true"] { color:#344b29; border-color:#dbe5cd; background:#e7efdc; }
-.question { background:#edf2e5; }
-.demo { border-color:#dce4d2; border-radius:13px; box-shadow:0 8px 28px #33492008; }
+.choices { background:#f3f3f3; border-color:#e0e0e0; }
+.choices button[aria-pressed="true"] { color:#383838; border-color:#dadada; background:#e6e6e6; }
+.question { background:#ececec; }
+.demo { border-color:#dbdbdb; border-radius:13px; box-shadow:0 8px 28px #34343408; }
