@@ -49,3 +49,16 @@ Rilis preferensi di atas aktif pada 10 September 2026, kode `a56f1ef`; hasil ver
 - Dashboard dan Masukan memakai susunan yang disesuaikan untuk HP dan desktop, dengan teks sedikit, hierarki jelas, dan rincian dibuka saat diperlukan.
 - Hindari kartu penuh penjelasan berulang. Utamakan angka, daftar pekerjaan, dan tindakan yang langsung bisa digunakan.
 - Masukan harus ringkas dan interaktif agar tidak banyak mengambil ruang layar atau menutupi pekerjaan utama.
+
+## Landing general dan desain — 14 September 2026
+
+- Landing utama Palwise wajib general, bukan fokus kursus. Halaman /klinik, /hotel, /kursus, dan bidang lain masing-masing menjelaskan konteks usahanya. Arahan ini menggantikan arahan landing fokus kursus sebelumnya.
+- Pemilik meminta rombakan menyeluruh desain UI/UX, layout, detail desktop dan handphone, serta copywriting landing, login, register, Info bisnis, dan tampilan aplikasi agar lebih meyakinkan dan mudah digunakan.
+- Klaim manfaat harus mengikuti kemampuan produk; jangan menambahkan testimoni, logo klien, atau angka hasil yang tidak terbukti.
+- Push dan deploy diizinkan secara eksplisit untuk rombakan ini.
+
+## Koreksi visual dan bahasa pengguna — 15 September 2026
+
+- Jangan gunakan latar hijau pada landing atau platform. Gunakan putih, abu-abu netral, dan aksen biru untuk interaksi; hindari tint hijau pada sidebar, kartu, chat, form, dan background.
+- Demo utama landing bukan percakapan jualan kopi/Bu Ratna. Gunakan contoh yang relevan untuk seluruh calon pengguna Palwise; contoh khusus usaha tetap tersedia lewat pilihan bidang dan halaman masing-masing.
+- Peringatan layanan di layar pengguna tidak boleh menampilkan perintah terminal, nama kunci API, atau langkah konfigurasi teknis, termasuk saat pratinjau lokal. Jelaskan dampak dan tindakan yang bisa dilakukan pengguna, tanpa menjamin sinkronisasi saat layanannya tidak dapat diperiksa.
