@@ -119,15 +119,15 @@ export const JUALAN_UMUM: IsiJualan = {
   namaPendek: "Toko",
   ikon: "chat",
   meta: {
-    judul: "Palwise: sales WhatsApp AI yang bales chat 24 jam",
+    judul: "Palwise: sales WhatsApp yang bales chat pelanggan 24 jam",
     ringkas:
-      "Chat WhatsApp jam 11 malam tetap dibales dalam hitungan detik, pakai harga dan info usahamu sendiri. Calon pelanggan tercatat rapi, tanpa nambah gaji. Mulai gratis, tanpa kartu kredit.",
+      "Pelanggan yang chat WhatsApp jam 11 malam nggak dibiarkan nunggu: dibales dalam hitungan detik, pakai harga dan info usahamu sendiri. Yang nanya tercatat rapi, tanpa nambah gaji. Mulai gratis, tanpa kartu kredit.",
   },
   hero: {
-    lencana: "Sales WhatsApp AI",
+    lencana: "Sales WhatsApp buat usahamu",
     judul: "Ada yang chat WhatsApp kamu jam 11 malam.",
     judulAbu: "Besoknya, dia udah beli di sebelah.",
-    sub: "Palwise bales tiap chat WhatsApp dalam hitungan detik, siang malam, pakai harga dan info usahamu sendiri. Calon pelanggan tercatat rapi, tanpa nambah gaji.",
+    sub: "Palwise bikin pelanggan kamu nggak pernah dibiarkan nunggu: tiap chat WhatsApp dibales AI-nya dalam hitungan detik, siang malam, pakai harga dan info usahamu sendiri. Yang nanya tercatat rapi, tanpa nambah gaji.",
   },
   chat: {
     nama: "Bu Ratna",
@@ -250,15 +250,15 @@ const KLINIK: IsiJualan = {
   namaPendek: "Klinik",
   ikon: "klinik",
   meta: {
-    judul: "Palwise untuk klinik: asisten WhatsApp AI yang bales pasien 24 jam",
+    judul: "Palwise untuk klinik: asisten WhatsApp yang bales pasien 24 jam",
     ringkas:
       "Pertanyaan tarif perawatan dan jadwal di WhatsApp dibales dalam hitungan detik, pakai info klinikmu sendiri. Permintaan jadwal tercatat untuk dipastikan tim, tanpa saran medis. Mulai gratis.",
   },
   hero: {
-    lencana: "Resepsionis WhatsApp AI untuk klinik",
+    lencana: "Resepsionis WhatsApp untuk klinik",
     judul: "Ada yang tanya harga perawatan lewat WhatsApp jam 10 malam.",
     judulAbu: "Besok paginya, dia udah booking di klinik lain.",
-    sub: "Palwise bales tiap chat WhatsApp klinikmu dalam hitungan detik, pakai tarif dan jadwal praktik yang kamu isi. Permintaan jadwal tercatat rapi, tim kamu tinggal mastiin.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp klinikmu dalam hitungan detik, pakai tarif dan jadwal praktik yang kamu isi. Permintaan jadwal tercatat rapi, tim kamu tinggal mastiin.",
   },
   chat: {
     nama: "Kak Nadia",
@@ -385,15 +385,15 @@ const DEALER: IsiJualan = {
   namaPendek: "Dealer",
   ikon: "mobil",
   meta: {
-    judul: "Palwise untuk dealer & bengkel: sales WhatsApp AI yang bales chat 24 jam",
+    judul: "Palwise untuk dealer & bengkel: sales WhatsApp yang bales chat 24 jam",
     ringkas:
       "Pertanyaan harga, DP, promo, dan jadwal servis di WhatsApp dibales dalam hitungan detik, pakai info dealermu sendiri. Permintaan test drive dan servis tercatat untuk sales dan bengkelmu. Mulai gratis.",
   },
   hero: {
-    lencana: "Sales WhatsApp AI untuk dealer & bengkel",
+    lencana: "Sales WhatsApp untuk dealer & bengkel",
     judul: "Ada yang tanya DP mobil lewat WhatsApp pas sales lagi libur.",
     judulAbu: "Senin pagi, dia udah SPK di dealer sebelah.",
-    sub: "Palwise bales tiap chat WhatsApp dealer dan bengkelmu dalam hitungan detik, pakai harga, promo, dan jadwal servis yang kamu isi. Yang minta test drive atau servis tercatat, sales kamu tinggal lanjut.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp dealer dan bengkelmu dalam hitungan detik, pakai harga, promo, dan jadwal servis yang kamu isi. Yang minta test drive atau servis tercatat, sales kamu tinggal lanjut.",
   },
   chat: {
     nama: "Pak Bayu",
@@ -521,15 +521,15 @@ const PROPERTI: IsiJualan = {
   namaPendek: "Properti",
   ikon: "properti",
   meta: {
-    judul: "Palwise untuk properti: sales WhatsApp AI yang bales calon pembeli 24 jam",
+    judul: "Palwise untuk properti: sales WhatsApp yang bales calon pembeli 24 jam",
     ringkas:
       "Pertanyaan tipe unit, harga, dan lokasi di WhatsApp dibales dalam hitungan detik, pakai info proyekmu sendiri. Yang serius diarahkan ke jadwal survei. Mulai gratis.",
   },
   hero: {
-    lencana: "Sales WhatsApp AI untuk properti",
+    lencana: "Sales WhatsApp untuk properti",
     judul: "Calon pembeli tanya unit lewat WhatsApp jam 9 malam.",
     judulAbu: "Minggu depannya, dia udah survei di proyek sebelah.",
-    sub: "Palwise bales tiap chat WhatsApp dari iklanmu dalam hitungan detik, pakai harga, tipe unit, dan lokasi yang kamu isi. Yang serius diarahkan ke jadwal survei, sales kamu tinggal ketemu.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp dari iklanmu dalam hitungan detik, pakai harga, tipe unit, dan lokasi yang kamu isi. Yang serius diarahkan ke jadwal survei, sales kamu tinggal ketemu.",
   },
   chat: {
     nama: "Pak Rizal",
@@ -656,15 +656,15 @@ const KURSUS: IsiJualan = {
   namaPendek: "Kursus",
   ikon: "kursus",
   meta: {
-    judul: "Palwise untuk kursus: sales WhatsApp AI yang bales calon peserta 24 jam",
+    judul: "Palwise untuk kursus: sales WhatsApp yang bales calon peserta 24 jam",
     ringkas:
       "Pertanyaan program, biaya, dan jadwal kelas di WhatsApp dibales dalam hitungan detik, pakai info lembagamu sendiri. Permintaan trial tercatat untuk dipastikan tim. Mulai gratis.",
   },
   hero: {
-    lencana: "Sales WhatsApp AI untuk kursus & pelatihan",
+    lencana: "Sales WhatsApp untuk kursus & pelatihan",
     judul: "Orang tua tanya biaya kursus lewat WhatsApp jam 9 malam.",
     judulAbu: "Besoknya, anaknya udah daftar di tempat lain.",
-    sub: "Palwise bales tiap chat WhatsApp lembagamu dalam hitungan detik, pakai program, biaya, dan jadwal yang kamu isi. Permintaan trial tercatat rapi, tim kamu tinggal mastiin.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp lembagamu dalam hitungan detik, pakai program, biaya, dan jadwal yang kamu isi. Permintaan trial tercatat rapi, tim kamu tinggal mastiin.",
   },
   chat: {
     nama: "Kak Maya",
@@ -787,15 +787,15 @@ const SERVIS: IsiJualan = {
   namaPendek: "Servis",
   ikon: "servis",
   meta: {
-    judul: "Palwise untuk jasa & servis: sales WhatsApp AI yang bales order 24 jam",
+    judul: "Palwise untuk jasa & servis: sales WhatsApp yang bales order 24 jam",
     ringkas:
       "Pertanyaan tarif, area, dan jadwal kunjungan di WhatsApp dibales dalam hitungan detik, pakai info usahamu sendiri. Permintaan jadwal tercatat untuk dipastikan tim. Mulai gratis.",
   },
   hero: {
-    lencana: "Sales WhatsApp AI untuk jasa & servis",
+    lencana: "Sales WhatsApp untuk jasa & servis",
     judul: "AC pelanggan mati, dia chat WhatsApp kamu jam 8 malam.",
     judulAbu: "Nggak dibales, dia langsung panggil tukang sebelah.",
-    sub: "Palwise bales tiap chat WhatsApp usaha servismu dalam hitungan detik, pakai tarif dan area layanan yang kamu isi. Permintaan kunjungan tercatat rapi, tim kamu tinggal atur teknisinya.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp usaha servismu dalam hitungan detik, pakai tarif dan area layanan yang kamu isi. Permintaan kunjungan tercatat rapi, tim kamu tinggal atur teknisinya.",
   },
   chat: {
     nama: "Bu Lina",
@@ -918,15 +918,15 @@ const KATERING: IsiJualan = {
   namaPendek: "Katering",
   ikon: "kopi",
   meta: {
-    judul: "Palwise untuk katering: sales WhatsApp AI yang bales pesanan 24 jam",
+    judul: "Palwise untuk katering: sales WhatsApp yang bales pesanan 24 jam",
     ringkas:
       "Pertanyaan menu, harga per porsi, dan tanggal acara di WhatsApp dibales dalam hitungan detik, pakai info usahamu sendiri. Pesanan dirinci, tanggalnya dipastikan tim. Mulai gratis.",
   },
   hero: {
-    lencana: "Sales WhatsApp AI untuk katering",
+    lencana: "Sales WhatsApp untuk katering",
     judul: "Ada yang pesan nasi box lewat WhatsApp jam 10 malam.",
     judulAbu: "Besoknya, dia udah deal sama katering sebelah.",
-    sub: "Palwise bales tiap chat WhatsApp kateringmu dalam hitungan detik, pakai menu, harga per porsi, dan area antar yang kamu isi. Pesanannya dirinci sampai total, tanggalnya tim kamu yang mastiin.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp kateringmu dalam hitungan detik, pakai menu, harga per porsi, dan area antar yang kamu isi. Pesanannya dirinci sampai total, tanggalnya tim kamu yang mastiin.",
   },
   chat: {
     nama: "Bu Endah",
@@ -1049,15 +1049,15 @@ const TOKO: IsiJualan = {
   namaPendek: "Toko",
   ikon: "fashion",
   meta: {
-    judul: "Palwise untuk toko online: sales WhatsApp AI yang bales chat 24 jam",
+    judul: "Palwise untuk toko online: sales WhatsApp yang bales chat 24 jam",
     ringkas:
       "Pertanyaan ukuran, stok, dan ongkir di WhatsApp dibales dalam hitungan detik, pakai daftar harga tokomu sendiri. Yang mau pesan langsung dirinci totalnya. Mulai gratis.",
   },
   hero: {
-    lencana: "Sales WhatsApp AI untuk toko online",
+    lencana: "Sales WhatsApp untuk toko online",
     judul: "Ada yang nanya ukuran lewat WhatsApp jam 11 malam.",
     judulAbu: "Besoknya, dia udah checkout di toko sebelah.",
-    sub: "Palwise bales tiap chat WhatsApp tokomu dalam hitungan detik, pakai harga, stok, dan ongkir yang kamu isi. Yang udah mau pesan langsung dirinci totalnya, tanpa nambah admin.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp tokomu dalam hitungan detik, pakai harga, stok, dan ongkir yang kamu isi. Yang udah mau pesan langsung dirinci totalnya, tanpa nambah admin.",
   },
   chat: {
     nama: "Kak Dinda",
@@ -1180,15 +1180,15 @@ const SEKOLAH: IsiJualan = {
   namaPendek: "Sekolah",
   ikon: "catat",
   meta: {
-    judul: "Palwise untuk sekolah: asisten WhatsApp AI untuk penerimaan murid baru",
+    judul: "Palwise untuk sekolah: asisten WhatsApp untuk penerimaan murid baru",
     ringkas:
       "Pertanyaan gelombang pendaftaran, syarat, dan biaya di WhatsApp dibales dalam hitungan detik, pakai info sekolahmu sendiri. Orang tua langsung tahu langkah berikutnya. Mulai gratis.",
   },
   hero: {
-    lencana: "Asisten WhatsApp AI untuk penerimaan murid baru",
+    lencana: "Asisten WhatsApp untuk penerimaan murid baru",
     judul: "Orang tua tanya biaya pendaftaran lewat WhatsApp jam 9 malam.",
     judulAbu: "Minggu depannya, anaknya udah daftar di sekolah lain.",
-    sub: "Palwise bales tiap chat WhatsApp sekolahmu dalam hitungan detik, pakai syarat, biaya, dan jadwal pendaftaran yang kamu isi. Orang tua langsung tahu langkah berikutnya, tim pendaftaranmu nggak kewalahan.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp sekolahmu dalam hitungan detik, pakai syarat, biaya, dan jadwal pendaftaran yang kamu isi. Orang tua langsung tahu langkah berikutnya, tim pendaftaranmu nggak kewalahan.",
   },
   chat: {
     nama: "Bu Ani",
@@ -1311,15 +1311,15 @@ const HOTEL: IsiJualan = {
   namaPendek: "Hotel & villa",
   ikon: "hotel",
   meta: {
-    judul: "Palwise untuk hotel & villa: sales WhatsApp AI yang bales tamu 24 jam",
+    judul: "Palwise untuk hotel & villa: sales WhatsApp yang bales tamu 24 jam",
     ringkas:
       "Pertanyaan harga kamar, fasilitas, dan tanggal menginap di WhatsApp dibales dalam hitungan detik, pakai info penginapanmu sendiri. Permintaan pesan kamar tercatat untuk dipastikan resepsionis. Mulai gratis.",
   },
   hero: {
-    lencana: "Sales WhatsApp AI untuk hotel & villa",
+    lencana: "Sales WhatsApp untuk hotel & villa",
     judul: "Tamu tanya harga kamar lewat WhatsApp jam 11 malam.",
     judulAbu: "Nggak dibales, dia booking hotel sebelah lewat aplikasi.",
-    sub: "Palwise bales tiap chat WhatsApp hotel, villa, atau guest house kamu dalam hitungan detik, pakai harga kamar dan aturan menginap yang kamu isi. Permintaan pesan kamar tercatat rapi, resepsionis tinggal mastiin.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp hotel, villa, atau guest house kamu dalam hitungan detik, pakai harga kamar dan aturan menginap yang kamu isi. Permintaan pesan kamar tercatat rapi, resepsionis tinggal mastiin.",
   },
   // Sengaja keluarga dengan anak kecil dan jemput bandara: dua pertanyaan
   // yang hampir selalu ikut di chat penginapan, dan dua-duanya dijawab dari
@@ -1454,15 +1454,15 @@ const TRAVEL: IsiJualan = {
   namaPendek: "Travel",
   ikon: "travel",
   meta: {
-    judul: "Palwise untuk tour & travel: sales WhatsApp AI yang bales calon peserta 24 jam",
+    judul: "Palwise untuk tour & travel: sales WhatsApp yang bales calon peserta 24 jam",
     ringkas:
       "Pertanyaan paket, jadwal berangkat, dan harga per orang di WhatsApp dibales dalam hitungan detik, pakai info travelmu sendiri. Pendaftaran tercatat rapi untuk dipastikan tim. Mulai gratis.",
   },
   hero: {
-    lencana: "Sales WhatsApp AI untuk tour & travel",
+    lencana: "Sales WhatsApp untuk tour & travel",
     judul: "Ada yang tanya paket liburan lewat WhatsApp jam 10 malam.",
     judulAbu: "Besoknya, dia udah DP di travel sebelah.",
-    sub: "Palwise bales tiap chat WhatsApp travelmu dalam hitungan detik, pakai paket, jadwal, dan harga yang kamu isi. Yang mau ikut langsung dirinci totalnya, tim kamu tinggal mastiin kursinya.",
+    sub: "Palwise pakai AI buat bales tiap chat WhatsApp travelmu dalam hitungan detik, pakai paket, jadwal, dan harga yang kamu isi. Yang mau ikut langsung dirinci totalnya, tim kamu tinggal mastiin kursinya.",
   },
   chat: {
     nama: "Kak Laras",

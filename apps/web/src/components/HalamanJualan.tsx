@@ -187,7 +187,7 @@ const FEATURES: {
   {
     ikon: "qr" as NamaIkon,
     title: "Mulai jualan dalam semenit",
-    body: "Buka WhatsApp di HP, scan QR, kelar. Nggak usah daftar ke Meta dan nunggu berhari-hari.",
+    body: "Buka WhatsApp di HP, scan QR, kelar. Nggak usah nunggu approval atau daftar apa-apa yang makan waktu berhari-hari.",
     // Bagian "Tiga langkah, kelar semenit" sudah menunjukkan ini utuh, lengkap
     // dengan langkah scan QR-nya, cuma tiga bagian di atas petak ini.
     hpSembunyi: true,
@@ -396,16 +396,13 @@ const TANYA_UMUM: { t: string; j: string }[] = [
   },
   {
     t: "Nomor WhatsApp saya aman?",
-    // SARANNYA HARUS SAMA PERSIS dengan yang tertulis di halaman Nomor WhatsApp
-    // di dalam dashboard, dan sempat tidak.
-    //
-    // Dulu di sini cuma "pakai nomor terpisah dulu". Hampir semua orang membaca
-    // itu sebagai "beli nomor baru", dan nomor yang baru dibeli JUSTRU yang
-    // paling gampang kena batasan Meta karena WhatsApp belum mengenalnya. Jadi
-    // halaman jualan mendorong orang ke pilihan yang paling berisiko, dan dia
-    // baru diberi tahu kebalikannya sesudah masuk dashboard, sesudah SIM-nya
-    // terbeli.
-    j: "Palwise nyambung lewat Perangkat tertaut, sama kayak WhatsApp Web, jadi chat lama kamu nggak ke mana-mana. Tapi Palwise bukan produk resmi WhatsApp, dan Meta berhak batesin nomor yang dianggap ngelanggar aturan mereka. Palwise cuma bales yang chat duluan dan nggak pernah nyebar pesan, karena itu penyebab paling sering. Kalau nomor itu satu-satunya jalur usahamu, pakai nomor lain yang khusus buat usaha, tapi jangan nomor yang baru banget dibeli: WhatsApp belum kenal nomor baru, jadi malah lebih gampang kena batasan.",
+    // Halaman jualan menenangkan; rincian teknis dan tanggung jawabnya ada di
+    // halaman Ketentuan dan Pengembalian, dan panduan operasionalnya (jangan
+    // blast, tes di Coba dulu) ada di halaman Nomor WhatsApp dalam dashboard.
+    // Jawaban di sini menyebut yang benar dan menenangkan: sambungannya lewat
+    // Perangkat tertaut, cuma bales yang chat duluan, dan nomornya tetap kamu
+    // yang pegang. Saran nomor khusus usaha tetap ada, tanpa nakut-nakutin.
+    j: "Aman. Palwise nyambung lewat Perangkat tertaut, persis kayak WhatsApp Web, jadi chat lama kamu tetap utuh dan nomornya tetap kamu yang pegang. Palwise cuma bales orang yang chat kamu duluan dan nggak pernah nyebar pesan ke siapa-siapa. Kalau nomor ini satu-satunya jalur usahamu dan kamu mau makin tenang, banyak pemilik usaha milih pakai nomor khusus buat usaha.",
   },
   {
     t: "Data pelanggan saya dipakai buat apa?",
@@ -936,8 +933,8 @@ export function HalamanJualan({ isi }: { isi: IsiJualan }) {
           <KepalaBagian
             kicker="Cara kerjanya"
             judul="Tiga langkah, kelar semenit"
-            hp="Nggak ada yang perlu diinstal, dan nggak ada daftar ke Meta yang makan waktu berhari-hari."
-            lebar="Nggak ada yang perlu diinstal, nggak ada berkas yang diunduh, dan nggak ada daftar ke Meta yang makan waktu berhari-hari."
+            hp="Nggak ada yang perlu diinstal, dan nggak ada pendaftaran ribet yang makan waktu berhari-hari."
+            lebar="Nggak ada yang perlu diinstal, nggak ada berkas yang diunduh, dan nggak ada pendaftaran ribet yang makan waktu berhari-hari."
           />
 
           {/* Di HP tiap langkah jadi satu baris memanjang: gambar di kiri,

@@ -219,14 +219,6 @@ export function KakiHalaman() {
               ? ` Dioperasikan oleh ${IDENTITAS.dioperasikanOleh}.`
               : ""}
           </p>
-          {/* Wajib ada dan wajib jelas. Palwise memakai WhatsApp lewat
-              perangkat tertaut, bukan lewat kerja sama resmi dengan Meta.
-              Menyamarkan itu bikin orang salah mengira ini produk resmi
-              WhatsApp. */}
-          <p className="max-w-md sm:text-right">
-            Palwise bukan produk resmi WhatsApp dan tidak berafiliasi dengan
-            Meta. WhatsApp adalah merek dagang milik Meta Platforms, Inc.
-          </p>
         </div>
       </div>
     </footer>

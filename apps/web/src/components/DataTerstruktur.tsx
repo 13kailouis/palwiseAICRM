@@ -89,7 +89,7 @@ export function DataTerstruktur({
       "Ingatkan pelanggan sebelum janji temunya",
       "Sapa lagi pelanggan yang menghilang",
       "Ringkasan AI tiap pelanggan",
-      "Pasang cukup scan QR, tanpa daftar ke Meta",
+      "Pasang cukup scan QR, tanpa pendaftaran yang ribet",
     ],
   };
 
