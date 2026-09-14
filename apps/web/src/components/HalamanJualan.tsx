@@ -14,7 +14,8 @@ import { DataTerstruktur } from "@/components/DataTerstruktur";
 import { IDENTITAS, tautanBantuanWa } from "@/lib/identitas";
 import { Ikon, type NamaIkon } from "@/components/Ikon";
 import { PRESET } from "@/lib/preset";
-import { halamanPreset, type IsiJualan } from "@/lib/jualan";
+import { HALAMAN_BIDANG, halamanPreset, type IsiJualan } from "@/lib/jualan";
+import { PilihContohChat } from "@/components/PilihContohChat";
 import { ContohTanya } from "@/components/ContohTanya";
 import { HitungRugi } from "@/components/HitungRugi";
 import { ContohChat } from "@/components/ContohChat";
@@ -693,9 +694,23 @@ export function HalamanJualan({ isi }: { isi: IsiJualan }) {
           <div className="relative mx-auto mt-10 max-w-5xl sm:mt-14">
             {/* The night chat IS the product people buy: a 23.41 question answered with the
                 right price and shipping. The owner-side Palwise AI demo moved below the fold. */}
-            <div className="flex justify-center">
-              <ContohChat chat={isi.chat} />
-            </div>
+            {/* Halaman bidang cukup contoh bidangnya sendiri. Halaman depan
+                dibaca semua bidang, jadi pengunjungnya memilih contoh yang
+                mirip pertanyaan pelanggannya. Toko dilewati karena contoh
+                umumnya sudah toko. */}
+            {isi.presetId ? (
+              <div className="flex justify-center">
+                <ContohChat chat={isi.chat} />
+              </div>
+            ) : (
+              <PilihContohChat
+                pilihan={[isi, ...HALAMAN_BIDANG.filter((h) => h.id !== "toko")].map((h) => ({
+                  id: h.id,
+                  label: h.namaPendek,
+                  panel: <ContohChat chat={h.chat} />,
+                }))}
+              />
+            )}
           </div>
 
           {/* Pintasan, CUMA DI HP.

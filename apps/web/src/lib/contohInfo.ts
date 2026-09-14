@@ -494,6 +494,93 @@ Ada beasiswa? Ada jalur prestasi dan jalur ekonomi, syaratnya diurus bagian admi
 Bisa masuk di tengah tahun ajaran? Bisa untuk murid pindahan, berkasnya dicek tim dulu.
 Bahasa pengantarnya apa? Bahasa Indonesia, dengan pelajaran Bahasa Inggris tiap hari.`;
 
+const PENGINAPAN = `TIPE KAMAR DAN HARGA PER MALAM
+Deluxe Room, 1 kasur queen, maksimal 2 orang, Rp 650.000 hari biasa, Rp 800.000 Jumat dan Sabtu
+Twin Room, 2 kasur single, maksimal 2 orang, Rp 650.000 hari biasa, Rp 800.000 Jumat dan Sabtu
+Family Room, 1 kasur king dan 1 kasur single, maksimal 4 orang, Rp 1.100.000 hari biasa, Rp 1.350.000 Jumat dan Sabtu
+Villa 2 kamar dengan kolam renang pribadi, maksimal 6 orang, Rp 3.200.000 per malam
+Tambahan kasur, Rp 200.000 per malam, sudah termasuk sarapan 1 orang
+Harga di atas sudah termasuk pajak dan layanan.
+Tanggal 24 Desember sampai 1 Januari harga naik 30 persen, minimal menginap 2 malam.
+Villa tanggal 25 sampai 31 Desember sudah penuh.
+
+YANG SUDAH TERMASUK
+Sarapan untuk 2 orang per kamar, untuk villa 6 orang.
+Wifi, air mineral, kolam renang umum, dan parkir.
+Belum termasuk antar jemput bandara.
+
+JAM DAN ATURAN MENGINAP
+Check-in mulai 14.00, check-out paling lambat 12.00.
+Early check-in dan late check-out tergantung kamar kosong, dipastikan tim di hari kedatangan.
+Late check-out sampai 15.00 dikenakan 50 persen harga kamar.
+Anak di bawah 6 tahun gratis kalau tidur dengan orang tua, tanpa tambahan kasur.
+Tidak menerima hewan peliharaan.
+Semua kamar bebas asap rokok.
+
+CARA PESAN DAN BAYAR
+Sebutkan tanggal check-in, tanggal check-out, jumlah tamu, dan tipe kamar.
+Pesanan dianggap pasti setelah tim mengirim konfirmasi dan DP 50 persen masuk.
+DP lewat transfer BCA atau QRIS. Pelunasan waktu check-in, bisa tunai, debit, atau kartu kredit.
+Data kartu kredit tidak pernah diminta lewat chat.
+
+PEMBATALAN
+Batal paling lambat 7 hari sebelum check-in, DP dikembalikan penuh.
+Batal kurang dari 7 hari, DP tidak dikembalikan tapi tanggalnya bisa dipindah sekali dalam 3 bulan.
+Pesanan untuk 24 Desember sampai 1 Januari tidak bisa dibatalkan.
+
+LOKASI DAN ANTAR JEMPUT
+Jalan Raya Ubud nomor 21, 15 menit jalan kaki ke pasar.
+Antar jemput bandara Rp 350.000 sekali jalan per mobil, maksimal 4 orang.
+Sewa motor Rp 100.000 per hari.
+
+YANG SERING DITANYA
+Ada harga untuk rombongan atau acara? Ada, untuk di atas 5 kamar harganya ditanyakan ke tim.
+Bisa bayar di tempat tanpa DP? Tidak bisa untuk Jumat, Sabtu, dan musim liburan.
+Ada restoran? Ada, buka 07.00 sampai 22.00, makanan bisa diantar ke kamar.`;
+
+const TRAVEL = `PAKET PERJALANAN DAN HARGA PER ORANG
+Open trip Labuan Bajo 3 hari 2 malam, kapal phinisi, Rp 3.750.000, berangkat tiap minggu
+Private trip Labuan Bajo 3 hari 2 malam, minimal 4 orang, Rp 5.900.000
+Open trip Bromo sunrise 1 hari dari Malang, Rp 450.000, berangkat tiap Sabtu dan Minggu
+Tour Jepang 7 hari Tokyo, Osaka, Kyoto, Rp 24.900.000, berangkat 12 April dan 18 Mei
+Tour Korea 6 hari Seoul dan Nami, Rp 17.500.000, berangkat 20 Maret
+Tour Jepang keberangkatan 12 April sudah penuh.
+Anak di bawah 12 tahun potongan 10 persen untuk tour luar negeri.
+
+YANG SUDAH DAN BELUM TERMASUK
+Labuan Bajo sudah termasuk kapal, kabin, makan 3 kali sehari, tiket masuk taman nasional, dan pemandu.
+Labuan Bajo belum termasuk tiket pesawat ke Labuan Bajo.
+Tour luar negeri sudah termasuk tiket pesawat pulang pergi dari Jakarta, hotel bintang 4, makan sesuai jadwal, bus, dan pemandu berbahasa Indonesia.
+Tour luar negeri belum termasuk visa, tips pemandu Rp 500.000, dan pengeluaran pribadi.
+
+CARA DAFTAR DAN BAYAR
+Sebutkan paket, tanggal berangkat, dan jumlah orang.
+Kursi dianggap aman setelah tim mengonfirmasi dan DP masuk.
+DP Labuan Bajo dan Bromo 50 persen, tour luar negeri Rp 5.000.000 per orang.
+Pelunasan paling lambat 30 hari sebelum berangkat.
+Transfer ke rekening perusahaan di BCA atau Mandiri.
+Data KTP dan paspor diminta tim setelah DP masuk.
+
+SYARAT PERJALANAN LUAR NEGERI
+Paspor berlaku minimal 6 bulan dari tanggal pulang.
+Pengurusan visa dibantu tim, keputusan disetujui atau tidak ada di kedutaan.
+Jadwal penerbangan bisa berubah mengikuti maskapai.
+
+PEMBATALAN
+Batal lebih dari 45 hari sebelum berangkat, uang kembali dipotong biaya administrasi Rp 1.000.000.
+Batal 15 sampai 45 hari sebelum berangkat, DP tidak dikembalikan.
+Batal kurang dari 15 hari sebelum berangkat, seluruh biaya tidak dikembalikan.
+Trip yang batal karena cuaca buruk dijadwalkan ulang tanpa biaya tambahan.
+
+KANTOR DAN JAM KERJA
+Jalan Kenari nomor 14, Jakarta Selatan.
+Senin sampai Sabtu, 09.00 sampai 18.00.
+
+YANG SERING DITANYA
+Bisa ikut sendirian? Bisa untuk open trip, digabung dengan peserta lain.
+Bisa bayar dicicil? Bisa, asal lunas 30 hari sebelum berangkat.
+Cocok untuk anak dan orang tua? Labuan Bajo dan tour kota cocok, Bromo perlu kuat berjalan menanjak.`;
+
 const LAINNYA = `DAFTAR LAYANAN DAN HARGA
 Cetak brosur A5 art paper 120 gram, Rp 1.200 per lembar, minimal 100 lembar
 Cetak brosur A5 art paper 150 gram, Rp 1.500 per lembar, minimal 100 lembar
@@ -544,6 +631,8 @@ const ISI: Record<string, string> = {
   makanan: MAKANAN,
   klinik: KLINIK,
   properti: PROPERTI,
+  penginapan: PENGINAPAN,
+  travel: TRAVEL,
   servis: SERVIS,
   otomotif: OTOMOTIF,
   kursus: KURSUS,

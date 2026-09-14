@@ -81,6 +81,8 @@ export interface IsiJualan {
   /** Preset asisten yang dipakai bidang ini. Null untuk halaman umum. */
   presetId: string | null;
   nama: string;
+  /** Label pilihan contoh chat di halaman depan: "Klinik", "Hotel & villa". */
+  namaPendek: string;
   ikon: NamaIkon;
   meta: { judul: string; ringkas: string };
   hero: { lencana: string; judul: string; judulAbu: string; sub: string };
@@ -114,17 +116,18 @@ export const JUALAN_UMUM: IsiJualan = {
   id: "umum",
   presetId: null,
   nama: "Semua usaha",
+  namaPendek: "Toko",
   ikon: "chat",
   meta: {
     judul: "Palwise: sales WhatsApp AI yang bales chat 24 jam",
     ringkas:
-      "Chat WhatsApp jam 11 malam tetap dibales dalam hitungan detik, pakai harga dan info tokomu sendiri. Calon pembeli tercatat rapi, tanpa nambah gaji. Mulai gratis, tanpa kartu kredit.",
+      "Chat WhatsApp jam 11 malam tetap dibales dalam hitungan detik, pakai harga dan info usahamu sendiri. Calon pelanggan tercatat rapi, tanpa nambah gaji. Mulai gratis, tanpa kartu kredit.",
   },
   hero: {
     lencana: "Sales WhatsApp AI",
     judul: "Ada yang chat WhatsApp kamu jam 11 malam.",
     judulAbu: "Besoknya, dia udah beli di sebelah.",
-    sub: "Palwise bales tiap chat WhatsApp dalam hitungan detik, siang malam, pakai harga dan info tokomu sendiri. Calon pembeli tercatat rapi, tanpa nambah gaji.",
+    sub: "Palwise bales tiap chat WhatsApp dalam hitungan detik, siang malam, pakai harga dan info usahamu sendiri. Calon pelanggan tercatat rapi, tanpa nambah gaji.",
   },
   chat: {
     nama: "Bu Ratna",
@@ -158,7 +161,7 @@ export const JUALAN_UMUM: IsiJualan = {
     ],
   },
   hitung: {
-    usaha: "tokomu",
+    usaha: "usahamu",
     satuan: "order",
     jadi: "Dari yang dibales cepat, yang jadi beli",
     nilai: "Rata-rata sekali belanja",
@@ -244,6 +247,7 @@ const KLINIK: IsiJualan = {
   id: "klinik",
   presetId: "klinik",
   nama: "Klinik & kecantikan",
+  namaPendek: "Klinik",
   ikon: "klinik",
   meta: {
     judul: "Palwise untuk klinik: asisten WhatsApp AI yang bales pasien 24 jam",
@@ -378,6 +382,7 @@ const DEALER: IsiJualan = {
   id: "dealer",
   presetId: "otomotif",
   nama: "Dealer & bengkel",
+  namaPendek: "Dealer",
   ikon: "mobil",
   meta: {
     judul: "Palwise untuk dealer & bengkel: sales WhatsApp AI yang bales chat 24 jam",
@@ -513,6 +518,7 @@ const PROPERTI: IsiJualan = {
   id: "properti",
   presetId: "properti",
   nama: "Properti",
+  namaPendek: "Properti",
   ikon: "properti",
   meta: {
     judul: "Palwise untuk properti: sales WhatsApp AI yang bales calon pembeli 24 jam",
@@ -647,6 +653,7 @@ const KURSUS: IsiJualan = {
   id: "kursus",
   presetId: "kursus",
   nama: "Kursus & pelatihan",
+  namaPendek: "Kursus",
   ikon: "kursus",
   meta: {
     judul: "Palwise untuk kursus: sales WhatsApp AI yang bales calon peserta 24 jam",
@@ -777,6 +784,7 @@ const SERVIS: IsiJualan = {
   id: "servis",
   presetId: "servis",
   nama: "Jasa & servis",
+  namaPendek: "Servis",
   ikon: "servis",
   meta: {
     judul: "Palwise untuk jasa & servis: sales WhatsApp AI yang bales order 24 jam",
@@ -907,6 +915,7 @@ const KATERING: IsiJualan = {
   id: "katering",
   presetId: "makanan",
   nama: "Katering & makanan",
+  namaPendek: "Katering",
   ikon: "kopi",
   meta: {
     judul: "Palwise untuk katering: sales WhatsApp AI yang bales pesanan 24 jam",
@@ -1037,6 +1046,7 @@ const TOKO: IsiJualan = {
   id: "toko",
   presetId: "toko",
   nama: "Toko & jualan online",
+  namaPendek: "Toko",
   ikon: "fashion",
   meta: {
     judul: "Palwise untuk toko online: sales WhatsApp AI yang bales chat 24 jam",
@@ -1167,6 +1177,7 @@ const SEKOLAH: IsiJualan = {
   id: "sekolah",
   presetId: "sekolah",
   nama: "Sekolah & kampus",
+  namaPendek: "Sekolah",
   ikon: "catat",
   meta: {
     judul: "Palwise untuk sekolah: asisten WhatsApp AI untuk penerimaan murid baru",
@@ -1293,6 +1304,284 @@ const SEKOLAH: IsiJualan = {
   penutup: "Orang tua yang chat malam ini, biar dia yang jawab",
 };
 
+const HOTEL: IsiJualan = {
+  id: "hotel",
+  presetId: "penginapan",
+  nama: "Hotel, villa & penginapan",
+  namaPendek: "Hotel & villa",
+  ikon: "hotel",
+  meta: {
+    judul: "Palwise untuk hotel & villa: sales WhatsApp AI yang bales tamu 24 jam",
+    ringkas:
+      "Pertanyaan harga kamar, fasilitas, dan tanggal menginap di WhatsApp dibales dalam hitungan detik, pakai info penginapanmu sendiri. Permintaan pesan kamar tercatat untuk dipastikan resepsionis. Mulai gratis.",
+  },
+  hero: {
+    lencana: "Sales WhatsApp AI untuk hotel & villa",
+    judul: "Tamu tanya harga kamar lewat WhatsApp jam 11 malam.",
+    judulAbu: "Nggak dibales, dia booking hotel sebelah lewat aplikasi.",
+    sub: "Palwise bales tiap chat WhatsApp hotel, villa, atau guest house kamu dalam hitungan detik, pakai harga kamar dan aturan menginap yang kamu isi. Permintaan pesan kamar tercatat rapi, resepsionis tinggal mastiin.",
+  },
+  // Sengaja keluarga dengan anak kecil dan jemput bandara: dua pertanyaan
+  // yang hampir selalu ikut di chat penginapan, dan dua-duanya dijawab dari
+  // aturan tertulis. Kamar kosongnya TIDAK pernah dipastikan asisten.
+  chat: {
+    nama: "Pak Andre",
+    belumDibaca: 4,
+    catatan:
+      "Ilustrasi chat villa. Harga dan tanggalnya contoh. Kamar kosong tetap dipastikan tim, karena Palwise tidak tersambung ke sistem reservasi.",
+    pesan: [
+      { dari: "pelanggan", teks: "Malam kak, tanggal 20 sampai 22 ada kamar buat 2 dewasa 1 anak?", jam: "23.08" },
+      {
+        dari: "asisten",
+        teks: "Selamat malam Pak! Family Room cocok, maksimal 4 orang dan sudah termasuk sarapan. Harganya Rp 1.100.000 per malam.",
+        jam: "23.08",
+      },
+      { dari: "pelanggan", teks: "Anak saya 5 tahun, kena biaya?", jam: "23.09" },
+      {
+        dari: "asisten",
+        teks: "Anak di bawah 6 tahun gratis Pak, kalau tidur bareng orang tua. Kamar kosongnya saya cek dulu ke tim ya.",
+        jam: "23.09",
+      },
+      { dari: "pelanggan", teks: "Oke. Bisa dijemput dari bandara?", jam: "23.11" },
+      {
+        dari: "asisten",
+        teks: "Bisa Pak, Rp 350.000 sekali jalan. Saya rinci ya: Family Room tanggal 20 sampai 22, 2 malam, Rp 2.200.000, plus jemput bandara. Tim kami kabari kepastian kamar dan cara bayarnya.",
+        jam: "23.11",
+      },
+    ],
+  },
+  hitung: {
+    usaha: "penginapanmu",
+    satuan: "booking",
+    jadi: "Dari yang dibales cepat, yang jadi menginap",
+    nilai: "Rata-rata sekali menginap",
+    nilaiAwal: 1_200_000,
+    nilaiMaks: 30_000_000,
+    langkahNilai: 100_000,
+    jadiAwal: 10,
+  },
+  tanyaAi: [
+    {
+      label: "Cek tamu",
+      ikon: "pelanggan",
+      tanya: "Siapa yang perlu aku balas?",
+      jawab: "Pak Andre menunggu kepastian Family Room tanggal 20 sampai 22. Bu Sinta minta harga 8 kamar untuk acara kantor, ini perlu kamu yang hitung.",
+      pelanggan: ["Pak Andre · Family Room, tgl 20-22", "Bu Sinta · 8 kamar untuk acara kantor"],
+      petunjuk: PETUNJUK_CEK,
+    },
+    {
+      label: "Siapkan draf",
+      ikon: "kirim",
+      tanya: "Bantu kabari Pak Andre, kamarnya aman.",
+      jawab: "Pak Andre minta Family Room tanggal 20 sampai 22 plus jemput bandara. Ini drafnya:",
+      draf: {
+        untuk: "Pak Andre",
+        teks: "Selamat pagi Pak Andre, Family Room untuk tanggal 20 sampai 22 sudah kami siapkan ya. Totalnya Rp 2.550.000 termasuk jemput bandara. Rincian DP-nya kami kirim setelah ini 🙏",
+      },
+      petunjuk: PETUNJUK_DRAF,
+    },
+    {
+      label: "Kabar penginapan",
+      ikon: "ringkasan",
+      tanya: "Minggu depan berapa yang minta kamar?",
+      jawab: "Ada 14 permintaan kamar untuk minggu depan, 5 belum kamu pastikan.",
+      angka: ["14 permintaan kamar", "5 belum dipastikan"],
+      petunjuk: PETUNJUK_ANGKA,
+    },
+  ],
+  sorotanJudul: "Bukan cuma bales. Dia jagain tamu sampai check-in.",
+  sorotan: {
+    info: "Harga kamar, fasilitas, dan aturan menginap cuma dari yang kamu isi. Kamar kosong dipastikan tim.",
+    janjiTab: "Tanggal menginap kecatat",
+    janji: "Tanggal check-in yang diminta di chat langsung masuk daftar. Resepsionis tinggal mastiin.",
+    sapaTab: "Tamu balik menginap",
+    sapa: "Ditanya kesannya setelah check-out, lalu disapa lagi pas musim liburan berikutnya.",
+  },
+  rasa: {
+    pesan: "Kak, Family Room tanggal 20 masih ada?",
+    santai: "Selamat malam kak! Family Room Rp 1.100.000 per malam, sudah termasuk sarapan. Menginap sampai tanggal berapa?",
+    nunggu: "Maaf menunggu lama kak. Family Room Rp 1.100.000 per malam, kamar kosongnya saya cek ke tim sekarang.",
+  },
+  info: [
+    { judul: "Tipe kamar & harga per malam", asal: "Ditempel manual", potongan: 16, siap: true },
+    { judul: "Aturan menginap & pembatalan", asal: "Ditempel manual", potongan: 8, siap: true },
+    { judul: "Halaman kamar di website", asal: "Dibaca dari website", potongan: 22, siap: true },
+    DARI_AI_LAIN,
+  ],
+  janji: [
+    { nama: "Bu Sinta", untuk: "lihat tempat untuk acara kantor", kapan: "Hari ini jam 15.00", pasti: true },
+    { nama: "Mas Dimas", untuk: "check-in Deluxe Room, 2 malam", kapan: "Besok jam 14.00", pasti: true },
+    { nama: "Pak Andre", untuk: "Family Room dan jemput bandara", kapan: "Tgl 20 jam 14.00", pasti: false },
+  ],
+  sapa: {
+    judul: "Tanya kesan & ajak menginap lagi",
+    baris: [
+      { hari: "Hari ke-0", teks: "Tamu check-out", kirim: false },
+      { hari: "Hari ke-1", teks: "“Terima kasih sudah menginap Pak. Ada yang kurang selama di sini?”", kirim: true },
+      { hari: "Bulan ke-5", teks: "“Pak, libur akhir tahun sebentar lagi. Mau saya kirim harga kamar untuk Desember?”", kirim: true },
+    ],
+    catatan: "Keluhan tamu langsung diteruskan ke resepsionis, bukan dijawab sendiri.",
+  },
+  langkahInfo: {
+    body: "Tulis tipe kamar, harga per malam, harga akhir pekan dan musim liburan, fasilitas, jam check-in, dan aturan pembatalan. Lalu periksa cara dia bicara ke tamu.",
+    pendek: "Tulis tipe kamar, harga, fasilitas, dan aturan menginap, lalu periksa hasilnya.",
+  },
+  tanyaJawab: [
+    {
+      t: "Dia bisa lihat kamar kosong dan langsung konfirmasi booking?",
+      j: "Belum. Palwise tidak tersambung ke sistem reservasi atau channel manager. Dia menjawab harga dan fasilitas, merinci tanggal dan totalnya, lalu resepsionis yang memastikan kamarnya. Yang belum dipastikan ditandai, bukan dianggap beres.",
+    },
+    {
+      t: "Harga kamar saya beda tiap tanggal, bisa?",
+      j: "Bisa, asal ditulis. Harga hari biasa, akhir pekan, dan musim liburan ditulis per baris, lalu dia menyebut yang sesuai tanggal tamu. Tanggal yang sudah penuh juga ditulis, supaya dia nggak menawarkannya.",
+    },
+    {
+      t: "Kalau tamu mau bayar pakai kartu kredit lewat chat?",
+      j: "Dia dilarang meminta nomor kartu, kode OTP, atau foto kartu lewat chat. Cara bayar yang dia sebut cuma yang kamu tulis, dan urusan pembayarannya tetap lewat tim kamu.",
+    },
+    {
+      t: "Cocok untuk villa atau guest house yang kamarnya sedikit?",
+      j: "Cocok. Justru yang nggak punya resepsionis jaga malam paling sering telat bales chat. Satu nomor WhatsApp cukup, dan kamu tetap bisa ikut balas kapan saja. Begitu kamu ngetik di sebuah chat, asistennya diam di chat itu.",
+    },
+  ],
+  penutup: "Tamu yang chat malam ini, biar dia yang jawab",
+};
+
+const TRAVEL: IsiJualan = {
+  id: "travel",
+  presetId: "travel",
+  nama: "Tour & travel",
+  namaPendek: "Travel",
+  ikon: "travel",
+  meta: {
+    judul: "Palwise untuk tour & travel: sales WhatsApp AI yang bales calon peserta 24 jam",
+    ringkas:
+      "Pertanyaan paket, jadwal berangkat, dan harga per orang di WhatsApp dibales dalam hitungan detik, pakai info travelmu sendiri. Pendaftaran tercatat rapi untuk dipastikan tim. Mulai gratis.",
+  },
+  hero: {
+    lencana: "Sales WhatsApp AI untuk tour & travel",
+    judul: "Ada yang tanya paket liburan lewat WhatsApp jam 10 malam.",
+    judulAbu: "Besoknya, dia udah DP di travel sebelah.",
+    sub: "Palwise bales tiap chat WhatsApp travelmu dalam hitungan detik, pakai paket, jadwal, dan harga yang kamu isi. Yang mau ikut langsung dirinci totalnya, tim kamu tinggal mastiin kursinya.",
+  },
+  chat: {
+    nama: "Kak Laras",
+    belumDibaca: 4,
+    catatan: "Ilustrasi chat travel. Paket dan harganya contoh. Kursi dan visa tetap dipastikan tim.",
+    pesan: [
+      { dari: "pelanggan", teks: "Kak, open trip Labuan Bajo bulan Juli masih ada?", jam: "22.14" },
+      {
+        dari: "asisten",
+        teks: "Halo kak! Juli ada keberangkatan tanggal 3, 10, 17, dan 24. Open trip 3 hari 2 malam Rp 3.750.000 per orang, sudah termasuk kapal phinisi, makan, dan tiket taman nasional.",
+        jam: "22.14",
+      },
+      { dari: "pelanggan", teks: "Tiket pesawatnya termasuk?", jam: "22.15" },
+      {
+        dari: "asisten",
+        teks: "Belum kak, tiket pesawat ke Labuan Bajo dipesan sendiri. Rencananya berangkat berapa orang?",
+        jam: "22.15",
+      },
+      { dari: "pelanggan", teks: "Ber-3, yang tanggal 10", jam: "22.16" },
+      {
+        dari: "asisten",
+        teks: "Saya rinci ya kak: open trip Labuan Bajo 10 Juli, 3 orang, totalnya Rp 11.250.000 dengan DP 50 persen. Tim kami kabari kepastian kursinya dulu sebelum kakak transfer.",
+        jam: "22.16",
+      },
+    ],
+  },
+  hitung: {
+    usaha: "travelmu",
+    satuan: "peserta",
+    jadi: "Dari yang dibales cepat, yang jadi daftar",
+    nilai: "Rata-rata untung per peserta",
+    nilaiAwal: 500_000,
+    nilaiMaks: 10_000_000,
+    langkahNilai: 50_000,
+    jadiAwal: 8,
+  },
+  tanyaAi: [
+    {
+      label: "Cek calon peserta",
+      ikon: "pelanggan",
+      tanya: "Siapa yang perlu aku balas?",
+      jawab: "Laras menunggu kepastian 3 kursi Labuan Bajo tanggal 10 Juli. Pak Yusuf tanya visa Jepang untuk orang tuanya, ini perlu tim yang jawab.",
+      pelanggan: ["Laras · Labuan Bajo 10 Juli, 3 orang", "Pak Yusuf · Tanya visa Jepang"],
+      petunjuk: PETUNJUK_CEK,
+    },
+    {
+      label: "Siapkan draf",
+      ikon: "kirim",
+      tanya: "Bantu kabari Laras, 3 kursinya aman.",
+      jawab: "Laras daftar open trip Labuan Bajo 10 Juli untuk 3 orang. Ini drafnya:",
+      draf: {
+        untuk: "Laras",
+        teks: "Halo kak Laras, 3 kursi open trip Labuan Bajo tanggal 10 Juli sudah kami amankan ya. DP 50 persen Rp 5.625.000. Setelah DP masuk, kami minta data KTP pesertanya 🙏",
+      },
+      petunjuk: PETUNJUK_DRAF,
+    },
+    {
+      label: "Kabar keberangkatan",
+      ikon: "ringkasan",
+      tanya: "Keberangkatan Juli udah berapa yang daftar?",
+      jawab: "Ada 23 orang yang minta didaftarkan untuk Juli, 6 belum kamu pastikan.",
+      angka: ["23 calon peserta", "6 belum dipastikan"],
+      petunjuk: "Jumlah yang minta daftar belum berarti jumlah yang sudah bayar DP.",
+    },
+  ],
+  sorotanJudul: "Bukan cuma bales. Dia bawa calon peserta sampai DP.",
+  sorotan: {
+    info: "Paket, jadwal, dan harga cuma dari yang kamu isi. Sisa kursi dan visa dilempar ke tim.",
+    janjiTab: "Keberangkatan kecatat",
+    janji: "Tanggal berangkat dan jumlah orang yang diminta di chat masuk daftar. Kamu tinggal mastiin.",
+    sapaTab: "Peserta ikut trip lagi",
+    sapa: "Ditanya kesannya setelah pulang, lalu dikabari pas ada paket baru.",
+  },
+  rasa: {
+    pesan: "Kak, open trip Labuan Bajo Juli masih ada?",
+    santai: "Halo kak! Juli ada keberangkatan tanggal 3, 10, 17, dan 24, Rp 3.750.000 per orang. Rencananya berapa orang?",
+    nunggu: "Maaf menunggu kak. Open trip Labuan Bajo Juli ada, Rp 3.750.000 per orang.",
+  },
+  info: [
+    { judul: "Paket & jadwal keberangkatan", asal: "Ditempel dari Excel", potongan: 24, siap: true },
+    { judul: "Itinerary tour Jepang", asal: "Diambil dari berkas PDF", potongan: 11, siap: true },
+    { judul: "Aturan DP & pembatalan", asal: "Ditempel manual", potongan: 6, siap: true },
+    DARI_AI_LAIN,
+  ],
+  janji: [
+    { nama: "Pak Yusuf", untuk: "konsultasi tour Jepang di kantor", kapan: "Hari ini jam 16.00", pasti: true },
+    { nama: "Mbak Tari", untuk: "open trip Bromo, kumpul di Malang", kapan: "Sabtu jam 23.30", pasti: true },
+    { nama: "Kak Laras", untuk: "open trip Labuan Bajo, 3 orang", kapan: "10 Juli jam 08.00", pasti: false },
+  ],
+  sapa: {
+    judul: "Tanya kesan & tawarkan trip berikutnya",
+    baris: [
+      { hari: "Hari ke-0", teks: "Pulang dari Labuan Bajo", kirim: false },
+      { hari: "Hari ke-2", teks: "“Gimana trip Labuan Bajo kemarin kak? Ada yang kurang?”", kirim: true },
+      { hari: "Bulan ke-4", teks: "“Kak, open trip Raja Ampat baru dibuka untuk Desember. Mau saya kirim itinerary-nya?”", kirim: true },
+    ],
+    catatan: "Nggak pernah menakut-nakuti kursi mau habis. Keluhan selama perjalanan langsung diteruskan ke tim.",
+  },
+  langkahInfo: {
+    body: "Tulis paket, jadwal keberangkatan, harga per orang, yang sudah dan belum termasuk, serta aturan DP dan pembatalan. Unggah itinerary, lalu periksa hasilnya.",
+    pendek: "Tulis paket, jadwal, harga, dan aturan DP, lalu periksa hasilnya.",
+  },
+  tanyaJawab: [
+    {
+      t: "Dia bisa jamin kursi aman atau visa disetujui?",
+      j: "Nggak. Dia dilarang memastikan kursi, tiket, atau kamar sebelum dipastikan tim, dan dilarang menjamin visa atau jadwal penerbangan. Yang dia kerjakan: menjawab soal paket, merinci totalnya, lalu mencatat pendaftarannya untuk tim.",
+    },
+    {
+      t: "Bisa kirim itinerary dan brosur?",
+      j: "Bisa. Unggah itinerary atau brosur sekali, lalu dia yang kirim pas ada yang minta. Paket yang memuat fitur ini tertulis di kartu harga.",
+    },
+    {
+      t: "Dia minta data paspor peserta lewat chat?",
+      j: "Nggak di obrolan awal. Data KTP atau paspor diminta tim waktu pendaftaran, supaya data pribadi nggak tersebar di chat yang belum tentu jadi daftar.",
+    },
+  ],
+  penutup: "Yang nanya paket liburan malam ini, biar dia yang jawab",
+};
+
 /**
  * Halaman per bidang, urutannya urutan di menu dan kaki halaman.
  *
@@ -1304,6 +1593,8 @@ const SEKOLAH: IsiJualan = {
  */
 export const HALAMAN_BIDANG: IsiJualan[] = [
   KLINIK,
+  HOTEL,
+  TRAVEL,
   DEALER,
   PROPERTI,
   KURSUS,

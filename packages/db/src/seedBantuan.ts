@@ -138,7 +138,8 @@ MENGISI INFO BISNIS
 - Bisa juga dipindahkan dari ChatGPT, Claude, atau Gemini kalau kamu sudah
   pernah cerita soal bisnismu di sana.
 - Ada contoh siap pakai per jenis usaha: toko, katering, klinik dan salon,
-  jasa dan servis, dealer dan bengkel, properti, kursus, sekolah.`;
+  jasa dan servis, dealer dan bengkel, properti, hotel dan villa, tour dan
+  travel, kursus, sekolah.`;
 
 const CATATAN_PASANG = `CARA MULAI PAKAI PALWISE
 

@@ -49,6 +49,8 @@ export type NamaIkon =
   | "kursus"
   | "servis"
   | "mobil"
+  | "hotel"
+  | "travel"
   | "kalender"
   | "centang"
   | "silang"
@@ -321,6 +323,28 @@ const GAMBAR: Record<NamaIkon, React.ReactNode> = {
       <path d="M9 16.5h6" />
       <circle cx="7" cy="16.5" r="2" />
       <circle cx="17" cy="16.5" r="2" />
+    </>
+  ),
+
+  /* Kasur dari samping: sandaran, bantal, kasur, dua kaki. Untuk hotel, villa,
+     dan penginapan. Bukan gedung bertingkat, karena gedung sudah terbaca
+     sebagai kantor atau properti, sedangkan kasur cuma berarti menginap. */
+  hotel: (
+    <>
+      <path d="M3 5.5V19" />
+      <path d="M3 15h18v4" />
+      <path d="M21 15v-3a2.5 2.5 0 0 0-2.5-2.5H11V15" />
+      <rect x="5.5" y="10" width="3.5" height="3" rx="1.2" />
+    </>
+  ),
+
+  /* Koper dengan pegangan dan dua sabuk. Untuk tour dan travel. Bukan pesawat,
+     karena banyak trip jalan lewat darat dan laut. */
+  travel: (
+    <>
+      <rect x="4" y="7.5" width="16" height="12.5" rx="2.5" />
+      <path d="M9 7.5V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2" />
+      <path d="M9 11v5.5M15 11v5.5" />
     </>
   ),
 

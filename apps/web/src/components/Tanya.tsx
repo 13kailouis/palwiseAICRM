@@ -96,6 +96,8 @@ const JENIS_USAHA = [
   { ikon: "klinik", label: "Klinik & kesehatan" },
   { ikon: "servis", label: "Servis & perbaikan" },
   { ikon: "properti", label: "Properti" },
+  { ikon: "hotel", label: "Hotel & villa" },
+  { ikon: "travel", label: "Tour & travel" },
   { ikon: "kursus", label: "Kursus & les" },
 ] as const;
 

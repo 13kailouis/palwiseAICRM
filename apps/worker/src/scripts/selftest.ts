@@ -5851,6 +5851,20 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
       "preset properti melarang menjanjikan KPR",
       /JANGAN PERNAH menjanjikan persetujuan KPR/.test(preset),
     );
+    // Palwise tidak tersambung ke sistem reservasi hotel atau maskapai, jadi
+    // "kamarnya ada" dan "kursinya aman" dari asisten itu janji yang tidak
+    // bisa ditepati. Tamu yang datang lalu kamarnya penuh tidak kembali.
+    check(
+      "preset penginapan melarang memastikan kamar dan meminta data kartu",
+      /JANGAN PERNAH memastikan kamar tersedia/.test(preset) &&
+        /meminta nomor kartu kredit/.test(preset),
+    );
+    check(
+      "preset travel melarang menjamin kursi dan visa, dan tidak minta paspor di awal",
+      /JANGAN PERNAH memastikan kursi/.test(preset) &&
+        /JANGAN PERNAH menjamin visa/.test(preset) &&
+        /Jangan meminta foto paspor/.test(preset),
+    );
     check(
       "preset dipasang di layar Asisten",
       /<PresetUsaha /.test(pengaturan),
@@ -8778,6 +8792,16 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
         !/dijamin (hilang|putih|cerah)/i.test(contohPer.SKINCARE ?? ""),
     );
     check(
+      "contoh penginapan menyerahkan kepastian kamar ke tim dan tidak minta data kartu",
+      /dianggap pasti setelah tim/.test(contohPer.PENGINAPAN ?? "") &&
+        /Data kartu kredit tidak pernah diminta lewat chat/.test(contohPer.PENGINAPAN ?? ""),
+    );
+    check(
+      "contoh travel tidak menjamin visa dan kursi",
+      /keputusan disetujui atau tidak ada di kedutaan/.test(contohPer.TRAVEL ?? "") &&
+        /Kursi dianggap aman setelah tim/.test(contohPer.TRAVEL ?? ""),
+    );
+    check(
       "contoh sekolah tidak menyebut sisa kuota",
       !/sisa (kuota|kursi)|kuota tersisa|tinggal \d+ kursi/i.test(
         contohPer.SEKOLAH ?? "",
@@ -9623,6 +9647,14 @@ Sitemap: https://www.audydental.com/sitemap-blog.xml`;
     check(
       "hero menunjukkan chat pelanggan yang dibalas dan tidak dibuka dengan kuota",
       /<ContohChat chat=\{isi\.chat\} \/>/.test(heroAtas) && !/KUOTA_TANYA/.test(heroAtas),
+    );
+    // 14 September 2026: halaman depan tidak lagi cuma punya contoh toko kopi.
+    // Pemilik hotel atau klinik yang melihat "arabika gayo" di layar pertama
+    // menyimpulkan produk ini bukan untuknya. Pilihannya WAJIB diturunkan dari
+    // HALAMAN_BIDANG, supaya bidang baru otomatis ikut jadi pilihan.
+    check(
+      "halaman depan membiarkan pengunjung memilih contoh chat bidangnya",
+      /<PilihContohChat/.test(heroAtas) && /HALAMAN_BIDANG\s*\.filter/.test(heroAtas),
     );
     check("hero menyebut harga paket dari sumber yang sama", /formatIDR\(PLANS\.starter\.pricePerMonth\)/.test(heroPenuh));
     // NAMA PESAINGNYA TIDAK BOLEH ADA DI LAYAR, dan ini keputusan pemilik
