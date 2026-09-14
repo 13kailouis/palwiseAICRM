@@ -37,3 +37,7 @@
   .answer { gap: 8px; }
   .question { max-width: 96%; }
 }
+.choices { background:#f4f7ed; border-color:#e1e7d8; }
+.choices button[aria-pressed="true"] { color:#344b29; border-color:#dbe5cd; background:#e7efdc; }
+.question { background:#edf2e5; }
+.demo { border-color:#dce4d2; border-radius:13px; box-shadow:0 8px 28px #33492008; }

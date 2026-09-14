@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import { LogoNama } from "@/components/Logo";
+import { AuthShell } from "@/components/AuthShell";
 import Link from "next/link";
 import { tokenResetMasihBerlaku } from "@palwise/db";
 import { AturUlangForm } from "@/components/LupaForm";
 import { aturUlangAction } from "@/app/actions/auth";
-import { keSitus } from "@/lib/situs";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -24,13 +23,8 @@ export default async function AturUlangPage({
   const berlaku = token ? await tokenResetMasihBerlaku(token) : false;
 
   return (
-    <main className="grid min-h-screen place-items-center bg-ink-50 px-5 py-12">
-      <div className="w-full max-w-sm">
-        <Link href={keSitus("/")} className="mb-8 flex items-center justify-center gap-2">
-          <LogoNama />
-        </Link>
-
-        <div className="card p-6">
+    <AuthShell mode="recovery">
+        <div>
           {berlaku ? (
             <>
               <h1 className="text-xl font-semibold tracking-tight">Password baru</h1>
@@ -61,7 +55,6 @@ export default async function AturUlangPage({
             Kembali ke halaman masuk
           </Link>
         </p>
-      </div>
-    </main>
+    </AuthShell>
   );
 }

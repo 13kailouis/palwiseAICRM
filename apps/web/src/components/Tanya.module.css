@@ -346,3 +346,12 @@
 .recoverAnswer { display: inline-flex; min-height: 44px; align-items: center; margin-top: 8px; padding: 0 12px; border: 1px solid #e2e6ed; border-radius: 10px; color: #1557b0; font-size: 12px; }
 .recoverAnswer:hover { background: #f6f8fb; }
 @media (min-width: 1024px) { .suggestions { margin: 0 0 14px; } }
+/* Refreshed workspace surfaces; interaction and mobile scrolling stay owned by this module. */
+.header { border-color:#e6ebdd; }
+.welcomeLogo { background:#f0f4e8; border-color:#dfe7d4; box-shadow:none; }
+.welcome h1 { color:#293c24; letter-spacing:-.05em; }
+.composer { border-color:#d9e2ce; box-shadow:0 5px 20px #364b2110; border-radius:18px; }
+.owner p { background:#edf2e5; color:#2f4027; }
+.suggestion { border-color:#e1e7d9; border-radius:12px; background:#fbfcf9; }
+.suggestion:hover { background:#edf2e5; border-color:#bbc9aa; }
+.aiBadge { background:#f4f7ed; color:#687958; border-color:#dfe6d5; }

@@ -37,9 +37,9 @@ export default async function KnowledgePage({
     }),
     // Worker mati tidak boleh menjatuhkan halaman ini. Tanpa jawabannya, tab
     // Sheet tetap jalan untuk Sheet berlink, cuma tidak menawarkan email robot.
-    callWorker<{ robot: string | null }>("/sheets/info", { timeoutMs: 4000 }).catch(
-      () => ({ robot: null }),
-    ),
+    callWorker<{ robot: string | null }>("/sheets/info", {
+      timeoutMs: 4000,
+    }).catch(() => ({ robot: null })),
   ]);
 
   if (agents.length === 0) {
@@ -81,10 +81,10 @@ export default async function KnowledgePage({
     <>
       <PageHeader
         title="Info bisnis"
-        description="Semua yang asistenmu tahu soal usahamu. Dia cuma boleh menjawab dari sini, jadi tidak asal ngarang."
+        description="Satu tempat untuk informasi yang menjadi acuan jawaban asistenmu."
         action={
           <Link href="/app/galeri" className="btn-ghost">
-            Punya foto produk?
+            Buka galeri produk
           </Link>
         }
       />
@@ -93,7 +93,7 @@ export default async function KnowledgePage({
         agents={agents}
         activeId={active.id}
         basePath="/app/knowledge"
-        note="Tiap asisten punya catatannya sendiri. Kalau punya beberapa asisten, isi info yang relevan buat masing-masing."
+        note="Pilih asisten untuk mengelola sumber informasinya."
       />
 
       {/* Peringatan batas, sebelum orang mengetik apa pun.
@@ -114,71 +114,112 @@ export default async function KnowledgePage({
               {sisa <= 0 ? (
                 <>
                   <span className="font-medium">Catatannya sudah penuh.</span>{" "}
-                  Paket {plan.name} muat {plan.maxKnowledgeSources} catatan untuk
-                  seluruh akunmu, dan semuanya sudah terpakai. Hapus yang tidak
-                  dipakai lagi, atau naikkan paket.
+                  Paket {plan.name} muat {plan.maxKnowledgeSources} catatan
+                  untuk seluruh akunmu, dan semuanya sudah terpakai. Hapus yang
+                  tidak dipakai lagi, atau naikkan paket.
                 </>
               ) : (
                 <>
                   <span className="font-medium">Sisa {sisa} catatan lagi.</span>{" "}
-                  Paket {plan.name} muat {plan.maxKnowledgeSources} catatan untuk
-                  seluruh akunmu.
+                  Paket {plan.name} muat {plan.maxKnowledgeSources} catatan
+                  untuk seluruh akunmu.
                 </>
               )}
             </p>
-            <Link href="/app/tagihan" className="btn-ink shrink-0 px-4 py-1.5 text-xs">
+            <Link
+              href="/app/tagihan"
+              className="btn-ink shrink-0 px-4 py-1.5 text-xs"
+            >
               Naikkan paket
             </Link>
           </div>
         </div>
       )}
 
-      <div className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="space-y-4">
-          <h2 className="font-semibold text-ink-900">
-            {sources.length} catatan
-            {sources.length > 0 && (
-              <span className="font-normal text-ink-400">
-                {" "}
-                · {ready} sudah dihafal · {totalHuruf.toLocaleString("id-ID")} huruf
-              </span>
-            )}
-          </h2>
-          {/* Angka yang menentukan ditulis terpisah, karena satuannya beda:
-              yang di atas milik asisten ini, yang di bawah milik seluruh akun
-              dan itulah yang dibandingkan dengan batas paket. */}
-          <p className="-mt-2 text-xs text-ink-500">
-            Seluruh akun: {terpakaiAkun.toLocaleString("id-ID")} dari{" "}
-            {plan.maxKnowledgeSources.toLocaleString("id-ID")} catatan
-            {agents.length > 1 && ` (dipakai bersama ${agents.length} asisten)`}
-          </p>
-
-          <KnowledgeList
-            sources={sources.map((s) => ({
-              id: s.id,
-              type: s.type,
-              title: s.title,
-              content: s.content,
-              status: s.status,
-              error: s.error,
-              chunkCount: s.chunkCount,
-              addedLabel: formatWaktu(s.createdAt),
-              sheetUrl: s.sheetUrl,
-              sheetDisinkronLabel: s.sheetDisinkron ? formatWaktu(s.sheetDisinkron) : null,
-              sheetGagal: s.sheetGagal,
-              sheetCatatan: s.sheetCatatan,
-              sheetBacaan: bacaanSheet(s.sheetStruktur),
-            }))}
-          />
+      <div className="pw-knowledge">
+        <div className="pw-knowledge-intro">
+          <div>
+            <h2>Info bisnismu. Acuan jawaban asisten.</h2>
+            <p>
+              Tambahkan layanan, harga, dan aturan bisnismu. Periksa jawabannya
+              sebelum dipakai melayani pelanggan.
+            </p>
+          </div>
+          <Link
+            href={`/app/coba?a=${active.id}`}
+            className="pw-button pw-button-outline"
+          >
+            Uji jawaban asisten <span aria-hidden>↗</span>
+          </Link>
         </div>
+        <div className="pw-knowledge-grid">
+          <div className="pw-knowledge-library">
+            <div className="pw-knowledge-stats">
+              <div>
+                <strong>{sources.length}</strong>
+                <span>Sumber informasi</span>
+              </div>
+              <div>
+                <strong>{ready}</strong>
+                <span>Siap digunakan</span>
+              </div>
+              <div>
+                <strong>{sources.length - ready}</strong>
+                <span>Belum siap</span>
+              </div>
+            </div>
+            <div className="pw-knowledge-heading">
+              <h2>Pustaka bisnis</h2>
+              <span>
+                {totalHuruf.toLocaleString("id-ID")} karakter tersimpan
+              </span>
+              <a href="#tambah-info" className="pw-knowledge-mobile-add">
+                + Tambah info
+              </a>
+            </div>
+            <KnowledgeList
+              key={active.id}
+              sources={sources.map((s) => ({
+                id: s.id,
+                type: s.type,
+                title: s.title,
+                content: s.content,
+                status: s.status,
+                error: s.error,
+                chunkCount: s.chunkCount,
+                addedLabel: formatWaktu(s.createdAt),
+                sheetUrl: s.sheetUrl,
+                sheetDisinkronLabel: s.sheetDisinkron
+                  ? formatWaktu(s.sheetDisinkron)
+                  : null,
+                sheetGagal: s.sheetGagal,
+                sheetCatatan: s.sheetCatatan,
+                sheetBacaan: bacaanSheet(s.sheetStruktur),
+              }))}
+            />
+            <p className="pw-knowledge-quota">
+              Penyimpanan seluruh akun: {terpakaiAkun.toLocaleString("id-ID")} /{" "}
+              {plan.maxKnowledgeSources.toLocaleString("id-ID")} catatan
+              {agents.length > 1 &&
+                ` · dipakai bersama ${agents.length} asisten`}
+              .{" "}
+              <Link
+                href="/app/tagihan"
+                className="underline underline-offset-4"
+              >
+                Kelola paket
+              </Link>
+            </p>
+          </div>
 
-        <div className="lg:sticky lg:top-6 lg:self-start">
-          <KnowledgeAdd
-            agentId={active.id}
-            namaBisnis={workspace.name}
-            robotSheet={infoSheet.robot}
-            bukaSheet={tambah === "sheet"}
-          />
+          <div id="tambah-info" className="pw-knowledge-add">
+            <KnowledgeAdd
+              agentId={active.id}
+              namaBisnis={workspace.name}
+              robotSheet={infoSheet.robot}
+              bukaSheet={tambah === "sheet"}
+            />
+          </div>
         </div>
       </div>
     </>

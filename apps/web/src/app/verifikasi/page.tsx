@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { LogoNama } from "@/components/Logo";
+import { AuthShell } from "@/components/AuthShell";
 import Link from "next/link";
 import { pakaiTokenVerifikasi } from "@palwise/db";
-import { keSitus } from "@/lib/situs";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -36,13 +35,8 @@ export default async function VerifikasiPage({
           : "Tautannya tidak berlaku. Minta yang baru dari halaman Akun.";
 
   return (
-    <main className="grid min-h-screen place-items-center bg-ink-50 px-5 py-12">
-      <div className="w-full max-w-sm">
-        <Link href={keSitus("/")} className="mb-8 flex items-center justify-center gap-2">
-          <LogoNama />
-        </Link>
-
-        <div className="card p-6">
+    <AuthShell mode="recovery">
+        <div>
           {hasil.ok ? (
             <>
               <h1 className="text-xl font-semibold tracking-tight">Email dikonfirmasi</h1>
@@ -67,7 +61,6 @@ export default async function VerifikasiPage({
             </>
           )}
         </div>
-      </div>
-    </main>
+    </AuthShell>
   );
 }

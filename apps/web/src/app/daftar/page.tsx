@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogoNama } from "@/components/Logo";
+import { AuthShell } from "@/components/AuthShell";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/AuthForm";
 import { registerAction } from "@/app/actions/auth";
@@ -27,27 +27,11 @@ export default async function RegisterPage({
   const kodeAjak = ajak ? rapikanKodeAjak(ajak) : undefined;
 
   return (
-    <main className="grid min-h-screen place-items-center bg-ink-50 px-5 py-12">
-      <div className="w-full max-w-sm">
-        <Link href={keSitus("/")} className="mb-8 flex items-center justify-center gap-2">
-          <LogoNama />
-        </Link>
-
-        <div className="card p-6">
-          <h1 className="text-xl font-semibold tracking-tight">Buat akun</h1>
-          <p className="mb-6 mt-1 text-sm text-ink-500">
-            Asisten pertama kamu langsung disiapkan sekalian.
-          </p>
-          <AuthForm action={registerAction} mode="register" kodeAjak={kodeAjak} />
-        </div>
-
-        <p className="mt-5 text-center text-sm text-ink-500">
-          Sudah punya akun?{" "}
-          <Link href="/masuk" className="font-medium text-brand-700 hover:underline">
-            Masuk
-          </Link>
-        </p>
-      </div>
-    </main>
+    <AuthShell mode="register">
+      <h1>Mulai langkah yang lebih ringan.</h1>
+      <p className="pw-auth-description">Buat akun gratis. Kenalkan bisnismu, lalu coba asisten sebelum menyambungkan WhatsApp.</p>
+      <AuthForm action={registerAction} mode="register" kodeAjak={kodeAjak} />
+      <p className="pw-auth-terms">Dengan membuat akun, kamu menyetujui <Link href={keSitus("/ketentuan")}>syarat layanan</Link> dan telah membaca <Link href={keSitus("/privasi")}>kebijakan privasi</Link>.</p>
+    </AuthShell>
   );
 }

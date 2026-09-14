@@ -48,9 +48,9 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  ready: "Sudah dihafal",
-  pending: "Belum dihafal",
-  error: "Gagal dihafal",
+  ready: "Siap digunakan",
+  pending: "Sedang diproses",
+  error: "Perlu diperiksa",
 };
 
 function SaveButton({ dirty }: { dirty: boolean }) {
@@ -658,23 +658,13 @@ function IsiDariSheet({
 }
 
 export function KnowledgeList({ sources }: { sources: KnowledgeItemData[] }) {
-  if (sources.length === 0) {
-    return (
-      <div className="card">
-        <Kosong
-          ikon="info"
-          judul="Belum ada info apa-apa"
-          kalimat="Tempel daftar harga dan cara pesan lewat kotak Tambah info, biar asistenmu punya bahan menjawab."
-        />
-      </div>
-    );
-  }
-
-  return (
-    <ul className="space-y-3">
-      {sources.map((s) => (
-        <KnowledgeItem key={s.id} source={s} />
-      ))}
-    </ul>
-  );
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all");
+  const matches = sources.filter(s => (filter === "all" || (filter === "ready" ? s.status === "ready" : s.status !== "ready" || Boolean(s.sheetGagal))) && `${s.title} ${s.content}`.toLocaleLowerCase("id-ID").includes(query.trim().toLocaleLowerCase("id-ID")));
+  if (sources.length === 0) return <div className="card pw-empty-library"><Kosong ikon="info" judul="Kenalkan bisnismu pada Palwise" kalimat="Mulai dari daftar layanan, harga, atau pertanyaan yang sering ditanyakan pelanggan."/><a href="#tambah-info" className="btn-ghost">Tambahkan info pertama <span aria-hidden>↗</span></a></div>;
+  return <>
+    <div className="pw-library-tools"><label htmlFor="cari-info" className="sr-only">Cari judul atau isi informasi bisnis</label><div className="pw-library-search"><Ikon nama="cari" size={18}/><input id="cari-info" type="search" className="input" placeholder="Cari judul atau isi catatan…" value={query} onChange={e => setQuery(e.target.value)}/></div><div className="pw-library-filters" aria-label="Filter sumber informasi">{[["all", "Semua"], ["ready", "Siap"], ["attention", "Perlu dicek"]].map(([id, label]) => <button type="button" key={id} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}</div></div>
+    <p className="pw-library-count" role="status">{matches.length} dari {sources.length} sumber</p>
+    {matches.length ? <ul className="space-y-3">{matches.map(s => <KnowledgeItem key={s.id} source={s}/>)}</ul> : <div className="card p-6"><p className="text-sm font-medium">Tidak ada catatan yang cocok.</p><p className="mt-2 text-xs text-ink-500">Coba kata lain atau tampilkan semua sumber informasi.</p><button type="button" className="btn-ghost mt-4" onClick={() => { setQuery(""); setFilter("all"); }}>Reset pencarian</button></div>}
+  </>;
 }

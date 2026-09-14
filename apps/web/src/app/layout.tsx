@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "./palwise.css";
 import { ALAMAT_SITUS } from "@/lib/situs";
 
 /**
@@ -46,9 +47,9 @@ const huruf = localFont({
 });
 
 /** Search and sharing copy leads with the loss the owner already feels, same as the hero and share card. */
-const JUDUL = "Palwise: sales WhatsApp AI yang bales chat 24 jam";
+const JUDUL = "Palwise — Layani lebih banyak. Urus bisnis lebih tenang.";
 const RINGKAS =
-  "Chat WhatsApp jam 11 malam tetap dibales dalam hitungan detik, pakai harga dan info tokomu sendiri. Calon pembeli tercatat rapi, tanpa nambah gaji. Mulai gratis, tanpa kartu kredit.";
+  "AI untuk membalas WhatsApp pelanggan, merapikan percakapan, dan membantu pemilik bisnis mengambil langkah berikutnya. Mulai gratis, tanpa kartu kredit.";
 
 export const metadata: Metadata = {
   // Template judul: tiap halaman menambahkan namanya sendiri di depan, dan

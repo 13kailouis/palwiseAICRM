@@ -119,15 +119,14 @@ export const JUALAN_UMUM: IsiJualan = {
   namaPendek: "Toko",
   ikon: "chat",
   meta: {
-    judul: "Palwise: sales WhatsApp yang bales chat pelanggan 24 jam",
-    ringkas:
-      "Pelanggan yang chat WhatsApp jam 11 malam nggak dibiarkan nunggu: dibales dalam hitungan detik, pakai harga dan info usahamu sendiri. Yang nanya tercatat rapi, tanpa nambah gaji. Mulai gratis, tanpa kartu kredit.",
+    judul: "Palwise — Layani lebih banyak. Urus bisnis lebih tenang.",
+    ringkas: "AI untuk membalas WhatsApp pelanggan, merapikan percakapan, dan membantu pemilik bisnis mengambil langkah berikutnya. Mulai gratis, tanpa kartu kredit.",
   },
   hero: {
-    lencana: "Sales WhatsApp buat usahamu",
-    judul: "Ada yang chat WhatsApp kamu jam 11 malam.",
-    judulAbu: "Besoknya, dia udah beli di sebelah.",
-    sub: "Palwise bikin pelanggan kamu nggak pernah dibiarkan nunggu: tiap chat WhatsApp dibales AI-nya dalam hitungan detik, siang malam, pakai harga dan info usahamu sendiri. Yang nanya tercatat rapi, tanpa nambah gaji.",
+    lencana: "Rekan kerja AI untuk bisnismu",
+    judul: "Layani lebih banyak.",
+    judulAbu: "Urus bisnis lebih tenang.",
+    sub: "AI yang membantu membalas WhatsApp pelanggan, merapikan percakapan, dan menyiapkan langkah berikutnya. Semua dalam satu ruang kerja. Kendali tetap di tanganmu.",
   },
   chat: {
     nama: "Bu Ratna",

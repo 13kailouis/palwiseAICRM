@@ -30,7 +30,7 @@ const TULIS: { id: Tab; label: string }[] = [
 ];
 
 /**
- * Website duluan, dan dia satu-satunya yang diberi tanda "Paling cepat".
+ * Website duluan, dan dia satu-satunya yang diberi tanda "Impor".
  *
  * Alasannya bukan karena jalur ini paling banyak dikerjakan di kode (walau
  * memang begitu), tapi karena selisih usahanya untuk PEMILIKNYA paling besar:
@@ -50,7 +50,7 @@ const TULIS: { id: Tab; label: string }[] = [
  * itu menaruhnya paling depan, bukan menutup jalan yang lain.
  */
 const AMBIL: { id: Tab; label: string; ikon: NamaIkon; saran?: string }[] = [
-  { id: "website", label: "Website", ikon: "website", saran: "Paling cepat" },
+  { id: "website", label: "Website", ikon: "website", saran: "Impor" },
   { id: "file", label: "Berkas", ikon: "berkas" },
   // Sheet ada di deret AMBIL, bukan TULIS: isinya diambil dari tempat yang
   // sudah dipakai pemiliknya tiap hari, dan beda dengan Berkas, dia ikut
@@ -65,7 +65,7 @@ function Submit() {
   const { pending } = useFormStatus();
   return (
     <button type="submit" className="btn-primary" disabled={pending}>
-      {pending ? "Lagi dihafalkan" : "Simpan"}
+      {pending ? "Menyimpan info…" : "Simpan informasi"}
     </button>
   );
 }
@@ -104,9 +104,9 @@ export function KnowledgeAdd({
 
   return (
     <div className="card p-5">
-      <h2 className="font-semibold text-ink-900">Tambah info</h2>
+      <h2 className="font-semibold text-ink-900">Tambahkan informasi</h2>
       <p className="mt-1 text-sm text-ink-500">
-        Makin lengkap info yang kamu kasih, makin jarang asistenmu salah jawab.
+        Pilih sumbernya, periksa isinya, lalu simpan sebagai acuan asisten.
       </p>
 
       {/* Yang MENGAMBIL naik ke atas, yang MENULIS turun ke bawah.
@@ -137,6 +137,7 @@ export function KnowledgeAdd({
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
+            aria-pressed={tab === t.id}
             className={`tap-aman inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition ${
               tab === t.id
                 ? "border-ink-900 bg-ink-900 font-medium text-white"
@@ -186,6 +187,7 @@ export function KnowledgeAdd({
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
+            aria-pressed={tab === t.id}
                 className={`tap-aman justify-center rounded-md px-3 py-2 text-sm transition ${
                   tab === t.id
                     ? "bg-white font-medium text-ink-900 shadow-sm"
@@ -233,7 +235,7 @@ export function KnowledgeAdd({
           <div>
             <div className="mb-1.5 flex items-end justify-between gap-3">
               <label className="label mb-0" htmlFor="content">
-                Isinya
+                Informasi bisnis
               </label>
               {/* Contohnya benar-benar masuk ke kolomnya, bukan cuma dibayangi
                   sebagai placeholder yang hilang begitu diketik.
@@ -277,7 +279,7 @@ export function KnowledgeAdd({
             <textarea
               id="content"
               name="content"
-              rows={12}
+              rows={9}
               className="textarea"
               value={isi}
               onChange={(e) => setIsi(e.target.value)}

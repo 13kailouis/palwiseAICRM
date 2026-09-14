@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MarketingNav } from "./MarketingNav";
 import { LogoNama } from "@/components/Logo";
 import { IDENTITAS, identitasBelumLengkap } from "@/lib/identitas";
 import { keApp } from "@/lib/situs";
@@ -24,7 +25,7 @@ export function HalamanTeks({
   const belum = identitasBelumLengkap();
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="pw-marketing pw-document min-h-screen bg-white">
       <Penanda />
 
       <div className="mx-auto max-w-2xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
@@ -97,18 +98,7 @@ export function Isi({ children }: { children: React.ReactNode }) {
  * ini bisa dipercaya, dan itu waktu yang paling buruk untuk membuatnya ragu.
  */
 export function Penanda() {
-  return (
-    <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/85 backdrop-blur-md">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-5 sm:h-16 sm:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <LogoNama />
-        </Link>
-        <Link href={keApp("/daftar")} className="btn-ink">
-          Mulai gratis
-        </Link>
-      </div>
-    </header>
-  );
+  return <MarketingNav daftar={keApp("/daftar")} masuk={keApp("/masuk")} anchorBase="/"/>;
 }
 
 const TAUTAN: { judul: string; isi: { href: string; label: string }[] }[] = [
@@ -163,8 +153,8 @@ export function KakiHalaman() {
                 tiga baris tambahan di dasar halaman, menjelaskan lagi hal yang
                 baru saja dijelaskan seluruh halaman di atasnya. */}
             <p className="mt-4 hidden max-w-xs text-sm leading-relaxed text-ink-600 sm:block">
-              Sales WhatsApp yang membalas chat pelanggan 24 jam dan mencatat
-              calon pembeli, buat usaha di Indonesia.
+              Asisten WhatsApp untuk pelanggan. Rekan AI untuk pemilik.
+              Satu ruang kerja untuk bisnis yang lebih teratur.
             </p>
             {/* Alamat suratnya ditaruh di kaki halaman, bukan cuma di halaman
                 ketentuan. Orang yang menimbang membayar mencari tanda bahwa di

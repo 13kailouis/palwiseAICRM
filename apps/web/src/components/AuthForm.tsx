@@ -1,14 +1,18 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { AuthState } from "@/app/actions/auth";
 
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" className="btn-primary w-full py-2.5" disabled={pending}>
-      {pending ? "Sebentar" : label}
+    <button
+      type="submit"
+      className="btn-primary w-full py-2.5"
+      disabled={pending}
+    >
+      {pending ? "Memproses…" : label}
     </button>
   );
 }
@@ -24,6 +28,8 @@ export function AuthForm({
 }) {
   const [state, formAction] = useActionState(action, {} as AuthState);
 
+  const [lihatSandi, setLihatSandi] = useState(false);
+
   return (
     <form action={formAction} className="space-y-4">
       {mode === "register" && (
@@ -32,7 +38,14 @@ export function AuthForm({
             <label className="label" htmlFor="name">
               Nama kamu
             </label>
-            <input id="name" name="name" className="input" placeholder="Budi Santoso" />
+            <input
+              id="name"
+              name="name"
+              className="input"
+              placeholder="Nama lengkap"
+              autoComplete="name"
+              required
+            />
           </div>
           <div>
             <label className="label" htmlFor="businessName">
@@ -42,7 +55,9 @@ export function AuthForm({
               id="businessName"
               name="businessName"
               className="input"
-              placeholder="Kopi Nusantara"
+              placeholder="Nama usahamu"
+              autoComplete="organization"
+              required
             />
           </div>
         </>
@@ -56,6 +71,7 @@ export function AuthForm({
           id="email"
           name="email"
           type="email"
+          required
           autoComplete="email"
           className="input"
           placeholder="kamu@bisnis.com"
@@ -64,20 +80,44 @@ export function AuthForm({
 
       <div>
         <label className="label" htmlFor="password">
-          Password
+          Kata sandi
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete={mode === "login" ? "current-password" : "new-password"}
-          className="input"
-          placeholder={mode === "register" ? "Minimal 8 karakter" : "••••••••"}
-        />
+        <div className="pw-password">
+          <input
+            id="password"
+            name="password"
+            type={lihatSandi ? "text" : "password"}
+            required
+            minLength={mode === "register" ? 8 : undefined}
+            autoComplete={
+              mode === "login" ? "current-password" : "new-password"
+            }
+            className="input"
+            placeholder={
+              mode === "register" ? "Minimal 8 karakter" : "Masukkan kata sandi"
+            }
+          />
+          <button
+            type="button"
+            onClick={() => setLihatSandi(!lihatSandi)}
+            aria-label={
+              lihatSandi ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"
+            }
+            aria-pressed={lihatSandi}
+          >
+            {lihatSandi ? "Tutup" : "Lihat"}
+          </button>
+        </div>
       </div>
 
       {mode === "register" && (
-        <div>
+        <details
+          className="pw-auth-referral"
+          open={kodeAjak ? true : undefined}
+        >
+          <summary>
+            Punya kode ajakan? <span aria-hidden>+</span>
+          </summary>
           <label className="label" htmlFor="ajak">
             Kode ajakan{" "}
             <span className="font-normal text-ink-400">(kalau ada)</span>
@@ -95,16 +135,21 @@ export function AuthForm({
               bulan gratis.
             </p>
           )}
-        </div>
+        </details>
       )}
 
       {state?.error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p
+          role="alert"
+          className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
           {state.error}
         </p>
       )}
 
-      <Submit label={mode === "login" ? "Masuk" : "Buat akun"} />
+      <Submit
+        label={mode === "login" ? "Masuk ke ruang kerja" : "Buat akun gratis"}
+      />
     </form>
   );
 }

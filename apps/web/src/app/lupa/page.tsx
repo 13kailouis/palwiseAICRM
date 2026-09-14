@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { LogoNama } from "@/components/Logo";
+import { AuthShell } from "@/components/AuthShell";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MintaResetForm } from "@/components/LupaForm";
 import { mintaResetAction } from "@/app/actions/auth";
 import { getSessionUser } from "@/lib/auth";
-import { keSitus } from "@/lib/situs";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -15,16 +14,11 @@ export default async function LupaPage() {
   if (await getSessionUser()) redirect("/app");
 
   return (
-    <main className="grid min-h-screen place-items-center bg-ink-50 px-5 py-12">
-      <div className="w-full max-w-sm">
-        <Link href={keSitus("/")} className="mb-8 flex items-center justify-center gap-2">
-          <LogoNama />
-        </Link>
-
-        <div className="card p-6">
-          <h1 className="text-xl font-semibold tracking-tight">Lupa password</h1>
+    <AuthShell mode="recovery">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Pulihkan akses akun</h1>
           <p className="mb-6 mt-1 text-sm text-ink-500">
-            Masukkan emailmu, nanti kami kirim tautan untuk bikin password baru.
+            Masukkan email akunmu. Kami akan mengirim tautan untuk membuat kata sandi baru.
           </p>
           <MintaResetForm action={mintaResetAction} />
         </div>
@@ -35,7 +29,6 @@ export default async function LupaPage() {
             Masuk
           </Link>
         </p>
-      </div>
-    </main>
+    </AuthShell>
   );
 }

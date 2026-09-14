@@ -26,7 +26,8 @@ export function AgentTabs({
           <Link
             key={a.id}
             href={`${basePath}?a=${a.id}`}
-            className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+            aria-current={a.id === activeId ? "page" : undefined}
+            className={`tap-aman rounded-lg border px-3 py-1.5 text-sm transition ${
               a.id === activeId
                 ? "border-brand-500 bg-brand-50 font-medium text-brand-800"
                 : "border-ink-200 text-ink-600 hover:bg-ink-50"

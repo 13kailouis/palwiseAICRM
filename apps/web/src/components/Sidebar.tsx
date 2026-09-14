@@ -131,7 +131,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`hidden shrink-0 flex-col border-r border-ink-800 bg-ink-950 text-ink-300 lg:flex ${
+      className={`pw-sidebar hidden shrink-0 flex-col border-r border-ink-800 bg-ink-950 text-ink-300 lg:flex ${
         ciut ? "lg:w-16" : "lg:w-60"
       }`}
       style={{ transition: "width var(--gerak) var(--lengkung-masuk)" }}
