@@ -1,6 +1,12 @@
+import { PlatformNav } from "@/components/PlatformNav";
 import { prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
-import { FormDuaKolom, KOLOM_FORM, PageHeader, PanelBantuan } from "@/components/ui";
+import {
+  FormDuaKolom,
+  KOLOM_FORM,
+  PageHeader,
+  PanelBantuan,
+} from "@/components/ui";
 import { Ikon } from "@/components/Ikon";
 import {
   GantiEmailForm,
@@ -24,14 +30,16 @@ export default async function AkunPage() {
     <>
       <PageHeader
         kolom={KOLOM_FORM}
-        title="Akun"
-        description="Email dan password untuk masuk ke Palwise. Ini terpisah dari data bisnismu."
+        title="Akun & keamanan"
+        description="Kelola akses masuk dan email pemulihan akunmu."
       />
+
+      <PlatformNav active="/app/akun" kind="account" />
 
       <FormDuaKolom
         bantuan={
           <PanelBantuan
-            judul="Kenapa ini penting"
+            judul="Akses akunmu"
             poin={[
               {
                 ikon: "akun",
@@ -46,75 +54,87 @@ export default async function AkunPage() {
         }
       >
         <div className="space-y-6">
-        <div className="card-pad">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink-100 text-ink-600">
-                <Ikon nama="amplop" size={18} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm text-ink-500">Email kamu</p>
-                <p className="mt-0.5 truncate text-lg font-medium text-ink-950">
-                  {baris.email}
-                </p>
+          <div className="card-pad">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink-100 text-ink-600">
+                  <Ikon nama="amplop" size={18} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm text-ink-500">Email kamu</p>
+                  <p className="mt-0.5 break-all text-base font-medium text-ink-950">
+                    {baris.email}
+                  </p>
+                </div>
               </div>
+              <span
+                className={`badge ${
+                  terkonfirmasi
+                    ? "bg-brand-50 text-brand-700"
+                    : "bg-amber-50 text-amber-800"
+                }`}
+              >
+                {terkonfirmasi ? "Sudah dikonfirmasi" : "Belum dikonfirmasi"}
+              </span>
             </div>
-            <span
-              className={`badge ${
-                terkonfirmasi
-                  ? "bg-brand-50 text-brand-700"
-                  : "bg-amber-50 text-amber-800"
-              }`}
-            >
-              {terkonfirmasi ? "Sudah dikonfirmasi" : "Belum dikonfirmasi"}
-            </span>
+
+            {terkonfirmasi ? (
+              <p className="mt-4 text-sm leading-relaxed text-ink-500">
+                Dikonfirmasi{" "}
+                {baris.emailVerifiedAt!.toLocaleDateString("id-ID", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+                . Kalau suatu hari kamu lupa password, tautan pemulihannya
+                dikirim ke alamat ini.
+              </p>
+            ) : (
+              <div className="mt-4 space-y-4">
+                <p className="text-sm leading-relaxed text-ink-600">
+                  Verifikasi email agar kamu bisa memulihkan akses saat lupa
+                  password.
+                </p>
+                <TombolVerifikasi action={kirimVerifikasiAction} />
+              </div>
+            )}
           </div>
 
-          {terkonfirmasi ? (
-            <p className="mt-4 text-sm leading-relaxed text-ink-500">
-              Dikonfirmasi{" "}
-              {baris.emailVerifiedAt!.toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-              . Kalau suatu hari kamu lupa password, tautan pemulihannya dikirim
-              ke alamat ini.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-4">
-              <p className="text-sm leading-relaxed text-ink-600">
-                Kalau suatu hari kamu lupa password, alamat inilah satu-satunya
-                jalan kami mengembalikan akunmu. Jadi lebih baik dipastikan
-                sekarang, selagi masih gampang dibetulkan.
-              </p>
-              <TombolVerifikasi action={kirimVerifikasiAction} />
+          <details className="pw-settings-section">
+            <summary>
+              <span className="min-w-0 flex-1">
+                <span className="pw-settings-title">Ganti email</span>
+                <span className="pw-settings-description">
+                  Gunakan alamat yang selalu bisa kamu akses. Alamat lama akan
+                  menerima pemberitahuan.
+                </span>
+              </span>
+              <span className="pw-disclosure-arrow" aria-hidden="true">
+                ⌄
+              </span>
+            </summary>
+            <div className="pw-settings-content">
+              <GantiEmailForm action={gantiEmailAction} />
             </div>
-          )}
-        </div>
+          </details>
 
-        <div className="card-pad">
-          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
-            <Ikon nama="amplop" size={16} className="text-ink-400" />
-            Ganti email
-          </h2>
-          <p className="mb-5 mt-1 text-sm text-ink-500">
-            Alamat lama akan dikabari kalau ini terjadi.
-          </p>
-          <GantiEmailForm action={gantiEmailAction} />
-        </div>
-
-        <div className="card-pad">
-          <h2 className="flex items-center gap-2 font-semibold text-ink-900">
-            <Ikon nama="gembok" size={16} className="text-ink-400" />
-            Ganti password
-          </h2>
-          <p className="mb-5 mt-1 text-sm text-ink-500">
-            Perangkat lain yang masih terbuka akan diminta masuk ulang. Perangkat
-            ini tidak.
-          </p>
-          <GantiSandiForm action={gantiSandiAction} />
-        </div>
+          <details className="pw-settings-section">
+            <summary>
+              <span className="min-w-0 flex-1">
+                <span className="pw-settings-title">Ganti password</span>
+                <span className="pw-settings-description">
+                  Perangkat lain akan diminta masuk ulang. Perangkat ini tetap
+                  terhubung.
+                </span>
+              </span>
+              <span className="pw-disclosure-arrow" aria-hidden="true">
+                ⌄
+              </span>
+            </summary>
+            <div className="pw-settings-content">
+              <GantiSandiForm action={gantiSandiAction} />
+            </div>
+          </details>
         </div>
       </FormDuaKolom>
     </>

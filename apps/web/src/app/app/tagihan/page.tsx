@@ -1,3 +1,4 @@
+import { PlatformNav } from "@/components/PlatformNav";
 import Link from "next/link";
 import { headers } from "next/headers";
 import {
@@ -26,12 +27,19 @@ import {
 import { AjakTeman } from "@/components/AjakTeman";
 import { ringkasanAjak } from "@/lib/ajakTeman";
 import { requireUser } from "@/lib/auth";
-import { midtransModeUji, midtransSiap, salahLingkunganKunci } from "@/lib/midtrans";
+import {
+  midtransModeUji,
+  midtransSiap,
+  salahLingkunganKunci,
+} from "@/lib/midtrans";
 import { keSitus } from "@/lib/situs";
 import { PageHeader } from "@/components/ui";
 import { Ikon } from "@/components/Ikon";
 import { TombolGantiPaket } from "@/components/TombolGantiPaket";
-import { batalkanJadwalTurunAction, changePlanAction } from "@/app/actions/plan";
+import {
+  batalkanJadwalTurunAction,
+  changePlanAction,
+} from "@/app/actions/plan";
 
 export const dynamic = "force-dynamic";
 
@@ -128,12 +136,39 @@ export default async function TagihanPage({
         description="Bayar per bulan, berhenti kapan saja. Tidak ada biaya pasang."
       />
 
-      <div className="space-y-6 p-4 sm:p-6">
-        <div className="card-pad flex flex-wrap items-center justify-between gap-3">
-          <div><h2 className="font-semibold text-ink-900">Kuota Tanya</h2>
-            <p className="mt-1 text-sm text-ink-600">{jatahTanya.terpakai} / {jatahTanya.batas} pertanyaan AI {jatahTanya.belumKonfirmasi ? "percobaan" : "bulan ini"} · Maksimal {jatahTanya.harian.batas} per hari.</p>
-            <p className="mt-1 text-xs text-ink-500">{jatahTanya.belumKonfirmasi ? "Verifikasi email untuk membuka kuota bulanan." : `Terisi lagi ${new Date(jatahTanya.resetBulanan).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long" })}, 00.00 WIB.`} Terpisah dari balasan WhatsApp.</p>
-          </div><Link className="text-sm text-brand-700 underline underline-offset-4" href={jatahTanya.belumKonfirmasi ? "/app/akun" : "/app/tanya"}>{jatahTanya.belumKonfirmasi ? "Verifikasi email" : "Buka Tanya"}</Link>
+      <PlatformNav active="/app/tagihan" kind="account" />
+      <div className="pw-billing space-y-6 p-4 sm:p-6">
+        <nav className="pw-jump-links" aria-label="Bagian paket">
+          <a href="#pemakaian">Pemakaian</a>
+          <a href="#pilih-paket">Bandingkan paket</a>
+          {riwayat.length > 0 && (
+            <a href="#riwayat-bayar">Riwayat pembayaran</a>
+          )}
+        </nav>
+        <div
+          id="pemakaian"
+          className="card-pad flex flex-wrap items-center justify-between gap-3"
+        >
+          <div>
+            <h2 className="font-semibold text-ink-900">Kuota Tanya</h2>
+            <p className="mt-1 text-sm text-ink-600">
+              {jatahTanya.terpakai} / {jatahTanya.batas} pertanyaan AI{" "}
+              {jatahTanya.belumKonfirmasi ? "percobaan" : "bulan ini"} ·
+              Maksimal {jatahTanya.harian.batas} per hari.
+            </p>
+            <p className="mt-1 text-xs text-ink-500">
+              {jatahTanya.belumKonfirmasi
+                ? "Verifikasi email untuk membuka kuota bulanan."
+                : `Terisi lagi ${new Date(jatahTanya.resetBulanan).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long" })}, 00.00 WIB.`}{" "}
+              Terpisah dari balasan WhatsApp.
+            </p>
+          </div>
+          <Link
+            className="text-sm text-brand-700 underline underline-offset-4"
+            href={jatahTanya.belumKonfirmasi ? "/app/akun" : "/app/tanya"}
+          >
+            {jatahTanya.belumKonfirmasi ? "Verifikasi email" : "Buka Tanya"}
+          </Link>
         </div>
         {/* Baru kembali dari halaman bayar.
 
@@ -280,9 +315,9 @@ export default async function TagihanPage({
             </p>
             <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
               Paket {getPlan(tertunda.planId).name},{" "}
-              {formatIDR(tertunda.jumlah)}. Kalau kamu sudah transfer,
-              tunggu saja sebentar, paketnya naik sendiri begitu banknya
-              mengabari kami.
+              {formatIDR(tertunda.jumlah)}. Kalau kamu sudah transfer, tunggu
+              saja sebentar, paketnya naik sendiri begitu banknya mengabari
+              kami.
             </p>
             {/* Sisa waktunya DISEBUT, bukan cuma dijadikan syarat munculnya
                 tombol.
@@ -297,9 +332,9 @@ export default async function TagihanPage({
                 hidup terbaca seperti sudah mati. */}
             <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
               Tautan bayarnya berlaku {Math.ceil(sisaJamUpaya(tertunda))} jam
-              lagi. Lewat itu, tagihannya hangus dan kamu perlu membuat yang baru
-              dari kartu paket di bawah. Nomor virtual account-nya juga akan
-              berbeda.
+              lagi. Lewat itu, tagihannya hangus dan kamu perlu membuat yang
+              baru dari kartu paket di bawah. Nomor virtual account-nya juga
+              akan berbeda.
             </p>
             <a
               href={tertunda.urlBayar}
@@ -311,18 +346,10 @@ export default async function TagihanPage({
           </div>
         )}
 
-        <AjakTeman
-          kode={ajak.kode}
-          tautan={tautanAjak(ajak.kode, asalSitus)}
-          diajak={ajak.diajak}
-          sudahBerlangganan={ajak.sudahBerlangganan}
-          bulanGratis={ajak.bulanGratis}
-        />
-
-        <div>
+        <div id="pilih-paket" className="pw-plan-selection">
           <h2 className="flex items-center gap-2 font-semibold text-ink-900">
             <Ikon nama="paket" size={16} className="text-ink-400" />
-            Ganti paket
+            Pilih ruang tumbuh untuk bisnismu
           </h2>
           <div className="anim-urut mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {SEMUA_PAKET.map((p) => {
@@ -373,7 +400,10 @@ export default async function TagihanPage({
                * bukan tombol berharga.
                */
               const aktifLama =
-                current && berbayar && langganan.aktif && !langganan.segeraHabis;
+                current &&
+                berbayar &&
+                langganan.aktif &&
+                !langganan.segeraHabis;
 
               // Paket yang lebih murah dari yang sekarang itu TURUN, bukan beli.
               //
@@ -412,15 +442,24 @@ export default async function TagihanPage({
                         bukan biru: satu bidang biru per layar sudah dipakai
                         cincin paket aktif. */}
                     {current ? (
-                      <span className="badge bg-brand-600 text-white">Aktif</span>
+                      <span className="badge bg-brand-600 text-white">
+                        Aktif
+                      </span>
                     ) : p.highlight ? (
-                      <span className="badge bg-ink-950 text-white">Paling laris</span>
+                      <span className="badge bg-ink-950 text-white">
+                        Untuk tim berkembang
+                      </span>
                     ) : null}
                   </div>
                   <p className="mt-3 text-2xl font-bold tracking-tight">
-                    {p.pricePerMonth === 0 ? "Gratis" : formatIDR(p.pricePerMonth)}
+                    {p.pricePerMonth === 0
+                      ? "Gratis"
+                      : formatIDR(p.pricePerMonth)}
                     {p.pricePerMonth > 0 && (
-                      <span className="text-sm font-normal text-ink-500"> /bln</span>
+                      <span className="text-sm font-normal text-ink-500">
+                        {" "}
+                        /bln
+                      </span>
                     )}
                   </p>
                   {/* Harga per balasan, dan ini yang membuat Growth terlihat
@@ -495,8 +534,8 @@ export default async function TagihanPage({
                         </span>
                       </p>
                       <p className="mt-0.5 text-xs text-ink-500">
-                        Sisa {langganan.sisaHari} hari. Nanti kami kabari sebelum
-                        habis, jadi kamu tidak perlu mengingatnya.
+                        Sisa {langganan.sisaHari} hari. Nanti kami kabari
+                        sebelum habis, jadi kamu tidak perlu mengingatnya.
                       </p>
                       <details className="group mt-3">
                         <summary className="cursor-pointer list-none text-xs font-medium text-brand-700 hover:underline">
@@ -558,8 +597,8 @@ export default async function TagihanPage({
 
           {!midtransSiap() && (
             <p className="mt-4 text-xs leading-relaxed text-ink-500">
-              Pembayaran otomatis belum diatur di server ini. Hubungi kami untuk
-              berlangganan dan kami aktifkan manual.
+              Pembayaran online belum tersedia. Hubungi tim Palwise untuk
+              bantuan berlangganan.
             </p>
           )}
 
@@ -571,9 +610,8 @@ export default async function TagihanPage({
               menerima uang padahal belum sepeser pun. */}
           {midtransModeUji() && !salahLingkunganKunci() && (
             <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
-              Pembayaran masih memakai mode uji Midtrans (sandbox). Transaksi di
-              sini TIDAK memindahkan uang sungguhan. Isi MIDTRANS_PRODUCTION=on
-              di .env kalau server ini sudah dipakai pelanggan.
+              Pembayaran dalam mode simulasi. Transaksi di sini tidak
+              memindahkan uang sungguhan.
             </p>
           )}
 
@@ -583,7 +621,8 @@ export default async function TagihanPage({
               di satu baris .env yang benar-benar salah. */}
           {salahLingkunganKunci() && (
             <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
-              Pembayaran belum bisa dipakai: {salahLingkunganKunci()}
+              Pembayaran sedang tidak tersedia. Coba lagi nanti atau hubungi tim
+              Palwise melalui halaman Kontak.
             </p>
           )}
         </div>
@@ -593,7 +632,7 @@ export default async function TagihanPage({
             "uangnya sudah keluar tapi paketnya tidak naik". Riwayat yang cuma
             memuat yang berhasil bikin percakapan itu jadi saling menebak. */}
         {riwayat.length > 0 && (
-          <div>
+          <div id="riwayat-bayar">
             <h2 className="flex items-center gap-2 font-semibold text-ink-900">
               <Ikon nama="jam" size={16} className="text-ink-400" />
               Riwayat pembayaran
@@ -615,7 +654,10 @@ export default async function TagihanPage({
                 </thead>
                 <tbody>
                   {riwayat.map((p) => (
-                    <tr key={p.id} className="border-b border-ink-100 last:border-0">
+                    <tr
+                      key={p.id}
+                      className="border-b border-ink-100 last:border-0"
+                    >
                       <td className="whitespace-nowrap px-4 py-2.5 text-ink-700">
                         {tanggalIndo(p.createdAt)}
                       </td>
@@ -643,12 +685,18 @@ export default async function TagihanPage({
 
             <ul className="card mt-4 divide-y divide-ink-100 md:hidden">
               {riwayat.map((p) => (
-                <li key={p.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                <li
+                  key={p.id}
+                  className="flex items-start justify-between gap-3 px-4 py-3"
+                >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-ink-900">
                       {getPlan(p.planId).name}
                       {p.sumber === SUMBER_BULAN_GRATIS && (
-                        <span className="font-normal text-ink-500"> · bulan gratis</span>
+                        <span className="font-normal text-ink-500">
+                          {" "}
+                          · bulan gratis
+                        </span>
                       )}
                     </p>
                     <p className="mt-0.5 text-xs text-ink-500">
@@ -670,13 +718,38 @@ export default async function TagihanPage({
             </ul>
             <p className="mt-3 text-xs leading-relaxed text-ink-500">
               Butuh bukti bayar resmi atau minta uang kembali? Aturannya ada di{" "}
-              <Link href="/pengembalian" className="text-brand-600 hover:underline">
+              <Link
+                href="/pengembalian"
+                className="text-brand-600 hover:underline"
+              >
                 kebijakan pengembalian dana
               </Link>
               .
             </p>
           </div>
         )}
+        <details className="pw-settings-section">
+          <summary>
+            <span className="min-w-0 flex-1">
+              <span className="pw-settings-title">Ajak teman</span>
+              <span className="pw-settings-description">
+                Lihat tautan undangan dan bonus langgananmu.
+              </span>
+            </span>
+            <span className="pw-disclosure-arrow" aria-hidden="true">
+              ⌄
+            </span>
+          </summary>
+          <div className="pw-settings-content">
+            <AjakTeman
+              kode={ajak.kode}
+              tautan={tautanAjak(ajak.kode, asalSitus)}
+              diajak={ajak.diajak}
+              sudahBerlangganan={ajak.sudahBerlangganan}
+              bulanGratis={ajak.bulanGratis}
+            />
+          </div>
+        </details>
       </div>
     </>
   );

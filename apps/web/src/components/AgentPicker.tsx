@@ -29,7 +29,10 @@ export function AgentPicker({
   planName: string;
 }) {
   const [adding, setAdding] = useState(false);
-  const [state, formAction] = useActionState(createAgentAction, {} as FormState);
+  const [state, formAction] = useActionState(
+    createAgentAction,
+    {} as FormState,
+  );
   const full = used >= max;
 
   return (
@@ -38,11 +41,12 @@ export function AgentPicker({
        sebagai "rapat". Jarak atas dan bawah dibikin sama supaya barisnya
        terlihat berdiri sendiri, bukan menggantung di bawah sesuatu.
        Pinggirannya juga ikut lebar layar, seperti halaman lain. */
-    <div className="border-b border-ink-200 bg-white pb-4 pt-4">
+    <div className="pw-agent-picker">
       <div className={`flex flex-wrap items-center gap-2 ${KOLOM_FORM}`}>
         {agents.map((a) => (
           <Link
             key={a.id}
+            aria-current={a.id === activeId ? "page" : undefined}
             href={`/app/agent?a=${a.id}`}
             className={`tap-aman rounded-lg border px-3 py-1.5 text-sm transition ${
               a.id === activeId
@@ -52,7 +56,7 @@ export function AgentPicker({
           >
             {a.name}
             {!a.isActive && (
-              <span className="ml-1.5 text-xs text-ink-400">(mati)</span>
+              <span className="ml-1.5 text-xs text-ink-400">(nonaktif)</span>
             )}
           </Link>
         ))}
@@ -74,9 +78,14 @@ export function AgentPicker({
         )}
 
         {adding && (
-          <form action={formAction} className="flex items-center gap-2">
+          <form
+            action={formAction}
+            className="flex w-full flex-wrap items-center gap-2"
+          >
             <input
               name="name"
+              aria-label="Nama asisten baru"
+              required
               autoFocus
               className="input max-w-[220px] py-1.5"
               placeholder="Nama, misal: Bagian keluhan"
@@ -97,7 +106,9 @@ export function AgentPicker({
         </span>
       </div>
 
-      {state?.error && <p className="mt-2 text-sm text-red-600">{state.error}</p>}
+      {state?.error && (
+        <p className="mt-2 text-sm text-red-600">{state.error}</p>
+      )}
 
       {agents.length > 1 && (
         <p className="mt-3 text-xs leading-relaxed text-ink-500">

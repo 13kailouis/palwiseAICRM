@@ -1,3 +1,4 @@
+import { PlatformNav } from "@/components/PlatformNav";
 import Link from "next/link";
 import { getPlan, prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
@@ -88,6 +89,8 @@ export default async function KnowledgePage({
           </Link>
         }
       />
+
+      <PlatformNav active="/app/knowledge" agentId={active.id} />
 
       <AgentTabs
         agents={agents}

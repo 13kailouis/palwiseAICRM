@@ -22,13 +22,19 @@ const STEPS = [
 
 const LABEL: Record<string, { text: string; className: string }> = {
   connected: { text: "Aktif", className: "bg-brand-50 text-brand-700" },
-  connecting: { text: "Lagi nyambung", className: "bg-amber-50 text-amber-700" },
-  // "Tunggu di-scan" itu keadaan menunggu, sama keluarga dengan "Lagi
+  connecting: {
+    text: "Menghubungkan",
+    className: "bg-amber-50 text-amber-700",
+  },
+  // "Menunggu dipindai" itu keadaan menunggu, sama keluarga dengan "Lagi
   // nyambung", jadi ikut amber. Dulu biru bawaan Tailwind (bukan biru merek),
   // jadi terbaca seperti warna asing yang tidak ada di halaman lain.
-  qr: { text: "Tunggu di-scan", className: "bg-amber-50 text-amber-700" },
+  qr: { text: "Menunggu dipindai", className: "bg-amber-50 text-amber-700" },
   logged_out: { text: "Dicabut dari HP", className: "bg-red-50 text-red-700" },
-  disconnected: { text: "Belum nyambung", className: "bg-ink-100 text-ink-600" },
+  disconnected: {
+    text: "Belum tersambung",
+    className: "bg-ink-100 text-ink-600",
+  },
 };
 
 export function WhatsAppConnect({
@@ -71,7 +77,12 @@ export function WhatsAppConnect({
   statusCallback.current = onStatusChange;
   const refreshBusy = useRef(false);
   const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     // Tab yang tersembunyi tidak perlu ditanyai sama sekali.
@@ -80,7 +91,11 @@ export function WhatsAppConnect({
     // pemeriksaan ini, tiap tab seperti itu tetap mengirim permintaan terus
     // menerus ke server yang juga menjalankan seluruh mesin WhatsApp dan AI,
     // untuk layar yang tidak sedang dilihat siapa pun.
-    if ((typeof document !== "undefined" && document.hidden) || refreshBusy.current) return;
+    if (
+      (typeof document !== "undefined" && document.hidden) ||
+      refreshBusy.current
+    )
+      return;
     refreshBusy.current = true;
 
     try {
@@ -100,7 +115,7 @@ export function WhatsAppConnect({
       prevStatus.current = data.status;
     } catch {
       if (!mounted.current) return;
-      setState(s => ({ ...s, qrDataUrl: null, workerUp: false }));
+      setState((s) => ({ ...s, qrDataUrl: null, workerUp: false }));
       setChecked(true);
       statusCallback.current?.(false);
     } finally {
@@ -157,197 +172,325 @@ export function WhatsAppConnect({
   const showingQr = state.workerUp && state.status === "qr" && state.qrDataUrl;
   const badge = LABEL[state.status] ?? LABEL.disconnected;
 
-  if (dalamChat) return <div className={compact.card}>
-    <div className={compact.heading}>
-      <Ikon nama="whatsapp" size={21} />
-      <div className={compact.identity}><h3>{channelName}</h3><p role="status">{!checked ? "Memeriksa sambungan…" : !state.workerUp ? "Status belum tersedia" : connected ? state.phoneNumber || "Tersambung" : state.status === "logged_out" ? "Tautan dicabut dari WhatsApp" : badge.text}</p></div>
-      {checked && connected && state.workerUp && <Ikon nama="centang" size={18} className="text-brand-600" />}
-      <a href="/app/whatsapp" className={compact.icon} aria-label="Kelola nomor WhatsApp" title="Kelola nomor WhatsApp"><span aria-hidden="true">↗</span></a>
-      {onClose && <button type="button" onClick={onClose} className={compact.icon} aria-label="Tutup kartu WhatsApp" title="Tutup kartu WhatsApp"><Ikon nama="silang" size={16} /></button>}
-    </div>
-    {channelPicker}
-    {checked && !(connected && state.workerUp) && <div className={compact.body}>
-      {showingQr && <div className={compact.qr}>
-        <img src={state.qrDataUrl!} width={200} height={200} alt="Kode QR untuk menautkan WhatsApp ke Palwise" />
-        <p>WhatsApp → <strong>Perangkat tertaut</strong> → <strong>Tautkan perangkat</strong></p>
-      </div>}
-      {state.status === "connecting" && state.workerUp && <p className={compact.status} role="status">Menyiapkan sambungan…</p>}
-      {(notice || !state.workerUp || (state.error && state.status !== "logged_out")) && <p role="alert" className={compact.error}>{notice || (!state.workerUp ? "Sambungan belum bisa diperiksa. Coba lagi." : state.error)}</p>}
-      <div className={compact.actions}>
-        {!state.workerUp ? <button type="button" className={compact.primary} disabled={busy} onClick={refresh}>Coba lagi</button> :
-          <button type="button" className={compact.primary} disabled={busy || state.status === "connecting"} onClick={() => post("start")}>{busy ? "Memproses…" : showingQr ? "Perbarui QR" : "Tampilkan QR"}</button>}
-        {state.workerUp && sedangBerubah && <button type="button" className={compact.secondary} disabled={busy} onClick={() => post("stop")}>Batal</button>}
-        <details className={compact.help}><summary>Bantuan</summary><div>
-          <p>Buka WhatsApp di HP → Perangkat tertaut → Tautkan perangkat, lalu scan QR. Di iPhone, menu ini ada di Pengaturan.</p>
-          <p>Memakai HP yang sama? Buka chat ini di komputer atau perangkat lain untuk menampilkan QR.</p>
-          <p>QR diperbarui otomatis saat kartu terbuka.</p>
-        </div></details>
+  if (dalamChat)
+    return (
+      <div className={compact.card}>
+        <div className={compact.heading}>
+          <Ikon nama="whatsapp" size={21} />
+          <div className={compact.identity}>
+            <h3>{channelName}</h3>
+            <p role="status">
+              {!checked
+                ? "Memeriksa sambungan…"
+                : !state.workerUp
+                  ? "Status belum tersedia"
+                  : connected
+                    ? state.phoneNumber || "Tersambung"
+                    : state.status === "logged_out"
+                      ? "Tautan dicabut dari WhatsApp"
+                      : badge.text}
+            </p>
+          </div>
+          {checked && connected && state.workerUp && (
+            <Ikon nama="centang" size={18} className="text-brand-600" />
+          )}
+          <a
+            href="/app/whatsapp"
+            className={compact.icon}
+            aria-label="Kelola nomor WhatsApp"
+            title="Kelola nomor WhatsApp"
+          >
+            <span aria-hidden="true">↗</span>
+          </a>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className={compact.icon}
+              aria-label="Tutup kartu WhatsApp"
+              title="Tutup kartu WhatsApp"
+            >
+              <Ikon nama="silang" size={16} />
+            </button>
+          )}
+        </div>
+        {channelPicker}
+        {checked && !(connected && state.workerUp) && (
+          <div className={compact.body}>
+            {showingQr && (
+              <div className={compact.qr}>
+                <img
+                  src={state.qrDataUrl!}
+                  width={200}
+                  height={200}
+                  alt="Kode QR untuk menautkan WhatsApp ke Palwise"
+                />
+                <p>
+                  WhatsApp → <strong>Perangkat tertaut</strong> →{" "}
+                  <strong>Tautkan perangkat</strong>
+                </p>
+              </div>
+            )}
+            {state.status === "connecting" && state.workerUp && (
+              <p className={compact.status} role="status">
+                Menyiapkan sambungan…
+              </p>
+            )}
+            {(notice ||
+              !state.workerUp ||
+              (state.error && state.status !== "logged_out")) && (
+              <p role="alert" className={compact.error}>
+                {notice ||
+                  (!state.workerUp
+                    ? "Sambungan belum bisa diperiksa. Coba lagi."
+                    : state.error)}
+              </p>
+            )}
+            <div className={compact.actions}>
+              {!state.workerUp ? (
+                <button
+                  type="button"
+                  className={compact.primary}
+                  disabled={busy}
+                  onClick={refresh}
+                >
+                  Coba lagi
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={compact.primary}
+                  disabled={busy || state.status === "connecting"}
+                  onClick={() => post("start")}
+                >
+                  {busy
+                    ? "Memproses…"
+                    : showingQr
+                      ? "Perbarui QR"
+                      : "Tampilkan QR"}
+                </button>
+              )}
+              {state.workerUp && sedangBerubah && (
+                <button
+                  type="button"
+                  className={compact.secondary}
+                  disabled={busy}
+                  onClick={() => post("stop")}
+                >
+                  Batal
+                </button>
+              )}
+              <details className={compact.help}>
+                <summary>Bantuan</summary>
+                <div>
+                  <p>
+                    Buka WhatsApp di HP → Perangkat tertaut → Tautkan perangkat,
+                    lalu scan QR. Di iPhone, menu ini ada di Pengaturan.
+                  </p>
+                  <p>
+                    Memakai HP yang sama? Buka chat ini di komputer atau
+                    perangkat lain untuk menampilkan QR.
+                  </p>
+                  <p>QR diperbarui otomatis saat kartu terbuka.</p>
+                </div>
+              </details>
+            </div>
+          </div>
+        )}
       </div>
-    </div>}
-  </div>;
+    );
 
   return (
-    <div className="card overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-200 px-5 py-3.5">
-        <div className="flex items-center gap-3">
-          <p className="font-medium text-ink-900">{channelName}</p>
-          <span className={`badge ${badge.className}`}>{badge.text}</span>
+    <section className="pw-channel-card">
+      <div className="pw-channel-header">
+        <span className="pw-settings-icon">
+          <Ikon nama="whatsapp" size={22} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3>{channelName}</h3>
+          <p role="status">
+            {!checked
+              ? "Memeriksa sambungan…"
+              : !state.workerUp
+                ? "Status belum tersedia"
+                : connected
+                  ? state.phoneNumber || "WhatsApp tersambung"
+                  : badge.text}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          {connected && (
-            <span className="text-sm text-ink-500">{state.phoneNumber ?? ""}</span>
-          )}
-          {deleteSlot}
-        </div>
+        {checked && connected && state.workerUp && (
+          <span className="badge bg-ink-100 text-ink-700">Tersambung</span>
+        )}
+        {deleteSlot}
       </div>
-
-      <div className="p-5">
-        {connected ? (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600">
-                  <Ikon nama="centang" size={20} />
-                </span>
-                <div>
-                  <p className="font-medium text-ink-900">Nomor ini sudah jalan</p>
-                  <p className="text-sm text-ink-500">
-                    Chat yang masuk ke sini otomatis dibalas.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button className="btn-ghost" disabled={busy} onClick={() => post("stop")}>
-                  Matikan sementara
+      <div className="pw-channel-body">
+        {!checked ? (
+          <p className="text-sm text-ink-500" role="status">
+            Mengambil status WhatsApp…
+          </p>
+        ) : !state.workerUp ? (
+          <div className="pw-channel-status">
+            <h4>Status sambungan belum dapat diperiksa</h4>
+            <p>
+              Sementara, tangani pelanggan langsung di WhatsApp. Coba periksa
+              kembali untuk melihat status terbaru.
+            </p>
+            <button type="button" className="btn-ghost mt-4" onClick={refresh}>
+              Periksa kembali
+            </button>
+          </div>
+        ) : connected ? (
+          <div className="pw-channel-status">
+            <h4>Siap terhubung dengan pelanggan</h4>
+            <p>
+              Balasan mengikuti asisten dan pengaturan yang kamu pilih untuk
+              nomor ini.
+            </p>
+            <details className="mt-4">
+              <summary className="cursor-pointer py-2 text-xs font-medium text-ink-600">
+                Kelola sambungan
+              </summary>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  disabled={busy}
+                  onClick={() => post("stop")}
+                >
+                  Jeda sambungan
                 </button>
                 <button
+                  type="button"
                   className="btn-danger"
                   disabled={busy}
                   onClick={() => setKonfirmCabut(true)}
                 >
-                  Cabut nomor
+                  Lepaskan nomor
                 </button>
               </div>
-            </div>
-
-            {/* Konfirmasi di tempat, bukan kotak bawaan browser: dia bisa
-                diblokir, dan tidak bisa menjelaskan akibatnya sepelan ini. */}
-            {konfirmCabut && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                <p className="text-sm leading-relaxed text-red-900">
-                  Cabut nomor ini dari Palwise? Chat yang masuk berhenti dibalas,
-                  dan kamu perlu scan QR lagi kalau mau memakainya. Riwayat
-                  obrolannya tetap tersimpan.
-                </p>
-                <div className="mt-2.5 flex gap-2">
-                  <button
-                    className="btn-danger px-3 py-1.5 text-xs"
-                    disabled={busy}
-                    onClick={() => {
-                      setKonfirmCabut(false);
-                      post("stop", { logout: true });
-                    }}
-                  >
-                    Ya, cabut
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-xs text-ink-700 hover:bg-ink-50"
-                    onClick={() => setKonfirmCabut(false)}
-                  >
-                    Batal
-                  </button>
-                </div>
-              </div>
-            )}
+            </details>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-[260px_minmax(0,1fr)] md:gap-8">
-            {/* Di HP kotaknya dibatasi 240px dan ditaruh di tengah. Tanpa itu
-                dia jadi persegi selebar layar, dan waktu QR-nya belum muncul
-                yang kelihatan cuma satu kotak kosong raksasa. */}
-            <div className="mx-auto grid aspect-square w-full max-w-[240px] place-items-center rounded-xl border border-ink-200 bg-ink-50 md:mx-0 md:max-w-none">
-              {showingQr ? (
-                // eslint-disable-next-line @next/next/no-img-element
+          <div>
+            {showingQr ? (
+              <div className="pw-channel-qr">
                 <img
                   src={state.qrDataUrl!}
-                  alt="Kode QR WhatsApp"
-                  className="h-full w-full rounded-xl bg-white p-3"
+                  width={240}
+                  height={240}
+                  alt="Kode QR untuk menautkan WhatsApp ke Palwise"
                 />
-              ) : state.status === "connecting" ? (
-                <p className="px-6 text-center text-sm text-ink-500">Sebentar ya</p>
-              ) : (
-                <p className="px-6 text-center text-sm text-ink-500">
-                  Klik Sambungkan untuk memunculkan QR
+                <div>
+                  <h4>Pindai dari WhatsApp di HP</h4>
+                  <ol>
+                    {STEPS.map((step, i) => (
+                      <li key={step}>
+                        <span>{i + 1}</span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                  <p>QR diperbarui otomatis saat halaman terbuka.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="pw-channel-status">
+                <h4>
+                  {state.status === "connecting"
+                    ? "Menyiapkan sambungan…"
+                    : state.status === "logged_out"
+                      ? "Tautkan kembali nomor bisnismu"
+                      : "Sambungkan dalam beberapa langkah"}
+                </h4>
+                <p>
+                  Buka WhatsApp di HP, pilih Perangkat tertaut, lalu pindai kode
+                  QR yang muncul di sini.
                 </p>
+              </div>
+            )}
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={busy || state.status === "connecting"}
+                onClick={() => post("start")}
+              >
+                {busy
+                  ? "Memproses…"
+                  : showingQr
+                    ? "Perbarui QR"
+                    : state.status === "connecting"
+                      ? "Menghubungkan…"
+                      : "Tampilkan QR"}
+              </button>
+              {sedangBerubah && (
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  disabled={busy}
+                  onClick={() => post("stop")}
+                >
+                  Batal
+                </button>
               )}
             </div>
-
-            <div>
-              <h3 className="font-semibold text-ink-900">Cara menyambungkan</h3>
-              <ol className="mt-4 space-y-2.5">
-                {STEPS.map((s, i) => (
-                  <li key={s} className="flex gap-3 text-sm text-ink-700">
-                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ink-100 text-[11px] font-medium text-ink-600">
-                      {i + 1}
-                    </span>
-                    {s}
-                  </li>
-                ))}
-              </ol>
-
-              {/* Cuma kalau tidak ada keterangan yang lebih spesifik.
-
-                  Waktu nomornya dicabut dari HP, worker menyimpan alasan yang
-                  lebih jelas di lastError ("dikeluarkan lewat menu Perangkat
-                  tertaut di HP"), dan itu ditampilkan di kotak merah tepat di
-                  bawah. Tanpa syarat ini, dua kotak bertumpuk mengatakan hal
-                  yang sama dengan kalimat berbeda, dan orang yang membacanya
-                  wajar mengira ada dua masalah. */}
-              {state.status === "logged_out" && !state.error && (
-                <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                  Nomor ini dicabut dari HP. Scan QR lagi kalau mau dipakai.
-                </p>
-              )}
-              {state.error && (
-                <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {state.error}
-                </p>
-              )}
-              {!state.workerUp && (
-                <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                  Mesin Palwise belum menyala.
-                </p>
-              )}
-              {notice && (
-                <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {notice}
-                </p>
-              )}
-
-              <div className="mt-6 flex gap-2">
-                <button className="btn-primary" disabled={busy} onClick={() => post("start")}>
-                  {busy ? "Sebentar" : showingQr ? "Ganti QR baru" : "Sambungkan"}
-                </button>
-                {(state.status === "qr" || state.status === "connecting") && (
-                  <button className="btn-ghost" disabled={busy} onClick={() => post("stop")}>
-                    Batal
-                  </button>
-                )}
-              </div>
-
-              <p className="mt-5 text-xs leading-relaxed text-ink-500">
-                Kotak QR ganti otomatis tiap 20 detik dan halaman ini ikut
-                memperbaruinya, jadi tidak usah di-refresh.
+            <details className="mt-3">
+              <summary className="cursor-pointer py-2 text-xs font-medium text-ink-600">
+                Menyambungkan dari HP?
+              </summary>
+              <p className="mt-2 text-xs leading-relaxed text-ink-500">
+                Buka Palwise di komputer atau perangkat lain untuk menampilkan
+                QR. Di iPhone, Perangkat tertaut berada di menu Pengaturan
+                WhatsApp.
               </p>
+            </details>
+          </div>
+        )}
+        {(notice || (state.error && state.workerUp)) && (
+          <p
+            role="alert"
+            className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+          >
+            {notice ||
+              "Sambungan perlu diperbarui. Coba tautkan kembali nomor melalui QR."}
+          </p>
+        )}
+        {konfirmCabut && (
+          <div
+            role="alert"
+            className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4"
+          >
+            <p className="text-sm leading-relaxed text-red-900">
+              Lepaskan {channelName} dari Palwise? Balasan otomatis berhenti.
+              Riwayat tetap tersimpan dan kamu perlu memindai QR untuk
+              menyambungkannya kembali.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-danger"
+                disabled={busy}
+                onClick={() => {
+                  setKonfirmCabut(false);
+                  void post("stop", { logout: true });
+                }}
+              >
+                Ya, lepaskan nomor
+              </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => setKonfirmCabut(false)}
+              >
+                Batal
+              </button>
             </div>
           </div>
         )}
-
         {agentSlot && (
-          <div className="mt-5 border-t border-ink-100 pt-5">{agentSlot}</div>
+          <div className="mt-6 border-t border-ink-100 pt-5">{agentSlot}</div>
         )}
       </div>
-    </div>
+    </section>
   );
 }

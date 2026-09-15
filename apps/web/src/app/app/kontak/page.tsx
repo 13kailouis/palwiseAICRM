@@ -24,10 +24,15 @@ const STAGES = ["baru", "tertarik", "negosiasi", "closing", "selesai", "batal"];
 export default async function KontakPage({
   searchParams,
 }: {
-  searchParams: Promise<{ stage?: string; q?: string }>;
+  searchParams: Promise<{ stage?: string; q?: string; page?: string }>;
 }) {
   const user = await requireUser();
-  const { stage, q } = await searchParams;
+  const { stage, q: rawQuery, page: rawPage } = await searchParams;
+  const q = rawQuery?.trim() || "";
+  const pageSize = 30;
+  const parsedPage = Number(rawPage);
+  const requestedPage =
+    Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
   const where: any = { workspaceId: user.workspaceId, ...HANYA_PELANGGAN_ASLI };
   if (stage && STAGES.includes(stage)) where.stage = stage;
@@ -73,6 +78,17 @@ export default async function KontakPage({
     ];
   }
 
+  const matched = await prisma.contact.count({ where });
+  const pageCount = Math.max(1, Math.ceil(matched / pageSize));
+  const page = Math.min(requestedPage, pageCount);
+  const linkFor = (nextStage = stage, nextPage = 1) => {
+    const params = new URLSearchParams();
+    if (nextStage) params.set("stage", nextStage);
+    if (q) params.set("q", q);
+    if (nextPage > 1) params.set("page", String(nextPage));
+    return `/app/kontak${params.size ? `?${params}` : ""}`;
+  };
+
   const [contacts, counts, jumlahMasalah, jumlahJanji] = await Promise.all([
     prisma.contact.findMany({
       where,
@@ -83,9 +99,10 @@ export default async function KontakPage({
       // bawaan menurut keluhan terlama tidak masuk akal di sini: yang dicari
       // "siapa yang datang paling dekat", bukan "siapa yang paling lama kesal".
       orderBy: cumaBerjanji
-        ? [{ janjiPada: "asc" }]
-        : [{ masalahSejak: "asc" }, { updatedAt: "desc" }],
-      take: 200,
+        ? [{ janjiPada: "asc" }, { id: "asc" }]
+        : [{ masalahSejak: "asc" }, { updatedAt: "desc" }, { id: "asc" }],
+      take: pageSize,
+      skip: (page - 1) * pageSize,
       include: {
         conversations: {
           orderBy: { lastMessageAt: "desc" },
@@ -123,10 +140,27 @@ export default async function KontakPage({
     <>
       <PageHeader
         title="Pelanggan"
-        description="Terisi otomatis dari isi obrolan. Yang perlu ditangani duluan muncul paling atas."
+        description="Kenali pelanggan, temukan percakapan, dan tentukan tindak lanjut."
       />
 
-      <div className="space-y-5 p-4 sm:p-6">
+      <div className="pw-contacts space-y-5 p-4 sm:p-6">
+        <div className="pw-metrics" aria-label="Ringkasan pelanggan">
+          <Link href="/app/kontak">
+            <span>Seluruh pelanggan</span>
+            <strong>{total.toLocaleString("id-ID")}</strong>
+            <small>Tersimpan dari percakapan</small>
+          </Link>
+          <Link href="/app/kontak?stage=tertarik">
+            <span>Tertarik</span>
+            <strong>{countFor("tertarik").toLocaleString("id-ID")}</strong>
+            <small>Lihat peluang tindak lanjut</small>
+          </Link>
+          <Link href="/app/kontak?stage=janji">
+            <span>Janji mendatang</span>
+            <strong>{jumlahJanji.toLocaleString("id-ID")}</strong>
+            <small>Persiapkan layanan berikutnya</small>
+          </Link>
+        </div>
         {/* Pelanggan bermasalah.
 
             Sengaja BUKAN tahap ketujuh di deretan bawah. Enam tahap itu
@@ -182,7 +216,9 @@ export default async function KontakPage({
             </span>
             <span className="flex-1 text-sm leading-relaxed text-ink-800">
               <span className="font-medium">Punya janji temu.</span>{" "}
-              {jumlahJanji === 1 ? "Ada pelanggan" : `Ada ${jumlahJanji} pelanggan`}{" "}
+              {jumlahJanji === 1
+                ? "Ada pelanggan"
+                : `Ada ${jumlahJanji} pelanggan`}{" "}
               yang sudah punya jadwal ke depan.
             </span>
             <span className="tap-aman shrink-0 text-xs font-medium text-brand-700">
@@ -198,40 +234,47 @@ export default async function KontakPage({
             dibungkus). Tiap pil sekaligus saringannya, dengan jumlahnya di
             ujung. */}
         <div className="thin-scroll -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-          {[{ id: "", label: "Semua", n: total }, ...STAGES.map((s) => ({ id: s, label: s, n: countFor(s) }))].map(
-            (t) => {
-              const aktif = t.id ? stage === t.id : !stage;
-              return (
-                <Link
-                  key={t.id || "semua"}
-                  href={t.id ? `/app/kontak?stage=${t.id}` : "/app/kontak"}
-                  className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2 text-sm capitalize transition ${
-                    aktif
-                      ? "bg-ink-900 font-medium text-white"
-                      : "border border-ink-200 text-ink-700 hover:bg-ink-50"
+          {[
+            { id: "", label: "Semua", n: total },
+            ...STAGES.map((s) => ({ id: s, label: s, n: countFor(s) })),
+          ].map((t) => {
+            const aktif = t.id ? stage === t.id : !stage;
+            return (
+              <Link
+                key={t.id || "semua"}
+                href={linkFor(t.id)}
+                aria-current={aktif ? "page" : undefined}
+                className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2 text-sm capitalize transition ${
+                  aktif
+                    ? "bg-ink-900 font-medium text-white"
+                    : "border border-ink-200 text-ink-700 hover:bg-ink-50"
+                }`}
+              >
+                {t.label}
+                <span
+                  className={`text-xs tabular-nums ${
+                    aktif ? "text-white/60" : "text-ink-400"
                   }`}
                 >
-                  {t.label}
-                  <span
-                    className={`text-xs tabular-nums ${
-                      aktif ? "text-white/60" : "text-ink-400"
-                    }`}
-                  >
-                    {t.n}
-                  </span>
-                </Link>
-              );
-            },
-          )}
+                  {t.n}
+                </span>
+              </Link>
+            );
+          })}
         </div>
 
-        <form className="flex gap-2">
+        <form
+          className="pw-search-toolbar"
+          role="search"
+          aria-label="Pencarian pelanggan"
+        >
           {stage && <input type="hidden" name="stage" value={stage} />}
           <input
             name="q"
+            aria-label="Cari pelanggan"
             defaultValue={q ?? ""}
             className="input flex-1 sm:max-w-sm"
-            placeholder="Cari nama, nomor, catatan, atau isi janjinya"
+            placeholder="Cari nama, nomor, atau catatan…"
           />
           <button className="btn-ink shrink-0" type="submit">
             Cari
@@ -265,12 +308,16 @@ export default async function KontakPage({
                   nama yang jadi patokannya. */}
               <div className="anim-urut divide-y divide-ink-100 md:hidden">
                 {contacts.map((c) => (
-                  <KontakKartu key={c.id} contact={c} menggantung={menggantung} />
+                  <KontakKartu
+                    key={c.id}
+                    contact={c}
+                    menggantung={menggantung}
+                  />
                 ))}
               </div>
 
               <div className="hidden overflow-x-auto md:block">
-              {/* Kolom "Usahanya" dihapus, isinya pindah ke bawah namanya.
+                {/* Kolom "Usahanya" dihapus, isinya pindah ke bawah namanya.
 
                   Kolom tetap yang isinya "-" untuk sebagian besar baris itu
                   bukan cuma boros tempat, dia juga menyesatkan: warung, klinik,
@@ -278,180 +325,215 @@ export default async function KontakPage({
                   datanya kurang lengkap, padahal memang tidak ada yang kurang.
                   Sebagai baris kecil di bawah nama, dia muncul kalau ada dan
                   hilang kalau tidak ada. */}
-              <table className="w-full min-w-[760px] text-sm">
-                <thead className="border-b border-ink-200 bg-ink-50/60 text-left text-xs text-ink-500">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Nama</th>
-                    <th className="px-4 py-3 font-medium">Nomor & email</th>
-                    <th className="px-4 py-3 font-medium">Minatnya</th>
-                    <th className="px-4 py-3 font-medium">Tahap</th>
-                    <th className="px-4 py-3 font-medium">Terakhir chat</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ink-100">
-                  {contacts.map((c) => {
-                    const tags = parseJsonArray(c.tags);
-                    const conv = c.conversations[0];
-                    return (
-                      <tr key={c.id} className="hover:bg-ink-50/60">
-                        <td className="px-4 py-3">
-                          <div className="flex items-start gap-3">
-                            <Avatar nama={displayName(c)} ukuran={38} fotoPath={c.waFotoPath} />
-                            <div className="min-w-0 flex-1">
-                          <Link
-                            href={`/app/kontak/${c.id}`}
-                            className="font-medium text-ink-900 hover:text-brand-700 hover:underline"
-                          >
-                            {displayName(c)}
-                          </Link>
-                          {c.businessName && (
-                            <p className="text-xs text-ink-500">
-                              {c.businessName}
-                              {c.industry && ` · ${c.industry}`}
-                            </p>
-                          )}
-                          {!c.name && c.waPushName && (
-                            <p className="text-xs text-ink-400">dari profil WA</p>
-                          )}
-                          {c.janjiPada && c.janjiPada.getTime() > Date.now() && (
-                            <p className="mt-1 text-xs text-ink-600">
-                              {formatJanji(c.janjiPada)}
-                              {c.janjiCatatan && ` · ${c.janjiCatatan}`}
-                            </p>
-                          )}
-
-                          {c.masalah && (
-                            <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2">
-                              <p className="text-xs leading-relaxed text-red-900">
-                                {c.masalah}
-                              </p>
-                              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                {c.masalahSejak && (
-                                  <span className="text-[11px] text-red-700">
-                                    {menggantung(c.masalahSejak)}
-                                  </span>
+                <table className="w-full min-w-[760px] text-sm">
+                  <thead className="border-b border-ink-200 bg-ink-50/60 text-left text-xs text-ink-500">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Nama</th>
+                      <th className="px-4 py-3 font-medium">Nomor & email</th>
+                      <th className="px-4 py-3 font-medium">Minatnya</th>
+                      <th className="px-4 py-3 font-medium">Tahap</th>
+                      <th className="px-4 py-3 font-medium">Terakhir chat</th>
+                      <th className="px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-100">
+                    {contacts.map((c) => {
+                      const tags = parseJsonArray(c.tags);
+                      const conv = c.conversations[0];
+                      return (
+                        <tr key={c.id} className="hover:bg-ink-50/60">
+                          <td className="px-4 py-3">
+                            <div className="flex items-start gap-3">
+                              <Avatar
+                                nama={displayName(c)}
+                                ukuran={38}
+                                fotoPath={c.waFotoPath}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <Link
+                                  href={`/app/kontak/${c.id}`}
+                                  className="font-medium text-ink-900 hover:text-brand-700 hover:underline"
+                                >
+                                  {displayName(c)}
+                                </Link>
+                                {c.businessName && (
+                                  <p className="text-xs text-ink-500">
+                                    {c.businessName}
+                                    {c.industry && ` · ${c.industry}`}
+                                  </p>
                                 )}
-                                <form action={updateContactAction}>
-                                  <input type="hidden" name="id" value={c.id} />
-                                  <input
-                                    type="hidden"
-                                    name="bereskanMasalah"
-                                    value="1"
-                                  />
-                                  <button
-                                    type="submit"
-                                    className="text-[11px] font-medium text-red-700 underline hover:text-red-900"
-                                  >
-                                    Tandai sudah beres
-                                  </button>
-                                </form>
+                                {!c.name && c.waPushName && (
+                                  <p className="text-xs text-ink-400">
+                                    dari profil WA
+                                  </p>
+                                )}
+                                {c.janjiPada &&
+                                  c.janjiPada.getTime() > Date.now() && (
+                                    <p className="mt-1 text-xs text-ink-600">
+                                      {formatJanji(c.janjiPada)}
+                                      {c.janjiCatatan && ` · ${c.janjiCatatan}`}
+                                    </p>
+                                  )}
+
+                                {c.masalah && (
+                                  <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2">
+                                    <p className="text-xs leading-relaxed text-red-900">
+                                      {c.masalah}
+                                    </p>
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                      {c.masalahSejak && (
+                                        <span className="text-[11px] text-red-700">
+                                          {menggantung(c.masalahSejak)}
+                                        </span>
+                                      )}
+                                      <form action={updateContactAction}>
+                                        <input
+                                          type="hidden"
+                                          name="id"
+                                          value={c.id}
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="bereskanMasalah"
+                                          value="1"
+                                        />
+                                        <button
+                                          type="submit"
+                                          className="text-[11px] font-medium text-red-700 underline hover:text-red-900"
+                                        >
+                                          Tandai sudah beres
+                                        </button>
+                                      </form>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-ink-600">
-                          {c.phone ? (
-                            <p>{c.phone}</p>
-                          ) : (
-                            <p className="text-xs text-ink-400">
-                              {c.waJid?.endsWith("@lid")
-                                ? "nomor disembunyikan WhatsApp"
-                                : "-"}
-                            </p>
-                          )}
-                          {c.email && (
-                            <p className="text-xs text-ink-400">{c.email}</p>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
-                            {tags.length === 0 ? (
-                              <span className="text-ink-400">-</span>
+                          </td>
+                          <td className="px-4 py-3 text-ink-600">
+                            {c.phone ? (
+                              <p>{c.phone}</p>
                             ) : (
-                              tags.map((t) => (
-                                <span
-                                  key={t}
-                                  className="badge bg-ink-100 text-ink-700"
-                                >
-                                  {t}
-                                </span>
-                              ))
+                              <p className="text-xs text-ink-400">
+                                {c.waJid?.endsWith("@lid")
+                                  ? "nomor disembunyikan WhatsApp"
+                                  : "-"}
+                              </p>
                             )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <form action={updateContactAction}>
-                            <input type="hidden" name="id" value={c.id} />
-                            <select
-                              name="stage"
-                              defaultValue={c.stage}
-                              className="rounded-md border border-ink-200 bg-white px-2 py-1 text-xs capitalize outline-none focus:border-brand-500"
-                            >
-                              {STAGES.map((s) => (
-                                <option key={s} value={s}>
-                                  {s}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              type="submit"
-                              className="ml-1.5 text-xs text-brand-700 hover:underline"
-                            >
-                              simpan
-                            </button>
-                          </form>
-                          {/* Tahap saja tidak memberi tahu kapan. "Selesai"
+                            {c.email && (
+                              <p className="text-xs text-ink-400">{c.email}</p>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              {tags.length === 0 ? (
+                                <span className="text-ink-400">-</span>
+                              ) : (
+                                tags.map((t) => (
+                                  <span
+                                    key={t}
+                                    className="badge bg-ink-100 text-ink-700"
+                                  >
+                                    {t}
+                                  </span>
+                                ))
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <form action={updateContactAction}>
+                              <input type="hidden" name="id" value={c.id} />
+                              <select
+                                name="stage"
+                                defaultValue={c.stage}
+                                className="rounded-md border border-ink-200 bg-white px-2 py-1 text-xs capitalize outline-none focus:border-brand-500"
+                              >
+                                {STAGES.map((s) => (
+                                  <option key={s} value={s}>
+                                    {s}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="submit"
+                                className="ml-1.5 text-xs text-brand-700 hover:underline"
+                              >
+                                simpan
+                              </button>
+                            </form>
+                            {/* Tahap saja tidak memberi tahu kapan. "Selesai"
                               yang terjadi tadi pagi dan yang terjadi sebulan
                               lalu kelihatan sama persis, padahal yang satu
                               perlu dicek uangnya sekarang. */}
-                          {c.klaimBayarSejak ? (
-                            <p className="mt-1 text-[11px] text-ink-400">
-                              ngaku bayar {formatWaktu(c.klaimBayarSejak)}
-                            </p>
-                          ) : (
-                            c.stage === "selesai" &&
-                            c.closedAt && (
+                            {c.klaimBayarSejak ? (
                               <p className="mt-1 text-[11px] text-ink-400">
-                                selesai {formatWaktu(c.closedAt)}
+                                ngaku bayar {formatWaktu(c.klaimBayarSejak)}
                               </p>
-                            )
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-ink-500">
-                          {formatWaktu(conv?.lastMessageAt ?? c.updatedAt)}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-right">
-                          <Link
-                            href={`/app/kontak/${c.id}`}
-                            className="text-xs text-brand-700 hover:underline"
-                          >
-                            Profil
-                          </Link>
-                          {conv && (
+                            ) : (
+                              c.stage === "selesai" &&
+                              c.closedAt && (
+                                <p className="mt-1 text-[11px] text-ink-400">
+                                  selesai {formatWaktu(c.closedAt)}
+                                </p>
+                              )
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-ink-500">
+                            {formatWaktu(conv?.lastMessageAt ?? c.updatedAt)}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right">
                             <Link
-                              href={`/app/inbox?c=${conv.id}`}
-                              className="ml-3 text-xs text-brand-700 hover:underline"
+                              href={`/app/kontak/${c.id}`}
+                              className="text-xs text-brand-700 hover:underline"
                             >
-                              Obrolan
+                              Profil
                             </Link>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            {conv && (
+                              <Link
+                                href={`/app/inbox?c=${conv.id}`}
+                                className="ml-3 text-xs text-brand-700 hover:underline"
+                              >
+                                Obrolan
+                              </Link>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </>
           )}
         </div>
 
         <p className="text-xs text-ink-500">
-          Menampilkan {contacts.length} dari {total} pelanggan.
+          {matched === 0
+            ? "0 pelanggan"
+            : `${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + contacts.length} dari ${matched.toLocaleString("id-ID")} pelanggan`}
+          {q || stage ? " sesuai pencarian" : ""}.
         </p>
+        {pageCount > 1 && (
+          <nav className="pw-pagination" aria-label="Halaman pelanggan">
+            {page > 1 ? (
+              <Link className="btn-ghost" href={linkFor(stage, page - 1)}>
+                ← Sebelumnya
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span>
+              Halaman {page} / {pageCount}
+            </span>
+            {page < pageCount ? (
+              <Link className="btn-ghost" href={linkFor(stage, page + 1)}>
+                Berikutnya →
+              </Link>
+            ) : (
+              <span />
+            )}
+          </nav>
+        )}
       </div>
     </>
   );

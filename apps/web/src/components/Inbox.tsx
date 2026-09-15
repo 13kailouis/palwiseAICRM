@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, formatJanji } from "@/components/ui";
 import { InfoTip } from "@/components/InfoTip";
@@ -89,8 +91,8 @@ const FILTERS: {
   label: string;
   hitung?: "open" | "human" | "all" | "panas" | "tenangkan";
 }[] = [
-  { id: "open", label: "Masih jalan", hitung: "open" },
-  { id: "human", label: "Nunggu kamu", hitung: "human" },
+  { id: "open", label: "Aktif", hitung: "open" },
+  { id: "human", label: "Perlu tim", hitung: "human" },
   // Dua ini dulu cuma chip angka di barisnya sendiri di atas daftar: memakan
   // satu baris penuh dan tidak bisa diapa-apakan. Sebagai saringan mereka
   // menyatu ke baris ini, dan angkanya sekalian jadi jalan masuk.
@@ -99,13 +101,13 @@ const FILTERS: {
   // "kesal"), jadi pil dan lencana saling menjelaskan tanpa keterangan
   // tambahan. Yang baik tetap ditulis sebelum yang buruk: kotak masuk yang
   // tiap pagi menyodorkan kemarahan duluan lama-lama tidak dibuka lagi.
-  { id: "panas", label: "Mau beli", hitung: "panas" },
+  { id: "panas", label: "Siap beli", hitung: "panas" },
   { id: "tenangkan", label: "Kesal", hitung: "tenangkan" },
   // Bukan saringan, tapi URUTAN: isinya sama dengan "Masih jalan", disusun
   // menurut siapa yang paling mahal kalau ditinggalkan. Lihat catatannya di
   // api/inbox/conversations/route.ts. Ditaruh sesudah yang menyaring karena
   // empat pil pertama yang dipakai tiap hari.
-  { id: "duluin", label: "Duluin ini" },
+  { id: "duluin", label: "Prioritas" },
   { id: "all", label: "Semua", hitung: "all" },
 ];
 
@@ -126,14 +128,18 @@ function hariDari(iso: string): number {
  * hari ini atau bulan lalu.
  */
 function labelHari(waktu: number): string {
-  const selisih = Math.round((hariDari(new Date().toISOString()) - waktu) / 86_400_000);
+  const selisih = Math.round(
+    (hariDari(new Date().toISOString()) - waktu) / 86_400_000,
+  );
   if (selisih === 0) return "Hari ini";
   if (selisih === 1) return "Kemarin";
   const d = new Date(waktu);
   return d.toLocaleDateString("id-ID", {
     day: "numeric",
     month: "short",
-    ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" }),
+    ...(d.getFullYear() === new Date().getFullYear()
+      ? {}
+      : { year: "numeric" }),
   });
 }
 
@@ -160,7 +166,8 @@ function formatWA(teks: string, kunci: string): React.ReactNode[] {
     if (m.index > akhir) keluar.push(teks.slice(akhir, m.index));
     const [utuh, tanda, dalam] = m;
     const anak = formatWA(dalam, `${kunci}.${n}`);
-    if (tanda === "*") keluar.push(<strong key={`${kunci}.${n}`}>{anak}</strong>);
+    if (tanda === "*")
+      keluar.push(<strong key={`${kunci}.${n}`}>{anak}</strong>);
     else if (tanda === "_") keluar.push(<em key={`${kunci}.${n}`}>{anak}</em>);
     else
       keluar.push(
@@ -291,17 +298,16 @@ function PesanBaris({
         {m.mediaUrl && m.mediaType === "audio" && (
           <audio controls src={m.mediaUrl} className="mb-2 w-56" />
         )}
-        {m.mediaUrl &&
-          !["image", "audio"].includes(m.mediaType) && (
-            <a
-              href={m.mediaUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mb-2 block underline"
-            >
-              Buka lampiran ({m.mediaType})
-            </a>
-          )}
+        {m.mediaUrl && !["image", "audio"].includes(m.mediaType) && (
+          <a
+            href={m.mediaUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mb-2 block underline"
+          >
+            Buka lampiran ({m.mediaType})
+          </a>
+        )}
         {/* Bacaan AI atas lampirannya. Ditaruh menempel di bawah
             lampirannya, bukan di baris terpisah, supaya jelas dia
             keterangan gambar dan bukan ucapan pelanggan.
@@ -329,7 +335,11 @@ function PesanBaris({
               mine ? "text-white/60" : "text-ink-400"
             }`}
           >
-            {m.role === "human" ? "kamu · " : m.role === "ai" ? "asisten · " : ""}
+            {m.role === "human"
+              ? "kamu · "
+              : m.role === "ai"
+                ? "asisten · "
+                : ""}
             {jam(m.createdAt)}
           </p>
         )}
@@ -343,11 +353,10 @@ export function Inbox({ initialId }: { initialId: string | null }) {
   const [list, setList] = useState<ConvSummary[]>([]);
   /** Angka per saringan, dihitung server. Lihat api/inbox/conversations. */
   const [jumlah, setJumlah] = useState<Record<string, number>>({});
-  // Pencarian di daftar. Kotaknya TERTUTUP sampai ikonnya diketuk: kolom yang
-  // selalu terpampang memakan satu baris penuh di layar yang isinya memang
-  // daftar, bukan formulir.
+  // Pencarian tetap terlihat agar pelanggan mudah ditemukan di HP dan desktop.
   const [cari, setCari] = useState("");
-  const [cariBuka, setCariBuka] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState(false);
   // Tombol "turun ke pesan terbaru" cuma muncul kalau memang sedang menggulir
   // jauh ke atas. Tanpa penanda ini dia mengambang terus di atas obrolan.
   const [jauhDariBawah, setJauhDariBawah] = useState(false);
@@ -378,8 +387,9 @@ export function Inbox({ initialId }: { initialId: string | null }) {
       const res = await fetch(`/api/inbox/conversations?filter=${filter}`, {
         cache: "no-store",
       });
-      if (!res.ok) return;
+      if (!res.ok) throw new Error("list unavailable");
       const data = await res.json();
+      setListError(false);
       setList(data.conversations);
       setJumlah(data.jumlah ?? {});
       // Auto-pilih obrolan pertama CUMA di layar lebar.
@@ -392,11 +402,14 @@ export function Inbox({ initialId }: { initialId: string | null }) {
       const layarLebar =
         typeof window !== "undefined" &&
         window.matchMedia("(min-width: 1024px)").matches;
-      setSelectedId((cur) =>
-        cur ?? (layarLebar ? (data.conversations[0]?.id ?? null) : null),
+      setSelectedId(
+        (cur) =>
+          cur ?? (layarLebar ? (data.conversations[0]?.id ?? null) : null),
       );
     } catch {
-      /* biarkan, coba lagi nanti */
+      setListError(true);
+    } finally {
+      setListLoading(false);
     }
   }, [filter]);
 
@@ -406,7 +419,9 @@ export function Inbox({ initialId }: { initialId: string | null }) {
     // dianggap sedang dilihat.
     if (!paksa && !sedangDilihat()) return;
     try {
-      const res = await fetch(`/api/inbox/conversations/${id}`, { cache: "no-store" });
+      const res = await fetch(`/api/inbox/conversations/${id}`, {
+        cache: "no-store",
+      });
       if (!res.ok) return;
       setDetail(await res.json());
     } catch {
@@ -526,7 +541,7 @@ export function Inbox({ initialId }: { initialId: string | null }) {
   }
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="pw-inbox flex h-full min-h-0">
       {/* Daftar percakapan */}
       {/* Daftar obrolan.
 
@@ -546,91 +561,63 @@ export function Inbox({ initialId }: { initialId: string | null }) {
           selectedId ? "hidden lg:flex" : "flex",
         ].join(" ")}
       >
-        {/* Saringan: satu baris yang bisa digeser, JANGAN membungkus.
-            Dulu `flex` biasa bikin empat tab membungkus jadi dua baris di layar
-            360px dan tiap tab jadi dua baris tulisan, terbaca berantakan. Pil
-            `whitespace-nowrap shrink-0` + `overflow-x-auto` menjaga satu baris;
-            kalau tidak muat, digeser, bukan dibungkus. */}
-        {/* Satu baris untuk dua pekerjaan: menyaring dan mencari.
-
-            Kolom pencarian yang selalu terpampang memakan satu baris penuh di
-            layar yang isinya memang daftar, jadi dia tertutup dan menempati
-            baris yang sama begitu ikonnya diketuk. */}
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-ink-200 px-2.5 py-2.5">
-          {cariBuka ? (
-            <div className="anim-muncul flex min-w-0 flex-1 items-center gap-2 rounded-full bg-ink-100 px-3 py-1.5">
-              <Ikon nama="cari" size={15} className="shrink-0 text-ink-500" />
-              <input
-                autoFocus
-                value={cari}
-                onChange={(e) => setCari(e.target.value)}
-                placeholder="Cari nama atau nomor"
-                aria-label="Cari obrolan"
-                className="min-w-0 flex-1 bg-transparent text-sm text-ink-900 outline-none placeholder:text-ink-400"
-              />
+        <div className="pw-inbox-tools">
+          <div className="pw-inbox-title">
+            <h1>Chat masuk</h1>
+            <span>{jumlah.open ?? 0} aktif</span>
+          </div>
+          <label className="pw-inbox-search">
+            <Ikon nama="cari" size={18} />
+            <input
+              value={cari}
+              onChange={(e) => setCari(e.target.value)}
+              placeholder="Cari nama atau nomor…"
+              aria-label="Cari obrolan"
+            />
+            {cari && (
               <button
                 type="button"
+                onClick={() => setCari("")}
+                aria-label="Hapus pencarian"
+              >
+                <Ikon nama="silang" size={16} />
+              </button>
+            )}
+          </label>
+          <div className="pw-inbox-filters" aria-label="Saring obrolan">
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                aria-pressed={filter === f.id}
                 onClick={() => {
-                  setCari("");
-                  setCariBuka(false);
+                  setFilter(f.id);
+                  setListLoading(true);
+                  setSelectedId(null);
                 }}
-                aria-label="Tutup pencarian"
-                className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-ink-500 transition hover:bg-white hover:text-ink-800"
               >
-                <Ikon nama="silang" size={14} />
+                {f.label}
+                {f.hitung && (jumlah[f.hitung] ?? 0) > 0 && (
+                  <span>{jumlah[f.hitung]}</span>
+                )}
               </button>
-            </div>
-          ) : (
-            <>
-              {/* Saringan: satu baris yang bisa digeser, JANGAN membungkus.
-                  Dulu `flex` biasa bikin empat tab membungkus jadi dua baris di
-                  layar 360px dan tiap tab jadi dua baris tulisan, terbaca
-                  berantakan. Pil `whitespace-nowrap shrink-0` +
-                  `overflow-x-auto` menjaga satu baris; kalau tidak muat,
-                  digeser, bukan dibungkus. */}
-              <div className="thin-scroll flex min-w-0 flex-1 gap-1 overflow-x-auto">
-                {FILTERS.map((f) => {
-                  const n = f.hitung ? (jumlah[f.hitung] ?? 0) : 0;
-                  const aktif = filter === f.id;
-                  return (
-                    <button
-                      key={f.id}
-                      onClick={() => {
-                        setFilter(f.id);
-                        setSelectedId(null);
-                      }}
-                      className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] transition ${
-                        aktif
-                          ? "bg-ink-900 font-medium text-white"
-                          : "text-ink-600 hover:bg-ink-100"
-                      }`}
-                    >
-                      {f.label}
-                      {n > 0 && (
-                        <span
-                          className={`text-[11px] tabular-nums ${
-                            aktif ? "text-white/70" : "text-ink-400"
-                          }`}
-                        >
-                          {n}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              <button
-                type="button"
-                onClick={() => setCariBuka(true)}
-                aria-label="Cari obrolan"
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink-500 transition hover:bg-ink-100 hover:text-ink-800"
-              >
-                <Ikon nama="cari" size={17} />
-              </button>
-            </>
-          )}
+            ))}
+          </div>
         </div>
-
+        {listError && (
+          <div role="status" className="pw-inbox-notice">
+            Daftar chat belum dapat diperbarui.{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setListLoading(true);
+                void loadList();
+              }}
+            >
+              Coba lagi
+            </button>
+          </div>
+        )}
         {/* Hitungan singkat, yang BAIK disebut duluan.
             Alasannya ditulis lengkap di api/inbox/conversations/route.ts:
             lencana merah menarik mata jauh lebih kuat daripada lencana hitam,
@@ -641,14 +628,37 @@ export function Inbox({ initialId }: { initialId: string | null }) {
             key-nya id percakapan, baris lama tidak dianimasikan ulang tiap
             putaran polling. */}
         <div className="thin-scroll anim-urut min-h-0 flex-1 overflow-y-auto">
-          {tampil.length === 0 ? (
+          {listLoading && list.length === 0 ? (
+            <div role="status" className="px-6 py-12 text-sm text-ink-500">
+              Memuat percakapan…
+            </div>
+          ) : tampil.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border-2 border-dashed border-ink-200 text-ink-300">
                 <Ikon nama={cari ? "cari" : "chat"} size={26} />
               </div>
               <p className="mt-4 text-sm leading-relaxed text-ink-500">
-                {cari ? "Tidak ada yang cocok." : "Belum ada obrolan di sini."}
+                {listError
+                  ? "Daftar percakapan belum tersedia."
+                  : cari
+                    ? "Tidak ada percakapan yang cocok."
+                    : "Belum ada percakapan di bagian ini."}
               </p>
+              {cari ? (
+                <button
+                  type="button"
+                  className="btn-ghost mt-3"
+                  onClick={() => setCari("")}
+                >
+                  Hapus pencarian
+                </button>
+              ) : (
+                !listError && (
+                  <Link href="/app/whatsapp" className="btn-ghost mt-3">
+                    Kelola WhatsApp
+                  </Link>
+                )
+              )}
             </div>
           ) : (
             tampil.map((c) => {
@@ -689,8 +699,11 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                   // sempat dicoba dan justru menutupi baris yang sedang
                   // diterangkannya.
                   title={rinci.length > 0 ? rinci.join(" · ") : undefined}
-                  className={`relative flex w-full items-start gap-3 px-3 pt-2 text-left transition ${
-                    selectedId === c.id ? "bg-ink-100" : "hover:bg-ink-50 active:bg-ink-100"
+                  aria-pressed={selectedId === c.id}
+                  className={`pw-conversation-row relative flex w-full items-start gap-3 px-3 pt-2 text-left transition ${
+                    selectedId === c.id
+                      ? "bg-ink-100"
+                      : "hover:bg-ink-50 active:bg-ink-100"
                   }`}
                 >
                   {/* Garis penanda tepi kiri waktu terpilih, cuma di layar lebar
@@ -721,7 +734,9 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                       )}
                       <span
                         className={`ml-auto shrink-0 text-[11px] ${
-                          belumDibaca ? "font-medium text-brand-700" : "text-ink-400"
+                          belumDibaca
+                            ? "font-medium text-brand-700"
+                            : "text-ink-400"
                         }`}
                       >
                         {relatif(c.lastMessageAt)}
@@ -762,7 +777,13 @@ export function Inbox({ initialId }: { initialId: string | null }) {
           <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white text-ink-300 shadow-sm">
             <Ikon nama="chat" size={28} />
           </div>
-          <p className="text-sm text-ink-500">Pilih obrolan di daftar kiri.</p>
+          <h2 className="text-xl font-semibold tracking-tight text-ink-900">
+            Setiap percakapan, lebih terarah.
+          </h2>
+          <p className="max-w-sm px-6 text-center text-sm leading-relaxed text-ink-500">
+            Pilih chat untuk membaca riwayat, melihat kebutuhan pelanggan, dan
+            melanjutkan percakapan bersama tim.
+          </p>
         </div>
       ) : (
         <>
@@ -790,7 +811,16 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                 aria-label="Kembali ke daftar obrolan"
                 className="-ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-600 transition active:bg-ink-100 lg:hidden"
               >
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M15 5l-7 7 7 7" />
                 </svg>
               </button>
@@ -803,51 +833,57 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                 href={`/app/kontak/${detail.contact.id}`}
                 className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg transition hover:opacity-80"
               >
-                <Avatar nama={detail.contact.name} ukuran={38} fotoPath={detail.contact.waFotoPath} />
+                <Avatar
+                  nama={detail.contact.name}
+                  ukuran={38}
+                  fotoPath={detail.contact.waFotoPath}
+                />
 
                 <div className="min-w-0 flex-1">
-                <p className="truncate font-medium leading-tight text-ink-900">
-                  {detail.contact.name}
-                </p>
-                <p className="truncate text-xs leading-tight text-ink-500">
-                  {detail.conversation.isPlayground
-                    ? "Ruang coba, bukan WhatsApp beneran"
-                    : (detail.contact.phone ?? "tanpa nomor")}
-                </p>
-                {/* Konteks cepat (keluhan / janji) cuma muncul kalau memang ada.
+                  <p className="truncate font-medium leading-tight text-ink-900">
+                    {detail.contact.name}
+                  </p>
+                  <p className="truncate text-xs leading-tight text-ink-500">
+                    {detail.conversation.isPlayground
+                      ? "Ruang coba, bukan WhatsApp beneran"
+                      : (detail.contact.phone ?? "tanpa nomor")}
+                  </p>
+                  {/* Konteks cepat (keluhan / janji) cuma muncul kalau memang ada.
                     Dulu disembunyikan di xl karena panel kanan memuatnya; panel
                     itu sudah dihapus (memakan tempat, isinya sama dengan profil
                     yang seketuk dari kepala ini), jadi sekarang selalu tampil. */}
-                {(detail.contact.masalah ||
-                  (!detail.conversation.isPlayground &&
-                    !detail.conversation.channelConnected) ||
-                  (detail.contact.janjiPada &&
-                    new Date(detail.contact.janjiPada).getTime() > Date.now())) && (
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    {/* Nomor putus dulu ditulis menyambung di ekor nomor
+                  {(detail.contact.masalah ||
+                    (!detail.conversation.isPlayground &&
+                      !detail.conversation.channelConnected) ||
+                    (detail.contact.janjiPada &&
+                      new Date(detail.contact.janjiPada).getTime() >
+                        Date.now())) && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {/* Nomor putus dulu ditulis menyambung di ekor nomor
                         teleponnya ("0812... · nomornya lagi tidak nyambung"),
                         jadi barisnya panjang dan keadaan yang paling penting
                         justru tenggelam di ujung kalimat. Sebagai lencana dia
                         kelihatan sekilas. */}
-                    {!detail.conversation.isPlayground &&
-                      !detail.conversation.channelConnected && (
-                        <span className="badge bg-amber-100 text-amber-800">
-                          nomor putus
+                      {!detail.conversation.isPlayground &&
+                        !detail.conversation.channelConnected && (
+                          <span className="badge bg-amber-100 text-amber-800">
+                            nomor putus
+                          </span>
+                        )}
+                      {detail.contact.masalah && (
+                        <span className="badge bg-red-50 text-red-700">
+                          ada keluhan
                         </span>
                       )}
-                    {detail.contact.masalah && (
-                      <span className="badge bg-red-50 text-red-700">
-                        ada keluhan
-                      </span>
-                    )}
-                    {detail.contact.janjiPada &&
-                      new Date(detail.contact.janjiPada).getTime() > Date.now() && (
-                        <span className="badge bg-brand-50 text-brand-700">
-                          {formatJanji(detail.contact.janjiPada)}
-                        </span>
-                      )}
-                  </div>
-                )}
+                      {detail.contact.janjiPada &&
+                        new Date(detail.contact.janjiPada).getTime() >
+                          Date.now() && (
+                          <span className="badge bg-brand-50 text-brand-700">
+                            {formatJanji(detail.contact.janjiPada)}
+                          </span>
+                        )}
+                    </div>
+                  )}
                 </div>
               </a>
 
@@ -876,7 +912,13 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                   aria-expanded={aksiTerbuka}
                   className="grid h-9 w-9 place-items-center rounded-lg text-ink-500 transition hover:bg-ink-100 hover:text-ink-800"
                 >
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
                     <circle cx="12" cy="5" r="1.6" />
                     <circle cx="12" cy="12" r="1.6" />
                     <circle cx="12" cy="19" r="1.6" />
@@ -984,7 +1026,8 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                 const hari = hariDari(m.createdAt);
                 const sebelum = detail.messages[i - 1];
                 const sesudah = detail.messages[i + 1];
-                const gantiHari = !sebelum || hariDari(sebelum.createdAt) !== hari;
+                const gantiHari =
+                  !sebelum || hariDari(sebelum.createdAt) !== hari;
                 // Pesan beruntun dari orang yang sama, berjarak dekat, jadi SATU
                 // kelompok: rapat di dalam, lega dengan kelompok berikutnya, dan
                 // jamnya cuma ditulis sekali di pesan terakhir. Tanpa ini tiap
@@ -997,8 +1040,10 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                   a.role !== "system" &&
                   b.role !== "system" &&
                   Math.abs(
-                    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-                  ) < 5 * 60_000;
+                    new Date(a.createdAt).getTime() -
+                      new Date(b.createdAt).getTime(),
+                  ) <
+                    5 * 60_000;
                 const rapat = !gantiHari && serumpun(sebelum, m);
                 const akhirKelompok =
                   !serumpun(m, sesudah) ||
@@ -1007,13 +1052,19 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                   <Fragment key={m.id}>
                     {/* Pemisah tanggal, digambar sekali tiap ganti hari. */}
                     {gantiHari && (
-                      <div className={`flex justify-center ${i === 0 ? "" : "mt-5"} mb-3`}>
+                      <div
+                        className={`flex justify-center ${i === 0 ? "" : "mt-5"} mb-3`}
+                      >
                         <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-ink-500 shadow-sm">
                           {labelHari(hari)}
                         </span>
                       </div>
                     )}
-                    <PesanBaris m={m} rapat={rapat} tampilkanJam={akhirKelompok} />
+                    <PesanBaris
+                      m={m}
+                      rapat={rapat}
+                      tampilkanJam={akhirKelompok}
+                    />
                   </Fragment>
                 );
               })}
@@ -1041,7 +1092,16 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                 aria-label="Turun ke pesan terbaru"
                 className="anim-naik absolute bottom-24 right-4 z-10 grid h-10 w-10 place-items-center rounded-full border border-ink-200 bg-white text-ink-600 shadow-[0_6px_16px_-6px_rgba(15,15,15,0.35)] transition hover:text-ink-900 active:scale-95 sm:right-6"
               >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M12 5v14M5 12l7 7 7-7" />
                 </svg>
               </button>
@@ -1085,12 +1145,12 @@ export function Inbox({ initialId }: { initialId: string | null }) {
                   cuma berlaku sedetik sebelum tombol kirim ditekan. */}
               {detail.conversation.aiEnabled && draft.trim().length > 0 && (
                 <p className="anim-muncul mt-2 text-[11px] leading-relaxed text-ink-500">
-                  Begitu kamu ikut balas, asisten langsung berhenti di obrolan ini.
+                  Begitu kamu ikut balas, asisten langsung berhenti di obrolan
+                  ini.
                 </p>
               )}
             </div>
           </div>
-
         </>
       )}
     </div>

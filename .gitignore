@@ -29,3 +29,4 @@ apps/web/next-env.d.ts
 # SENGAJA TIDAK ikut ke GitHub. Isinya strategi bersaing dan angka untung-rugi,
 # dan repo ini publik. Berkasnya tetap ada di komputer, cuma tidak dilacak git.
 bisnis/
+.next-platform-dev/

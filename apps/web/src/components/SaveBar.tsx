@@ -3,7 +3,13 @@
 import { useFormStatus } from "react-dom";
 import type { FormState } from "@/app/actions/agent";
 
-export function SaveBar({ state, label = "Simpan" }: { state: FormState; label?: string }) {
+export function SaveBar({
+  state,
+  label = "Simpan",
+}: {
+  state: FormState;
+  label?: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -27,10 +33,14 @@ export function SaveBar({ state, label = "Simpan" }: { state: FormState; label?:
           perlu disisakan. */}
       <div className="flex flex-col gap-2 pr-16 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:pr-0">
         {state?.error && (
-          <p className="text-sm text-red-600 sm:mr-auto">{state.error}</p>
+          <p role="alert" className="text-sm text-red-600 sm:mr-auto">
+            {state.error}
+          </p>
         )}
         {state?.message && !state.error && (
-          <p className="text-sm text-brand-700 sm:mr-auto">{state.message}</p>
+          <p role="status" className="text-sm text-brand-700 sm:mr-auto">
+            {state.message}
+          </p>
         )}
         <button
           type="submit"

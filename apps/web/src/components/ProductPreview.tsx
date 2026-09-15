@@ -21,6 +21,7 @@ export function ProductPreview({
 }) {
   const [mode, setMode] = useState<"wa" | "ai">("wa");
   const [industry, setIndustry] = useState("");
+  const [expanded, setExpanded] = useState(false);
   const example = options.find((item) => item.id === industry);
   const chat = example?.chat ?? initialChat;
   const tanya = example?.tanya ?? initialTanya;
@@ -36,7 +37,10 @@ export function ProductPreview({
           <select
             aria-label="Pilih bidang contoh percakapan"
             value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
+            onChange={(e) => {
+              setIndustry(e.target.value);
+              setExpanded(false);
+            }}
           >
             <option value="">Contoh: Kenali Palwise</option>
             {options.map((o) => (
@@ -120,12 +124,15 @@ export function ProductPreview({
               </span>
             </div>
             {mode === "wa" ? (
-              <div className="pw-bubbles">
+              <div
+                className={`pw-bubbles ${expanded ? "pw-bubbles-expanded" : ""}`}
+                id="pw-demo-messages"
+              >
                 <span className="pw-chat-day">CONTOH PERCAKAPAN</span>
                 {chat.pesan.slice(0, 4).map((p, i) => (
                   <div
                     key={i}
-                    className={`pw-bubble ${p.dari === "asisten" ? "pw-bubble-ai" : ""}`}
+                    className={`pw-bubble ${i > 1 ? "pw-bubble-extra" : ""} ${p.dari === "asisten" ? "pw-bubble-ai" : ""}`}
                   >
                     <p>{p.teks}</p>
                     <small>
@@ -134,6 +141,18 @@ export function ProductPreview({
                     </small>
                   </div>
                 ))}
+                {chat.pesan.length > 2 && (
+                  <button
+                    type="button"
+                    className="pw-demo-expand"
+                    aria-expanded={expanded}
+                    aria-controls="pw-demo-messages"
+                    onClick={() => setExpanded(!expanded)}
+                  >
+                    {expanded ? "Ringkas percakapan" : "Lanjutkan contoh"}
+                    <span aria-hidden>{expanded ? "−" : "+"}</span>
+                  </button>
+                )}
               </div>
             ) : (
               <div className="pw-owner-demo">

@@ -1,5 +1,11 @@
+import { PlatformNav } from "@/components/PlatformNav";
 import Link from "next/link";
-import { fiturPaket, getPlan, paketMinimalTiapFitur, prisma } from "@palwise/db";
+import {
+  fiturPaket,
+  getPlan,
+  paketMinimalTiapFitur,
+  prisma,
+} from "@palwise/db";
 import { requireUser } from "@/lib/auth";
 import { AgentForm } from "@/components/AgentForm";
 import { AgentPicker } from "@/components/AgentPicker";
@@ -78,6 +84,8 @@ export default async function AgentPage({
           </div>
         }
       />
+
+      <PlatformNav active="/app/agent" kind="setup" agentId={active.id} />
 
       <AgentPicker
         agents={agents.map((x) => ({

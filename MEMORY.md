@@ -62,3 +62,9 @@ Rilis preferensi di atas aktif pada 10 September 2026, kode `a56f1ef`; hasil ver
 - Jangan gunakan latar hijau pada landing atau platform. Gunakan putih, abu-abu netral, dan aksen biru untuk interaksi; hindari tint hijau pada sidebar, kartu, chat, form, dan background.
 - Demo utama landing bukan percakapan jualan kopi/Bu Ratna. Gunakan contoh yang relevan untuk seluruh calon pengguna Palwise; contoh khusus usaha tetap tersedia lewat pilihan bidang dan halaman masing-masing.
 - Peringatan layanan di layar pengguna tidak boleh menampilkan perintah terminal, nama kunci API, atau langkah konfigurasi teknis, termasuk saat pratinjau lokal. Jelaskan dampak dan tindakan yang bisa dilakukan pengguna, tanpa menjamin sinkronisasi saat layanannya tidak dapat diperiksa.
+
+## Pengalaman HP dan hero — 15 September 2026
+
+- Hapus angka kuota pesan/balasan gratis dari hero. Detail kapasitas tetap dijelaskan pada paket dan FAQ.
+- Desain HP harus disusun khusus: judul ringkas, teks mudah dibaca, satu CTA utama jelas, area sentuh nyaman, dan demo yang dapat diperluas. Jangan sekadar mengecilkan tampilan desktop.
+- Lanjutkan perbaikan halaman platform dengan formulir per bagian, pencarian yang mudah ditemukan, navigasi konsisten, dan status layanan yang akurat.

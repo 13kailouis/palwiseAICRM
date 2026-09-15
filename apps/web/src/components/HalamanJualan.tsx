@@ -112,9 +112,16 @@ export function HalamanJualan({ isi }: { isi: IsiJualan }) {
             <h1>
               {umum ? (
                 <>
-                  {isi.hero.judul}
-                  <br />
-                  <span>{isi.hero.judulAbu}</span>
+                  <span className="pw-headline-desktop">
+                    {isi.hero.judul}
+                    <br />
+                    <span>{isi.hero.judulAbu}</span>
+                  </span>
+                  <span className="pw-headline-mobile">
+                    Chat terlayani.
+                    <br />
+                    <em>Bisnis terkendali.</em>
+                  </span>
                 </>
               ) : (
                 <>
@@ -125,9 +132,8 @@ export function HalamanJualan({ isi }: { isi: IsiJualan }) {
               )}
             </h1>
             <p className="pw-hero-description">
-              AI yang membantu membalas WhatsApp pelanggan, merapikan
-              percakapan, dan menyiapkan langkah berikutnya. Semua dalam satu
-              ruang kerja. Kendali tetap di tanganmu.
+              Bantu pelanggan lewat WhatsApp. Kelola percakapan dan langkah
+              berikutnya bersama AI. Kendali tetap di tanganmu.
             </p>
             <div className="pw-hero-actions">
               <Link className="pw-button" href={keApp("/daftar")}>
@@ -140,8 +146,7 @@ export function HalamanJualan({ isi }: { isi: IsiJualan }) {
             </div>
             <p className="pw-hero-note">
               <Ikon nama="centang" size={14} />
-              Tanpa kartu kredit <span>·</span> {PLANS.free.aiCredits} balasan
-              gratis per bulan
+              Tanpa kartu kredit. Coba dengan bisnismu sendiri.
             </p>
           </div>
           <div id="demo" className="pw-hero-product">

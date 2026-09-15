@@ -1,3 +1,4 @@
+import { PlatformNav } from "@/components/PlatformNav";
 import Link from "next/link";
 import { prisma } from "@palwise/db";
 import { requireUser } from "@/lib/auth";
@@ -54,13 +55,15 @@ export default async function CobaPage({
         }
       />
 
+      <PlatformNav active="/app/coba" agentId={active.id} />
+
       <AgentTabs agents={agents} activeId={active.id} basePath="/app/coba" />
 
       <div className="p-4 sm:p-6">
         {knowledgeReady === 0 && (
           <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Info bisnis buat asisten ini masih kosong, jadi dia belum tahu produk
-            dan harganya.{" "}
+            Info bisnis buat asisten ini masih kosong, jadi dia belum tahu
+            produk dan harganya.{" "}
             <Link
               href={`/app/knowledge?a=${active.id}`}
               className="font-medium underline"
@@ -71,7 +74,11 @@ export default async function CobaPage({
           </div>
         )}
         {/* key memaksa percakapan uji dimulai bersih saat pindah asisten */}
-        <Playground key={active.id} agentId={active.id} agentName={active.name} />
+        <Playground
+          key={active.id}
+          agentId={active.id}
+          agentName={active.name}
+        />
       </div>
     </>
   );
