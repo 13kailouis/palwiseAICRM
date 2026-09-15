@@ -24,3 +24,11 @@
 ## Rilis
 
 Build produksi dibuat pada direktori rilis terpisah. Hanya proses web yang diganti setelah build lolos; build sebelumnya disimpan untuk pemulihan. Hasil aktivasi dan pemeriksaan live dicatat sesudah rilis.
+
+## Aktivasi terverifikasi
+
+- Kode `b10f862` dipush ke `main` dan aktif pada 15 September 2026 di `https://palwise.id` dan `https://app.palwise.id`.
+- Build web: `.next-tanya/release-b10f862`. Build sebelumnya `.next-tanya/release-b830071` tetap tersedia.
+- Web aktif dan health worker berhasil. PID worker tetap `251426` sebelum/sesudah aktivasi; worker tidak direstart.
+- Playwright live: hero tanpa angka kuota, demo buka/tutup, pilihan bidang, menu HP + Escape, tujuh lebar layar, `/klinik`, `/hotel`, `/kursus`, `/masuk`, `/daftar`, `/lupa` lolos; tidak ada galat JavaScript klien.
+- Semua data akun/pelanggan QA lokal sudah dibersihkan. Tidak ada pesan, pembayaran, atau perubahan akun pelanggan produksi dari pengujian ini.
